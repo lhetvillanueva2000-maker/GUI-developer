@@ -116,6 +116,13 @@ jobs:
   linux-and-android:
     needs: version
     runs-on: ubuntu-latest
+    # Surfaced as job env because the `secrets` context is not available in a
+    # step-level `if`, but `env` is.
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -135,15 +142,15 @@ jobs:
       - name: Decode the release keystore
         # Optional: set the ANDROID_KEYSTORE_* secrets to get a signed APK.
         # Without them the build still produces an unsigned one.
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
         shell: bash
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > build-scripts/release.jks
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > build-scripts/release.jks
           cat > build-scripts/keystore.properties <<EOF
           storeFile=build-scripts/release.jks
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
           EOF
 
       - name: Validate templates and run the tests
