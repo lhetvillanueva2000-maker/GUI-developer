@@ -1,0 +1,393 @@
+{
+  "formatVersion": 1,
+  "id": "project_n0oc9s6ecul4",
+  "name": "Bedrock Action Form",
+  "edition": "bedrock",
+  "canvas": {
+    "width": 320,
+    "height": 180,
+    "guiScale": 3,
+    "gridSize": 4,
+    "backdrop": "DIM",
+    "backdropColor": 3222278168,
+    "targetForm": "mobile",
+    "safeArea": {
+      "left": 12,
+      "top": 8,
+      "right": 12,
+      "bottom": 8
+    }
+  },
+  "elements": [
+    {
+      "id": "frame_59kef8r4bsvc",
+      "type": "panel.frame",
+      "name": "Form Body",
+      "bounds": {
+        "x": 60,
+        "y": 18,
+        "width": 200,
+        "height": 144
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4028637224
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 10
+        },
+        "corner": {
+          "kind": "e",
+          "value": "rounded"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": [
+        {
+          "id": "header_0vh2evwd1qec",
+          "type": "bar.header",
+          "name": "Form Title",
+          "bounds": {
+            "x": 8,
+            "y": 6,
+            "width": 184,
+            "height": 20
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "title": {
+              "kind": "s",
+              "value": "Village Shop"
+            },
+            "icon": {
+              "kind": "tex"
+            },
+            "showDivider": {
+              "kind": "b",
+              "value": true
+            },
+            "showCloseButton": {
+              "kind": "b",
+              "value": false
+            },
+            "background": {
+              "kind": "c",
+              "argb": 0
+            },
+            "dividerColor": {
+              "kind": "c",
+              "argb": 4281808695
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "default"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "label_22mvavzwaz0n",
+          "type": "text.label",
+          "name": "Form Body Text",
+          "bounds": {
+            "x": 8,
+            "y": 30,
+            "width": 184,
+            "height": 20
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "Pick something to trade."
+            },
+            "scale": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "wrap": {
+              "kind": "b",
+              "value": true
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "default"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "normal_0bk2669wqvx4",
+          "type": "button.normal",
+          "name": "Buy Button",
+          "bounds": {
+            "x": 8,
+            "y": 56,
+            "width": 184,
+            "height": 30
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Buy items"
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "tooltip": {
+              "kind": "s",
+              "value": ""
+            },
+            "action": {
+              "kind": "s",
+              "value": "form_button_0"
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "borderColor": {
+              "kind": "c",
+              "argb": 4278190080
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "default"
+            },
+            "texture": {
+              "kind": "tex"
+            },
+            "textureFit": {
+              "kind": "e",
+              "value": "nine_slice"
+            },
+            "tint": {
+              "kind": "c",
+              "argb": 4294967295
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "normal_p9wsefbbeww2",
+          "type": "button.normal",
+          "name": "Sell Button",
+          "bounds": {
+            "x": 8,
+            "y": 92,
+            "width": 184,
+            "height": 30
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Sell items"
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "tooltip": {
+              "kind": "s",
+              "value": ""
+            },
+            "action": {
+              "kind": "s",
+              "value": "form_button_1"
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "borderColor": {
+              "kind": "c",
+              "argb": 4278190080
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "default"
+            },
+            "texture": {
+              "kind": "tex"
+            },
+            "textureFit": {
+              "kind": "e",
+              "value": "nine_slice"
+            },
+            "tint": {
+              "kind": "c",
+              "argb": 4294967295
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "placeholder_cbhhcmclpg10",
+          "type": "image.placeholder",
+          "name": "Shop Icon",
+          "bounds": {
+            "x": 84,
+            "y": 126,
+            "width": 32,
+            "height": 12
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "texture": {
+              "kind": "tex"
+            },
+            "fit": {
+              "kind": "e",
+              "value": "contain"
+            },
+            "keepAspect": {
+              "kind": "b",
+              "value": true
+            },
+            "pixelated": {
+              "kind": "b",
+              "value": true
+            },
+            "opacity": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "tint": {
+              "kind": "c",
+              "argb": 4294967295
+            },
+            "placeholderColor": {
+              "kind": "c",
+              "argb": 4282400832
+            },
+            "rotation": {
+              "kind": "i",
+              "value": 0
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        }
+      ]
+    }
+  ],
+  "textures": [],
+  "meta": {
+    "author": "",
+    "description": "ActionForm-style dialog with stacked full-width touch buttons.",
+    "createdAt": "",
+    "modifiedAt": "",
+    "tags": [
+      "bedrock",
+      "form",
+      "dialog"
+    ],
+    "namespace": "mcgui",
+    "screenId": "bedrock_action_form"
+  }
+}

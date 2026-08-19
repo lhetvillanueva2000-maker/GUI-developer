@@ -1,0 +1,36 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Sample Chest Screen",
+    "description": "A vanilla-accurate three-row chest with the full player inventory.",
+    "uuid": "a06e09f8-1447-44ca-ad7b-d4a6f0d6e59b",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "8e6c4a34-0ef6-4f6c-a19e-61a901aa03ac",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "description": "UI definitions"
+    }
+  ],
+  "metadata": {
+    "authors": [
+      "Minecraft GUI Designer"
+    ],
+    "generated_with": "minecraft-gui-designer"
+  }
+}

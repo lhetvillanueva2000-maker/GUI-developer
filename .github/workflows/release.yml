@@ -1,0 +1,184 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+permissions:
+  contents: write
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.daemon=false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Work out the version once so every job stamps the same number.
+  # ---------------------------------------------------------------------------
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - id: resolve
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Building version $version"
+
+  # ---------------------------------------------------------------------------
+  # Windows: the .exe installer. Compose Desktop can only produce it here.
+  # ---------------------------------------------------------------------------
+  windows-desktop:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build the Windows installer
+        run: >
+          ./gradlew -PskipAndroid=true -Pmcgui.version=${{ needs.version.outputs.version }}
+          :desktopApp:packageReleaseExe
+          :desktopApp:packageReleaseMsi
+          :desktopApp:packageUberJarForCurrentOS
+
+      - name: Collect the installers
+        shell: bash
+        run: |
+          mkdir -p out
+          find desktopApp/build/compose/binaries -type f \( -name '*.exe' -o -name '*.msi' \) -exec cp {} out/ \;
+          find desktopApp/build/compose/jars -type f -name '*.jar' -exec cp {} out/ \;
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-desktop
+          path: out/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Linux: the .deb, and the Android APK.
+  # ---------------------------------------------------------------------------
+  linux-and-android:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Decode the release keystore
+        # Optional: set ANDROID_KEYSTORE_BASE64 / ANDROID_KEY_* secrets to get a
+        # signed APK. Without them the build still produces an unsigned one.
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > build-scripts/release.jks
+          cat > build-scripts/keystore.properties <<EOF
+          storeFile=build-scripts/release.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: Validate templates and run the tests
+        run: ./gradlew -Pmcgui.version=${{ needs.version.outputs.version }} validateProjects allTests
+
+      - name: Build the APK and the Linux package
+        run: >
+          ./gradlew -Pmcgui.version=${{ needs.version.outputs.version }}
+          :androidApp:assembleRelease
+          :desktopApp:packageReleaseDeb
+
+      - name: Collect the artifacts
+        shell: bash
+        run: |
+          mkdir -p out
+          find androidApp/build/outputs/apk/release -type f -name '*.apk' -exec cp {} out/ \;
+          find desktopApp/build/compose/binaries -type f -name '*.deb' -exec cp {} out/ \;
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-and-android
+          path: out/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Merge everything into the single deliverable ZIP and publish the release.
+  # ---------------------------------------------------------------------------
+  bundle:
+    needs: [version, windows-desktop, linux-and-android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download every build artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Build the release ZIP
+        run: |
+          chmod +x build-scripts/bundle-release.sh
+          ./build-scripts/bundle-release.sh artifacts "${{ needs.version.outputs.version }}" dist
+
+      - name: Show what went in
+        run: unzip -l dist/*.zip | head -40
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-bundle
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish the GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
+          body: |
+            ## Minecraft GUI Designer ${{ needs.version.outputs.version }}
+
+            `minecraft-gui-designer-${{ needs.version.outputs.version }}.zip` contains:
+
+            | Folder | Contents |
+            | --- | --- |
+            | `desktop/` | Windows installer (`.exe`, `.msi`), Linux `.deb`, and a portable `.jar` |
+            | `android/` | The Android APK |
+            | `templates/` | Bundled `.mcgui` templates plus a full set of sample exports |
+            | `docs/` | Architecture, project format and export documentation |
+            | `build-scripts/` | The scripts that produced this archive |
+            | `source.zip` | The complete source tree, including the Gradle build |
+
+            `MANIFEST.txt` inside the archive lists every file with its SHA-256.

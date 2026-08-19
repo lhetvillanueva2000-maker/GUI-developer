@@ -1,0 +1,533 @@
+{
+  "formatVersion": 1,
+  "id": "project_uf0le5siwi90",
+  "name": "Bedrock Settings Sheet",
+  "edition": "bedrock",
+  "canvas": {
+    "width": 320,
+    "height": 180,
+    "guiScale": 3,
+    "gridSize": 4,
+    "backdrop": "DIM",
+    "backdropColor": 3222278168,
+    "targetForm": "mobile",
+    "safeArea": {
+      "left": 12,
+      "top": 8,
+      "right": 12,
+      "bottom": 8
+    }
+  },
+  "elements": [
+    {
+      "id": "frame_xtc8hir8ytjo",
+      "type": "panel.frame",
+      "name": "Settings Sheet",
+      "bounds": {
+        "x": 20,
+        "y": 16,
+        "width": 280,
+        "height": 148
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4028308255
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4282203461
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 10
+        },
+        "corner": {
+          "kind": "e",
+          "value": "rounded"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": [
+        {
+          "id": "header_xgjnsayhgx1p",
+          "type": "bar.header",
+          "name": "Sheet Title",
+          "bounds": {
+            "x": 10,
+            "y": 8,
+            "width": 260,
+            "height": 20
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "title": {
+              "kind": "s",
+              "value": "Settings"
+            },
+            "icon": {
+              "kind": "tex"
+            },
+            "showDivider": {
+              "kind": "b",
+              "value": true
+            },
+            "showCloseButton": {
+              "kind": "b",
+              "value": true
+            },
+            "background": {
+              "kind": "c",
+              "argb": 0
+            },
+            "dividerColor": {
+              "kind": "c",
+              "argb": 4281808695
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "default"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "search_bmoq1ockkdod",
+          "type": "input.search",
+          "name": "Search Settings",
+          "bounds": {
+            "x": 10,
+            "y": 32,
+            "width": 260,
+            "height": 28
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "value": {
+              "kind": "s",
+              "value": ""
+            },
+            "placeholder": {
+              "kind": "s",
+              "value": "Search settings"
+            },
+            "showIcon": {
+              "kind": "b",
+              "value": true
+            },
+            "showClear": {
+              "kind": "b",
+              "value": true
+            },
+            "liveFilter": {
+              "kind": "b",
+              "value": true
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4278190080
+            },
+            "borderColor": {
+              "kind": "c",
+              "argb": 4288716960
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "scroll_yoh32msc44l1",
+          "type": "container.scroll",
+          "name": "Settings List",
+          "bounds": {
+            "x": 10,
+            "y": 66,
+            "width": 260,
+            "height": 70
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "direction": {
+              "kind": "e",
+              "value": "vertical"
+            },
+            "contentLength": {
+              "kind": "i",
+              "value": 200
+            },
+            "showScrollbar": {
+              "kind": "b",
+              "value": true
+            },
+            "scrollbarWidth": {
+              "kind": "i",
+              "value": 6
+            },
+            "background": {
+              "kind": "c",
+              "argb": 1073741824
+            },
+            "thumbColor": {
+              "kind": "c",
+              "argb": 4291217094
+            },
+            "momentum": {
+              "kind": "b",
+              "value": true
+            }
+          },
+          "stateOverrides": {},
+          "children": [
+            {
+              "id": "toggle_zxnf6whmlkjv",
+              "type": "button.toggle",
+              "name": "Vibration",
+              "bounds": {
+                "x": 4,
+                "y": 4,
+                "width": 248,
+                "height": 28
+              },
+              "anchor": "TOP_LEFT",
+              "visible": true,
+              "locked": false,
+              "props": {
+                "label": {
+                  "kind": "s",
+                  "value": "Vibration"
+                },
+                "onLabel": {
+                  "kind": "s",
+                  "value": "ON"
+                },
+                "offLabel": {
+                  "kind": "s",
+                  "value": "OFF"
+                },
+                "value": {
+                  "kind": "b",
+                  "value": true
+                },
+                "enabled": {
+                  "kind": "b",
+                  "value": true
+                },
+                "tooltip": {
+                  "kind": "s",
+                  "value": ""
+                },
+                "background": {
+                  "kind": "c",
+                  "argb": 4285295724
+                },
+                "onColor": {
+                  "kind": "c",
+                  "argb": 4283873355
+                },
+                "style": {
+                  "kind": "e",
+                  "value": "switch"
+                },
+                "textColor": {
+                  "kind": "c",
+                  "argb": 4292927712
+                },
+                "shadow": {
+                  "kind": "b",
+                  "value": true
+                },
+                "align": {
+                  "kind": "e",
+                  "value": "center"
+                },
+                "font": {
+                  "kind": "e",
+                  "value": "default"
+                }
+              },
+              "stateOverrides": {},
+              "children": []
+            },
+            {
+              "id": "toggle_kavf44qrdx67",
+              "type": "button.toggle",
+              "name": "Auto Jump",
+              "bounds": {
+                "x": 4,
+                "y": 36,
+                "width": 248,
+                "height": 28
+              },
+              "anchor": "TOP_LEFT",
+              "visible": true,
+              "locked": false,
+              "props": {
+                "label": {
+                  "kind": "s",
+                  "value": "Auto Jump"
+                },
+                "onLabel": {
+                  "kind": "s",
+                  "value": "ON"
+                },
+                "offLabel": {
+                  "kind": "s",
+                  "value": "OFF"
+                },
+                "value": {
+                  "kind": "b",
+                  "value": false
+                },
+                "enabled": {
+                  "kind": "b",
+                  "value": true
+                },
+                "tooltip": {
+                  "kind": "s",
+                  "value": ""
+                },
+                "background": {
+                  "kind": "c",
+                  "argb": 4285295724
+                },
+                "onColor": {
+                  "kind": "c",
+                  "argb": 4283873355
+                },
+                "style": {
+                  "kind": "e",
+                  "value": "switch"
+                },
+                "textColor": {
+                  "kind": "c",
+                  "argb": 4292927712
+                },
+                "shadow": {
+                  "kind": "b",
+                  "value": true
+                },
+                "align": {
+                  "kind": "e",
+                  "value": "center"
+                },
+                "font": {
+                  "kind": "e",
+                  "value": "default"
+                }
+              },
+              "stateOverrides": {},
+              "children": []
+            },
+            {
+              "id": "slider_k5pday7thbyn",
+              "type": "input.slider",
+              "name": "Sensitivity",
+              "bounds": {
+                "x": 4,
+                "y": 68,
+                "width": 248,
+                "height": 28
+              },
+              "anchor": "TOP_LEFT",
+              "visible": true,
+              "locked": false,
+              "props": {
+                "label": {
+                  "kind": "s",
+                  "value": "Sensitivity"
+                },
+                "value": {
+                  "kind": "f",
+                  "value": 0.55
+                },
+                "minValue": {
+                  "kind": "f",
+                  "value": 0.0
+                },
+                "maxValue": {
+                  "kind": "f",
+                  "value": 100.0
+                },
+                "stepSize": {
+                  "kind": "f",
+                  "value": 1.0
+                },
+                "showValue": {
+                  "kind": "b",
+                  "value": true
+                },
+                "suffix": {
+                  "kind": "s",
+                  "value": "%"
+                },
+                "enabled": {
+                  "kind": "b",
+                  "value": true
+                },
+                "trackColor": {
+                  "kind": "c",
+                  "argb": 4285295724
+                },
+                "knobColor": {
+                  "kind": "c",
+                  "argb": 4291217094
+                },
+                "knobWidth": {
+                  "kind": "i",
+                  "value": 8
+                },
+                "textColor": {
+                  "kind": "c",
+                  "argb": 4292927712
+                },
+                "shadow": {
+                  "kind": "b",
+                  "value": true
+                },
+                "align": {
+                  "kind": "e",
+                  "value": "center"
+                },
+                "font": {
+                  "kind": "e",
+                  "value": "default"
+                }
+              },
+              "stateOverrides": {},
+              "children": []
+            },
+            {
+              "id": "checkbox_708yy62pe3jx",
+              "type": "input.checkbox",
+              "name": "Show Coordinates",
+              "bounds": {
+                "x": 4,
+                "y": 100,
+                "width": 248,
+                "height": 24
+              },
+              "anchor": "TOP_LEFT",
+              "visible": true,
+              "locked": false,
+              "props": {
+                "label": {
+                  "kind": "s",
+                  "value": "Show coordinates"
+                },
+                "checked": {
+                  "kind": "b",
+                  "value": false
+                },
+                "boxSize": {
+                  "kind": "i",
+                  "value": 12
+                },
+                "enabled": {
+                  "kind": "b",
+                  "value": true
+                },
+                "tooltip": {
+                  "kind": "s",
+                  "value": ""
+                },
+                "boxColor": {
+                  "kind": "c",
+                  "argb": 4280953386
+                },
+                "checkColor": {
+                  "kind": "c",
+                  "argb": 4283873355
+                },
+                "textColor": {
+                  "kind": "c",
+                  "argb": 4292927712
+                },
+                "shadow": {
+                  "kind": "b",
+                  "value": true
+                },
+                "align": {
+                  "kind": "e",
+                  "value": "left"
+                },
+                "font": {
+                  "kind": "e",
+                  "value": "default"
+                }
+              },
+              "stateOverrides": {},
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "textures": [],
+  "meta": {
+    "author": "",
+    "description": "Bottom-sheet style settings screen with a scrollable option list.",
+    "createdAt": "",
+    "modifiedAt": "",
+    "tags": [
+      "bedrock",
+      "settings",
+      "touch"
+    ],
+    "namespace": "mcgui",
+    "screenId": "bedrock_settings_sheet"
+  }
+}

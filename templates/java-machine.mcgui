@@ -1,0 +1,1952 @@
+{
+  "formatVersion": 1,
+  "id": "project_7wb1nmjxq3m9",
+  "name": "Java Machine UI",
+  "edition": "java",
+  "canvas": {
+    "width": 176,
+    "height": 182,
+    "guiScale": 3,
+    "gridSize": 2,
+    "backdrop": "DIM",
+    "backdropColor": 3222278168,
+    "targetForm": "desktop",
+    "safeArea": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 0
+    }
+  },
+  "elements": [
+    {
+      "id": "chest_a8jfcfu4rsba",
+      "type": "panel.chest",
+      "name": "Machine Background",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 176,
+        "height": 166
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "title": {
+          "kind": "s",
+          "value": "Alloy Smelter"
+        },
+        "rows": {
+          "kind": "i",
+          "value": 3
+        },
+        "showPlayerInventory": {
+          "kind": "b",
+          "value": true
+        },
+        "showTitle": {
+          "kind": "b",
+          "value": true
+        },
+        "titleColor": {
+          "kind": "c",
+          "argb": 4282400832
+        },
+        "skin": {
+          "kind": "e",
+          "value": "dark"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": [
+        {
+          "id": "header_k0to4u1ba8lv",
+          "type": "bar.header",
+          "name": "Title",
+          "bounds": {
+            "x": 8,
+            "y": 5,
+            "width": 160,
+            "height": 12
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "title": {
+              "kind": "s",
+              "value": "Alloy Smelter"
+            },
+            "icon": {
+              "kind": "tex"
+            },
+            "showDivider": {
+              "kind": "b",
+              "value": false
+            },
+            "showCloseButton": {
+              "kind": "b",
+              "value": false
+            },
+            "background": {
+              "kind": "c",
+              "argb": 0
+            },
+            "dividerColor": {
+              "kind": "c",
+              "argb": 4281808695
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "minecraft"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_8mhs5a88xhq3",
+          "type": "slot.inventory",
+          "name": "Input A",
+          "bounds": {
+            "x": 34,
+            "y": 22,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 0
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_znmmset44ikh",
+          "type": "slot.inventory",
+          "name": "Input B",
+          "bounds": {
+            "x": 34,
+            "y": 44,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 1
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_jx5a83sos586",
+          "type": "slot.inventory",
+          "name": "Fuel",
+          "bounds": {
+            "x": 34,
+            "y": 66,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 2
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_1wy4k0t8g2i4",
+          "type": "slot.inventory",
+          "name": "Output",
+          "bounds": {
+            "x": 116,
+            "y": 44,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 3
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "bar_2abmfugp266d",
+          "type": "progress.bar",
+          "name": "Smelt Progress",
+          "bounds": {
+            "x": 62,
+            "y": 48,
+            "width": 48,
+            "height": 10
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "progress": {
+              "kind": "f",
+              "value": 0.55
+            },
+            "direction": {
+              "kind": "e",
+              "value": "right"
+            },
+            "showLabel": {
+              "kind": "b",
+              "value": false
+            },
+            "segmented": {
+              "kind": "b",
+              "value": false
+            },
+            "segments": {
+              "kind": "i",
+              "value": 10
+            },
+            "fillColor": {
+              "kind": "c",
+              "argb": 4294944550
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4280953386
+            },
+            "borderColor": {
+              "kind": "c",
+              "argb": 4278190080
+            },
+            "texture": {
+              "kind": "tex"
+            },
+            "textureFit": {
+              "kind": "e",
+              "value": "nine_slice"
+            },
+            "tint": {
+              "kind": "c",
+              "argb": 4294967295
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "bar_5kh5wqg4asm8",
+          "type": "progress.bar",
+          "name": "Fuel Gauge",
+          "bounds": {
+            "x": 36,
+            "y": 88,
+            "width": 14,
+            "height": 4
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "progress": {
+              "kind": "f",
+              "value": 0.3
+            },
+            "direction": {
+              "kind": "e",
+              "value": "right"
+            },
+            "showLabel": {
+              "kind": "b",
+              "value": false
+            },
+            "segmented": {
+              "kind": "b",
+              "value": false
+            },
+            "segments": {
+              "kind": "i",
+              "value": 10
+            },
+            "fillColor": {
+              "kind": "c",
+              "argb": 4293874512
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4280953386
+            },
+            "borderColor": {
+              "kind": "c",
+              "argb": 4278190080
+            },
+            "texture": {
+              "kind": "tex"
+            },
+            "textureFit": {
+              "kind": "e",
+              "value": "nine_slice"
+            },
+            "tint": {
+              "kind": "c",
+              "argb": 4294967295
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "tooltip_n5ws16cv60ze",
+          "type": "panel.tooltip",
+          "name": "Recipe Tooltip",
+          "bounds": {
+            "x": 100,
+            "y": 12,
+            "width": 70,
+            "height": 28
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "Iron + Coal\n= Steel Ingot"
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4027580432
+            },
+            "borderTop": {
+              "kind": "c",
+              "argb": 4283433215
+            },
+            "borderBottom": {
+              "kind": "c",
+              "argb": 4280811647
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4294967295
+            },
+            "followPointer": {
+              "kind": "b",
+              "value": false
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_k3jnxws7nfvb",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 10",
+          "bounds": {
+            "x": 8,
+            "y": 100,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 10
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_mcqj0r3eukc0",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 11",
+          "bounds": {
+            "x": 26,
+            "y": 100,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 11
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_82yh2sf2x48r",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 12",
+          "bounds": {
+            "x": 44,
+            "y": 100,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 12
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_3f65xli529h3",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 13",
+          "bounds": {
+            "x": 62,
+            "y": 100,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 13
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_pim42guh4a54",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 14",
+          "bounds": {
+            "x": 80,
+            "y": 100,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 14
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_nswibm0xiy98",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 15",
+          "bounds": {
+            "x": 98,
+            "y": 100,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 15
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_lqco88ei6s4b",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 16",
+          "bounds": {
+            "x": 116,
+            "y": 100,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 16
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_r61fo1pnbwvk",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 17",
+          "bounds": {
+            "x": 134,
+            "y": 100,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 17
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_ac8ncs46l5q6",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 18",
+          "bounds": {
+            "x": 152,
+            "y": 100,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 18
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_x3nvvqvtei6r",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 19",
+          "bounds": {
+            "x": 8,
+            "y": 118,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 19
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_igwdvx7zzsyz",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 20",
+          "bounds": {
+            "x": 26,
+            "y": 118,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 20
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_ijm40l2aww9n",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 21",
+          "bounds": {
+            "x": 44,
+            "y": 118,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 21
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_xamyc4b9nvmj",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 22",
+          "bounds": {
+            "x": 62,
+            "y": 118,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 22
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_idymb8pj2zn8",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 23",
+          "bounds": {
+            "x": 80,
+            "y": 118,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 23
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_l74e7p3tze1i",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 24",
+          "bounds": {
+            "x": 98,
+            "y": 118,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 24
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_2f664qq3wyyu",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 25",
+          "bounds": {
+            "x": 116,
+            "y": 118,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 25
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_ahqi0q1ocsj6",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 26",
+          "bounds": {
+            "x": 134,
+            "y": 118,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 26
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_fmlsm5bmqlm4",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 27",
+          "bounds": {
+            "x": 152,
+            "y": 118,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 27
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_hwvfhhx4zusm",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 28",
+          "bounds": {
+            "x": 8,
+            "y": 136,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 28
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_81nha2osb83t",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 29",
+          "bounds": {
+            "x": 26,
+            "y": 136,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 29
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_fnyih352wvsx",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 30",
+          "bounds": {
+            "x": 44,
+            "y": 136,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 30
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_dvu8xem1meuo",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 31",
+          "bounds": {
+            "x": 62,
+            "y": 136,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 31
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_nfjvl6ppyd76",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 32",
+          "bounds": {
+            "x": 80,
+            "y": 136,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 32
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_ep06nl0p6gab",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 33",
+          "bounds": {
+            "x": 98,
+            "y": 136,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 33
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_o9bym0y6u3fj",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 34",
+          "bounds": {
+            "x": 116,
+            "y": 136,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 34
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_g5ziqgm0pnxc",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 35",
+          "bounds": {
+            "x": 134,
+            "y": 136,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 35
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_dkhu6xd68o7d",
+          "type": "slot.inventory",
+          "name": "Inventory Slot 36",
+          "bounds": {
+            "x": 152,
+            "y": 136,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 36
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_18s8mvf84bwr",
+          "type": "slot.inventory",
+          "name": "Hotbar Slot 37",
+          "bounds": {
+            "x": 8,
+            "y": 158,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 37
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_s8yi3qy67lie",
+          "type": "slot.inventory",
+          "name": "Hotbar Slot 38",
+          "bounds": {
+            "x": 26,
+            "y": 158,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 38
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_zyjhuv4s8afh",
+          "type": "slot.inventory",
+          "name": "Hotbar Slot 39",
+          "bounds": {
+            "x": 44,
+            "y": 158,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 39
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_9ohgwes97u06",
+          "type": "slot.inventory",
+          "name": "Hotbar Slot 40",
+          "bounds": {
+            "x": 62,
+            "y": 158,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 40
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_ah66e9viu0u8",
+          "type": "slot.inventory",
+          "name": "Hotbar Slot 41",
+          "bounds": {
+            "x": 80,
+            "y": 158,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 41
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_3fszfmdldj1e",
+          "type": "slot.inventory",
+          "name": "Hotbar Slot 42",
+          "bounds": {
+            "x": 98,
+            "y": 158,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 42
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_uqiq4l7bbj6m",
+          "type": "slot.inventory",
+          "name": "Hotbar Slot 43",
+          "bounds": {
+            "x": 116,
+            "y": 158,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 43
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_ek9135ci9rsz",
+          "type": "slot.inventory",
+          "name": "Hotbar Slot 44",
+          "bounds": {
+            "x": 134,
+            "y": 158,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 44
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "inventory_xm9kemuq3vyj",
+          "type": "slot.inventory",
+          "name": "Hotbar Slot 45",
+          "bounds": {
+            "x": 152,
+            "y": 158,
+            "width": 18,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "slotIndex": {
+              "kind": "i",
+              "value": 45
+            },
+            "itemIcon": {
+              "kind": "tex"
+            },
+            "highlight": {
+              "kind": "b",
+              "value": false
+            },
+            "slotColor": {
+              "kind": "c",
+              "argb": 4287335307
+            },
+            "acceptsInput": {
+              "kind": "b",
+              "value": true
+            },
+            "filterTag": {
+              "kind": "s",
+              "value": ""
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        }
+      ]
+    }
+  ],
+  "textures": [],
+  "meta": {
+    "author": "",
+    "description": "Furnace-style machine screen with progress and fuel gauges.",
+    "createdAt": "",
+    "modifiedAt": "",
+    "tags": [
+      "java",
+      "machine",
+      "modded"
+    ],
+    "namespace": "mcgui",
+    "screenId": "java_machine_ui"
+  }
+}

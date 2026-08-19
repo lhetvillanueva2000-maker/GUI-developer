@@ -1,0 +1,517 @@
+{
+  "formatVersion": 1,
+  "id": "project_l1obnz9iquy3",
+  "name": "Bedrock Touch HUD",
+  "edition": "bedrock",
+  "canvas": {
+    "width": 320,
+    "height": 180,
+    "guiScale": 3,
+    "gridSize": 4,
+    "backdrop": "GAME_WORLD",
+    "backdropColor": 3222278168,
+    "targetForm": "mobile",
+    "safeArea": {
+      "left": 12,
+      "top": 8,
+      "right": 12,
+      "bottom": 8
+    }
+  },
+  "elements": [
+    {
+      "id": "touchpad_8o57k9nbr9wn",
+      "type": "bedrock.touchpad",
+      "name": "Movement Pad",
+      "bounds": {
+        "x": 16,
+        "y": 92,
+        "width": 84,
+        "height": 84
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "layout": {
+          "kind": "e",
+          "value": "dpad"
+        },
+        "opacity": {
+          "kind": "f",
+          "value": 0.7
+        },
+        "deadZone": {
+          "kind": "i",
+          "value": 12
+        },
+        "hapticFeedback": {
+          "kind": "b",
+          "value": true
+        },
+        "background": {
+          "kind": "c",
+          "argb": 2164260863
+        },
+        "knobColor": {
+          "kind": "c",
+          "argb": 4293783021
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "actionbutton_5tg79pqarbz2",
+      "type": "bedrock.actionButton",
+      "name": "Jump",
+      "bounds": {
+        "x": 262,
+        "y": 132,
+        "width": 44,
+        "height": 44
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "icon": {
+          "kind": "tex"
+        },
+        "label": {
+          "kind": "s",
+          "value": ""
+        },
+        "shape": {
+          "kind": "e",
+          "value": "circle"
+        },
+        "opacity": {
+          "kind": "f",
+          "value": 0.85
+        },
+        "repeatOnHold": {
+          "kind": "b",
+          "value": false
+        },
+        "hapticFeedback": {
+          "kind": "b",
+          "value": true
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "action": {
+          "kind": "s",
+          "value": "jump"
+        },
+        "background": {
+          "kind": "c",
+          "argb": 2583691263
+        },
+        "iconTint": {
+          "kind": "c",
+          "argb": 4280295456
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "actionbutton_3p9e459qgytp",
+      "type": "bedrock.actionButton",
+      "name": "Sneak",
+      "bounds": {
+        "x": 262,
+        "y": 84,
+        "width": 44,
+        "height": 44
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "icon": {
+          "kind": "tex"
+        },
+        "label": {
+          "kind": "s",
+          "value": ""
+        },
+        "shape": {
+          "kind": "e",
+          "value": "rounded"
+        },
+        "opacity": {
+          "kind": "f",
+          "value": 0.85
+        },
+        "repeatOnHold": {
+          "kind": "b",
+          "value": false
+        },
+        "hapticFeedback": {
+          "kind": "b",
+          "value": true
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "action": {
+          "kind": "s",
+          "value": "sneak"
+        },
+        "background": {
+          "kind": "c",
+          "argb": 2583691263
+        },
+        "iconTint": {
+          "kind": "c",
+          "argb": 4280295456
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "actionbutton_i1vxrzx23f6z",
+      "type": "bedrock.actionButton",
+      "name": "Inventory",
+      "bounds": {
+        "x": 214,
+        "y": 132,
+        "width": 44,
+        "height": 44
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "icon": {
+          "kind": "tex"
+        },
+        "label": {
+          "kind": "s",
+          "value": ""
+        },
+        "shape": {
+          "kind": "e",
+          "value": "rounded"
+        },
+        "opacity": {
+          "kind": "f",
+          "value": 0.85
+        },
+        "repeatOnHold": {
+          "kind": "b",
+          "value": false
+        },
+        "hapticFeedback": {
+          "kind": "b",
+          "value": true
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "action": {
+          "kind": "s",
+          "value": "open_inventory"
+        },
+        "background": {
+          "kind": "c",
+          "argb": 2583691263
+        },
+        "iconTint": {
+          "kind": "c",
+          "argb": 4280295456
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "hotbar_7ka1clui2zfk",
+      "type": "strip.hotbar",
+      "name": "Hotbar",
+      "bounds": {
+        "x": 69,
+        "y": 156,
+        "width": 182,
+        "height": 22
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "slots": {
+          "kind": "i",
+          "value": 9
+        },
+        "selectedIndex": {
+          "kind": "i",
+          "value": 0
+        },
+        "showSelector": {
+          "kind": "b",
+          "value": true
+        },
+        "background": {
+          "kind": "c",
+          "argb": 3221225472
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "bar_k9w5hpyq1w9o",
+      "type": "progress.bar",
+      "name": "Health",
+      "bounds": {
+        "x": 69,
+        "y": 140,
+        "width": 88,
+        "height": 8
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "progress": {
+          "kind": "f",
+          "value": 0.8
+        },
+        "direction": {
+          "kind": "e",
+          "value": "right"
+        },
+        "showLabel": {
+          "kind": "b",
+          "value": false
+        },
+        "segmented": {
+          "kind": "b",
+          "value": true
+        },
+        "segments": {
+          "kind": "i",
+          "value": 10
+        },
+        "fillColor": {
+          "kind": "c",
+          "argb": 4293212469
+        },
+        "background": {
+          "kind": "c",
+          "argb": 4280953386
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4278190080
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "bar_xwcg61ycxcmi",
+      "type": "progress.bar",
+      "name": "Hunger",
+      "bounds": {
+        "x": 163,
+        "y": 140,
+        "width": 88,
+        "height": 8
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "progress": {
+          "kind": "f",
+          "value": 0.6
+        },
+        "direction": {
+          "kind": "e",
+          "value": "right"
+        },
+        "showLabel": {
+          "kind": "b",
+          "value": false
+        },
+        "segmented": {
+          "kind": "b",
+          "value": true
+        },
+        "segments": {
+          "kind": "i",
+          "value": 10
+        },
+        "fillColor": {
+          "kind": "c",
+          "argb": 4287458915
+        },
+        "background": {
+          "kind": "c",
+          "argb": 4280953386
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4278190080
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "icon_rx96slq3zck4",
+      "type": "button.icon",
+      "name": "Chat",
+      "bounds": {
+        "x": 8,
+        "y": 8,
+        "width": 32,
+        "height": 32
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "icon": {
+          "kind": "tex"
+        },
+        "iconPadding": {
+          "kind": "i",
+          "value": 3
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": "Open chat"
+        },
+        "action": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 4285295724
+        },
+        "iconTint": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    }
+  ],
+  "textures": [],
+  "meta": {
+    "author": "",
+    "description": "Landscape touch HUD with a D-pad, action buttons and status bars.",
+    "createdAt": "",
+    "modifiedAt": "",
+    "tags": [
+      "bedrock",
+      "hud",
+      "touch"
+    ],
+    "namespace": "mcgui",
+    "screenId": "bedrock_touch_hud"
+  }
+}

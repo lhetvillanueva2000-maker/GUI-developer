@@ -1,0 +1,427 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
+package com.mcguidesigner.android.ui
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.mcguidesigner.android.AndroidAppState
+import com.mcguidesigner.android.MobileSection
+import com.mcguidesigner.android.MobileSheet
+import com.mcguidesigner.android.io.AndroidFileIO
+import com.mcguidesigner.core.editor.EditorController
+import com.mcguidesigner.core.editor.EditorState
+import com.mcguidesigner.core.editor.ViewMode
+import com.mcguidesigner.core.model.Edition
+import com.mcguidesigner.styles.render.rememberTextureCache
+import com.mcguidesigner.styles.theme.LocalSkinPalette
+
+/**
+ * The Android shell.
+ *
+ * Structurally different from the desktop editor on purpose: one section at a
+ * time, modal bottom sheets instead of docks, a thumb-reachable action bar for
+ * the current selection, and a navigation rail instead of a bottom bar once
+ * the window is wide enough (landscape phones and tablets).
+ */
+@Composable
+fun AndroidEditor(
+    app: AndroidAppState,
+    controller: EditorController,
+    state: EditorState,
+) {
+    val context = LocalContext.current
+    val palette = LocalSkinPalette.current
+    val textures = rememberTextureCache(state.project)
+    val snackbar = remember { SnackbarHostState() }
+
+    // --- Storage Access Framework launchers ------------------------------
+
+    val openLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri -> uri?.let { app.openDocument(context, it) } }
+
+    val createLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(AndroidFileIO.PROJECT_MIME),
+    ) { uri -> uri?.let { app.onDocumentCreated(context, it) } }
+
+    val imageLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments(),
+    ) { uris -> if (uris.isNotEmpty()) app.importTextures(context, uris) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(AndroidFileIO.ZIP_MIME),
+    ) { uri -> uri?.let { app.performExport(context, it) } }
+
+    LaunchedEffect(app.status) {
+        app.status?.let {
+            snackbar.showSnackbar(it)
+            app.status = null
+        }
+    }
+
+    // Keep the shared view mode in step with the mobile section so the canvas
+    // renders design chrome only while the Design section is showing.
+    LaunchedEffect(app.section) {
+        controller.setViewMode(
+            when (app.section) {
+                MobileSection.PREVIEW -> ViewMode.PREVIEW
+                MobileSection.CODE -> ViewMode.CODE
+                else -> ViewMode.DESIGN
+            },
+        )
+    }
+
+    BoxWithConstraints(Modifier.fillMaxSize().background(palette.chromeBackground)) {
+        // Wide windows (landscape phones, tablets) get a side rail; portrait
+        // keeps the bottom bar within thumb reach.
+        val useRail = maxWidth > 600.dp
+
+        Scaffold(
+            containerColor = palette.chromeBackground,
+            contentWindowInsets = WindowInsets.safeDrawing,
+            topBar = {
+                MobileTopBar(
+                    app = app,
+                    controller = controller,
+                    state = state,
+                    onOpen = { openLauncher.launch(arrayOf("*/*")) },
+                    onSave = { if (!app.saveDocument(context)) createLauncher.launch(app.suggestedFileName()) },
+                    onSaveAs = { createLauncher.launch(app.suggestedFileName()) },
+                    onImportImages = { imageLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
+                )
+            },
+            bottomBar = {
+                if (!useRail) {
+                    MobileNavBar(app)
+                }
+            },
+            snackbarHost = { SnackbarHost(snackbar) },
+        ) { padding ->
+            Row(Modifier.fillMaxSize().padding(padding)) {
+                if (useRail) {
+                    MobileNavRail(app)
+                }
+
+                Box(Modifier.weight(1f).fillMaxHeight()) {
+                    when (app.section) {
+                        MobileSection.DESIGN -> TouchDesignSurface(
+                            controller, state, textures, Modifier.fillMaxSize(),
+                        )
+
+                        MobileSection.LAYERS -> MobileLayersSection(
+                            controller, state, Modifier.fillMaxSize(),
+                        )
+
+                        MobileSection.PREVIEW -> MobilePreviewSection(
+                            controller, state, textures, Modifier.fillMaxSize(),
+                        )
+
+                        MobileSection.CODE -> MobileCodeSection(
+                            app, state, Modifier.fillMaxSize(),
+                        )
+                    }
+
+                    // Floating selection actions: the mobile answer to the
+                    // desktop's arrange menu and right-click.
+                    if (app.section == MobileSection.DESIGN) {
+                        SelectionActionBar(
+                            app = app,
+                            controller = controller,
+                            state = state,
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 12.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        MobileSheets(
+            app = app,
+            controller = controller,
+            state = state,
+            textures = textures,
+            onImportImages = { imageLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
+            onExport = { target ->
+                app.pendingExportTarget = target
+                exportLauncher.launch(app.exportFileName(target))
+            },
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Chrome
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun MobileTopBar(
+    app: AndroidAppState,
+    controller: EditorController,
+    state: EditorState,
+    onOpen: () -> Unit,
+    onSave: () -> Unit,
+    onSaveAs: () -> Unit,
+    onImportImages: () -> Unit,
+) {
+    val palette = LocalSkinPalette.current
+    var menuOpen by remember { mutableStateOf(false) }
+
+    TopAppBar(
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = palette.chromePanel,
+            titleContentColor = palette.chromeText,
+        ),
+        title = {
+            Column {
+                Text(
+                    state.documentTitle,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                )
+                Text(
+                    "${state.edition.displayName}  ·  ${state.project.canvas.width}x${state.project.canvas.height}" +
+                        if (state.validation.errorCount > 0) "  ·  ${state.validation.errorCount} errors" else "",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (state.validation.errorCount > 0) {
+                        com.mcguidesigner.styles.theme.ErrorRed
+                    } else {
+                        palette.chromeTextMuted
+                    },
+                    maxLines = 1,
+                )
+            }
+        },
+        actions = {
+            TopBarAction("↶", enabled = state.canUndo) { controller.undo() }
+            TopBarAction("↷", enabled = state.canRedo) { controller.redo() }
+            TopBarAction("⋮") { menuOpen = true }
+
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(text = { Text("Save") }, onClick = { menuOpen = false; onSave() })
+                DropdownMenuItem(text = { Text("Save as...") }, onClick = { menuOpen = false; onSaveAs() })
+                DropdownMenuItem(text = { Text("Open...") }, onClick = { menuOpen = false; onOpen() })
+                DropdownMenuItem(
+                    text = { Text("New from template...") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.TEMPLATES },
+                )
+                DropdownMenuItem(
+                    text = { Text("Import images...") },
+                    onClick = { menuOpen = false; onImportImages() },
+                )
+                DropdownMenuItem(
+                    text = { Text("Textures (${state.project.textures.size})") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.ASSETS },
+                )
+                DropdownMenuItem(
+                    text = { Text("Canvas & grid") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.CANVAS },
+                )
+                DropdownMenuItem(
+                    text = { Text("Project settings") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.PROJECT },
+                )
+                DropdownMenuItem(
+                    text = { Text("Issues (${state.validation.issues.size})") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.ISSUES },
+                )
+                DropdownMenuItem(
+                    text = { Text("Export...") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.EXPORT },
+                )
+                DropdownMenuItem(
+                    text = { Text("Switch to ${state.edition.other.displayName}") },
+                    onClick = {
+                        menuOpen = false
+                        controller.switchEdition(state.edition.other)
+                    },
+                )
+            }
+        },
+    )
+}
+
+@Composable
+private fun TopBarAction(glyph: String, enabled: Boolean = true, onClick: () -> Unit) {
+    val palette = LocalSkinPalette.current
+    Box(
+        Modifier
+            .padding(horizontal = 2.dp)
+            .clip(RoundedCornerShape(50))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Text(
+            glyph,
+            style = MaterialTheme.typography.titleMedium,
+            color = if (enabled) palette.chromeText else palette.chromeTextMuted,
+        )
+    }
+}
+
+@Composable
+private fun MobileNavBar(app: AndroidAppState) {
+    val palette = LocalSkinPalette.current
+    NavigationBar(containerColor = palette.chromePanel) {
+        MobileSection.entries.forEach { section ->
+            NavigationBarItem(
+                selected = app.section == section,
+                onClick = { app.section = section },
+                icon = { Text(section.glyph, style = MaterialTheme.typography.titleMedium) },
+                label = { Text(section.title, style = MaterialTheme.typography.labelSmall) },
+            )
+        }
+        NavigationBarItem(
+            selected = app.sheet == MobileSheet.COMPONENTS,
+            onClick = { app.sheet = MobileSheet.COMPONENTS },
+            icon = { Text("＋", style = MaterialTheme.typography.titleMedium) },
+            label = { Text("Add", style = MaterialTheme.typography.labelSmall) },
+        )
+    }
+}
+
+@Composable
+private fun MobileNavRail(app: AndroidAppState) {
+    val palette = LocalSkinPalette.current
+    NavigationRail(
+        containerColor = palette.chromePanel,
+        modifier = Modifier.width(84.dp).windowInsetsPadding(WindowInsets.safeDrawing),
+    ) {
+        MobileSection.entries.forEach { section ->
+            NavigationRailItem(
+                selected = app.section == section,
+                onClick = { app.section = section },
+                icon = { Text(section.glyph, style = MaterialTheme.typography.titleMedium) },
+                label = { Text(section.title, style = MaterialTheme.typography.labelSmall) },
+            )
+        }
+        NavigationRailItem(
+            selected = app.sheet == MobileSheet.COMPONENTS,
+            onClick = { app.sheet = MobileSheet.COMPONENTS },
+            icon = { Text("＋", style = MaterialTheme.typography.titleMedium) },
+            label = { Text("Add", style = MaterialTheme.typography.labelSmall) },
+        )
+    }
+}
+
+/**
+ * Actions for the current selection, docked at the bottom of the canvas.
+ *
+ * On desktop these live in menus and the keyboard; on a phone they have to be
+ * one thumb-tap away, which is why they float over the canvas instead.
+ */
+@Composable
+private fun SelectionActionBar(
+    app: AndroidAppState,
+    controller: EditorController,
+    state: EditorState,
+    modifier: Modifier = Modifier,
+) {
+    val palette = LocalSkinPalette.current
+    if (!state.hasSelection) {
+        Surface(
+            modifier = modifier,
+            color = palette.chromePanel.copy(alpha = 0.94f),
+            shape = RoundedCornerShape(50),
+        ) {
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Tap to select  ·  drag to pan  ·  pinch to zoom",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = palette.chromeTextMuted,
+                )
+            }
+        }
+        return
+    }
+
+    Surface(
+        modifier = modifier,
+        color = palette.chromePanel.copy(alpha = 0.96f),
+        shape = RoundedCornerShape(50),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ActionChip("Edit") { app.sheet = MobileSheet.PROPERTIES }
+            ActionChip("⧉") { controller.duplicateSelection() }
+            ActionChip("▲") { controller.bringForward() }
+            ActionChip("▼") { controller.sendBackward() }
+            state.primaryElement?.let { element ->
+                ActionChip(if (element.locked) "🔒" else "🔓") {
+                    controller.setLocked(element.id, !element.locked)
+                }
+            }
+            ActionChip("✕", tint = com.mcguidesigner.styles.theme.ErrorRed) { controller.deleteSelection() }
+        }
+    }
+}
+
+@Composable
+private fun ActionChip(
+    label: String,
+    tint: androidx.compose.ui.graphics.Color? = null,
+    onClick: () -> Unit,
+) {
+    val palette = LocalSkinPalette.current
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(50))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = tint ?: palette.chromeText,
+        )
+    }
+}

@@ -1,0 +1,1394 @@
+{
+  "namespace": "mcgui_sample_chest_screen",
+  "screen@common.base_screen": {
+    "size": [
+      "100%",
+      "100%"
+    ],
+    "variables": {
+      "$screen_content": "mcgui_sample_chest_screen.screen_content"
+    }
+  },
+  "screen_content": {
+    "type": "panel",
+    "size": [
+      176,
+      166
+    ],
+    "anchor_from": "center",
+    "anchor_to": "center",
+    "controls": [
+      {
+        "chest_background@mcgui_sample_chest_screen.chest_background": {}
+      }
+    ]
+  },
+  "title_bar": {
+    "type": "label",
+    "$designer_type": "bar.header",
+    "size": [
+      160,
+      12
+    ],
+    "offset": [
+      8,
+      6
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "color": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "alpha": 0.0,
+    "text": "Custom Chest",
+    "text_alignment": "left"
+  },
+  "chest_slot_0": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      8,
+      18
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 0
+  },
+  "chest_slot_1": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      26,
+      18
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 1
+  },
+  "chest_slot_2": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      44,
+      18
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 2
+  },
+  "chest_slot_3": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      62,
+      18
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 3
+  },
+  "chest_slot_4": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      80,
+      18
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 4
+  },
+  "chest_slot_5": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      98,
+      18
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 5
+  },
+  "chest_slot_6": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      116,
+      18
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 6
+  },
+  "chest_slot_7": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      134,
+      18
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 7
+  },
+  "chest_slot_8": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      152,
+      18
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 8
+  },
+  "chest_slot_9": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      8,
+      36
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 9
+  },
+  "chest_slot_10": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      26,
+      36
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 10
+  },
+  "chest_slot_11": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      44,
+      36
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 11
+  },
+  "chest_slot_12": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      62,
+      36
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 12
+  },
+  "chest_slot_13": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      80,
+      36
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 13
+  },
+  "chest_slot_14": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      98,
+      36
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 14
+  },
+  "chest_slot_15": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      116,
+      36
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 15
+  },
+  "chest_slot_16": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      134,
+      36
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 16
+  },
+  "chest_slot_17": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      152,
+      36
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 17
+  },
+  "chest_slot_18": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      8,
+      54
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 18
+  },
+  "chest_slot_19": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      26,
+      54
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 19
+  },
+  "chest_slot_20": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      44,
+      54
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 20
+  },
+  "chest_slot_21": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      62,
+      54
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 21
+  },
+  "chest_slot_22": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      80,
+      54
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 22
+  },
+  "chest_slot_23": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      98,
+      54
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 23
+  },
+  "chest_slot_24": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      116,
+      54
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 24
+  },
+  "chest_slot_25": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      134,
+      54
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 25
+  },
+  "chest_slot_26": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      152,
+      54
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 26
+  },
+  "inventory_slot_27": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      8,
+      84
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 27
+  },
+  "inventory_slot_28": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      26,
+      84
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 28
+  },
+  "inventory_slot_29": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      44,
+      84
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 29
+  },
+  "inventory_slot_30": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      62,
+      84
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 30
+  },
+  "inventory_slot_31": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      80,
+      84
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 31
+  },
+  "inventory_slot_32": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      98,
+      84
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 32
+  },
+  "inventory_slot_33": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      116,
+      84
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 33
+  },
+  "inventory_slot_34": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      134,
+      84
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 34
+  },
+  "inventory_slot_35": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      152,
+      84
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 35
+  },
+  "inventory_slot_36": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      8,
+      102
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 36
+  },
+  "inventory_slot_37": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      26,
+      102
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 37
+  },
+  "inventory_slot_38": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      44,
+      102
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 38
+  },
+  "inventory_slot_39": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      62,
+      102
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 39
+  },
+  "inventory_slot_40": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      80,
+      102
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 40
+  },
+  "inventory_slot_41": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      98,
+      102
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 41
+  },
+  "inventory_slot_42": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      116,
+      102
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 42
+  },
+  "inventory_slot_43": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      134,
+      102
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 43
+  },
+  "inventory_slot_44": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      152,
+      102
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 44
+  },
+  "inventory_slot_45": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      8,
+      120
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 45
+  },
+  "inventory_slot_46": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      26,
+      120
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 46
+  },
+  "inventory_slot_47": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      44,
+      120
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 47
+  },
+  "inventory_slot_48": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      62,
+      120
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 48
+  },
+  "inventory_slot_49": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      80,
+      120
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 49
+  },
+  "inventory_slot_50": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      98,
+      120
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 50
+  },
+  "inventory_slot_51": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      116,
+      120
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 51
+  },
+  "inventory_slot_52": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      134,
+      120
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 52
+  },
+  "inventory_slot_53": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      152,
+      120
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 53
+  },
+  "hotbar_slot_54": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      8,
+      142
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 54
+  },
+  "hotbar_slot_55": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      26,
+      142
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 55
+  },
+  "hotbar_slot_56": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      44,
+      142
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 56
+  },
+  "hotbar_slot_57": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      62,
+      142
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 57
+  },
+  "hotbar_slot_58": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      80,
+      142
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 58
+  },
+  "hotbar_slot_59": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      98,
+      142
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 59
+  },
+  "hotbar_slot_60": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      116,
+      142
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 60
+  },
+  "hotbar_slot_61": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      134,
+      142
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 61
+  },
+  "hotbar_slot_62": {
+    "type": "custom",
+    "$designer_type": "slot.inventory",
+    "size": [
+      18,
+      18
+    ],
+    "offset": [
+      152,
+      142
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "renderer": "inventory_item_renderer",
+    "$slot_index": 62
+  },
+  "chest_background": {
+    "type": "panel",
+    "$designer_type": "panel.chest",
+    "size": [
+      176,
+      166
+    ],
+    "offset": [
+      0,
+      0
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "visible": true,
+    "layer": 1,
+    "controls": [
+      {
+        "title_bar@mcgui_sample_chest_screen.title_bar": {}
+      },
+      {
+        "chest_slot_0@mcgui_sample_chest_screen.chest_slot_0": {}
+      },
+      {
+        "chest_slot_1@mcgui_sample_chest_screen.chest_slot_1": {}
+      },
+      {
+        "chest_slot_2@mcgui_sample_chest_screen.chest_slot_2": {}
+      },
+      {
+        "chest_slot_3@mcgui_sample_chest_screen.chest_slot_3": {}
+      },
+      {
+        "chest_slot_4@mcgui_sample_chest_screen.chest_slot_4": {}
+      },
+      {
+        "chest_slot_5@mcgui_sample_chest_screen.chest_slot_5": {}
+      },
+      {
+        "chest_slot_6@mcgui_sample_chest_screen.chest_slot_6": {}
+      },
+      {
+        "chest_slot_7@mcgui_sample_chest_screen.chest_slot_7": {}
+      },
+      {
+        "chest_slot_8@mcgui_sample_chest_screen.chest_slot_8": {}
+      },
+      {
+        "chest_slot_9@mcgui_sample_chest_screen.chest_slot_9": {}
+      },
+      {
+        "chest_slot_10@mcgui_sample_chest_screen.chest_slot_10": {}
+      },
+      {
+        "chest_slot_11@mcgui_sample_chest_screen.chest_slot_11": {}
+      },
+      {
+        "chest_slot_12@mcgui_sample_chest_screen.chest_slot_12": {}
+      },
+      {
+        "chest_slot_13@mcgui_sample_chest_screen.chest_slot_13": {}
+      },
+      {
+        "chest_slot_14@mcgui_sample_chest_screen.chest_slot_14": {}
+      },
+      {
+        "chest_slot_15@mcgui_sample_chest_screen.chest_slot_15": {}
+      },
+      {
+        "chest_slot_16@mcgui_sample_chest_screen.chest_slot_16": {}
+      },
+      {
+        "chest_slot_17@mcgui_sample_chest_screen.chest_slot_17": {}
+      },
+      {
+        "chest_slot_18@mcgui_sample_chest_screen.chest_slot_18": {}
+      },
+      {
+        "chest_slot_19@mcgui_sample_chest_screen.chest_slot_19": {}
+      },
+      {
+        "chest_slot_20@mcgui_sample_chest_screen.chest_slot_20": {}
+      },
+      {
+        "chest_slot_21@mcgui_sample_chest_screen.chest_slot_21": {}
+      },
+      {
+        "chest_slot_22@mcgui_sample_chest_screen.chest_slot_22": {}
+      },
+      {
+        "chest_slot_23@mcgui_sample_chest_screen.chest_slot_23": {}
+      },
+      {
+        "chest_slot_24@mcgui_sample_chest_screen.chest_slot_24": {}
+      },
+      {
+        "chest_slot_25@mcgui_sample_chest_screen.chest_slot_25": {}
+      },
+      {
+        "chest_slot_26@mcgui_sample_chest_screen.chest_slot_26": {}
+      },
+      {
+        "inventory_slot_27@mcgui_sample_chest_screen.inventory_slot_27": {}
+      },
+      {
+        "inventory_slot_28@mcgui_sample_chest_screen.inventory_slot_28": {}
+      },
+      {
+        "inventory_slot_29@mcgui_sample_chest_screen.inventory_slot_29": {}
+      },
+      {
+        "inventory_slot_30@mcgui_sample_chest_screen.inventory_slot_30": {}
+      },
+      {
+        "inventory_slot_31@mcgui_sample_chest_screen.inventory_slot_31": {}
+      },
+      {
+        "inventory_slot_32@mcgui_sample_chest_screen.inventory_slot_32": {}
+      },
+      {
+        "inventory_slot_33@mcgui_sample_chest_screen.inventory_slot_33": {}
+      },
+      {
+        "inventory_slot_34@mcgui_sample_chest_screen.inventory_slot_34": {}
+      },
+      {
+        "inventory_slot_35@mcgui_sample_chest_screen.inventory_slot_35": {}
+      },
+      {
+        "inventory_slot_36@mcgui_sample_chest_screen.inventory_slot_36": {}
+      },
+      {
+        "inventory_slot_37@mcgui_sample_chest_screen.inventory_slot_37": {}
+      },
+      {
+        "inventory_slot_38@mcgui_sample_chest_screen.inventory_slot_38": {}
+      },
+      {
+        "inventory_slot_39@mcgui_sample_chest_screen.inventory_slot_39": {}
+      },
+      {
+        "inventory_slot_40@mcgui_sample_chest_screen.inventory_slot_40": {}
+      },
+      {
+        "inventory_slot_41@mcgui_sample_chest_screen.inventory_slot_41": {}
+      },
+      {
+        "inventory_slot_42@mcgui_sample_chest_screen.inventory_slot_42": {}
+      },
+      {
+        "inventory_slot_43@mcgui_sample_chest_screen.inventory_slot_43": {}
+      },
+      {
+        "inventory_slot_44@mcgui_sample_chest_screen.inventory_slot_44": {}
+      },
+      {
+        "inventory_slot_45@mcgui_sample_chest_screen.inventory_slot_45": {}
+      },
+      {
+        "inventory_slot_46@mcgui_sample_chest_screen.inventory_slot_46": {}
+      },
+      {
+        "inventory_slot_47@mcgui_sample_chest_screen.inventory_slot_47": {}
+      },
+      {
+        "inventory_slot_48@mcgui_sample_chest_screen.inventory_slot_48": {}
+      },
+      {
+        "inventory_slot_49@mcgui_sample_chest_screen.inventory_slot_49": {}
+      },
+      {
+        "inventory_slot_50@mcgui_sample_chest_screen.inventory_slot_50": {}
+      },
+      {
+        "inventory_slot_51@mcgui_sample_chest_screen.inventory_slot_51": {}
+      },
+      {
+        "inventory_slot_52@mcgui_sample_chest_screen.inventory_slot_52": {}
+      },
+      {
+        "inventory_slot_53@mcgui_sample_chest_screen.inventory_slot_53": {}
+      },
+      {
+        "hotbar_slot_54@mcgui_sample_chest_screen.hotbar_slot_54": {}
+      },
+      {
+        "hotbar_slot_55@mcgui_sample_chest_screen.hotbar_slot_55": {}
+      },
+      {
+        "hotbar_slot_56@mcgui_sample_chest_screen.hotbar_slot_56": {}
+      },
+      {
+        "hotbar_slot_57@mcgui_sample_chest_screen.hotbar_slot_57": {}
+      },
+      {
+        "hotbar_slot_58@mcgui_sample_chest_screen.hotbar_slot_58": {}
+      },
+      {
+        "hotbar_slot_59@mcgui_sample_chest_screen.hotbar_slot_59": {}
+      },
+      {
+        "hotbar_slot_60@mcgui_sample_chest_screen.hotbar_slot_60": {}
+      },
+      {
+        "hotbar_slot_61@mcgui_sample_chest_screen.hotbar_slot_61": {}
+      },
+      {
+        "hotbar_slot_62@mcgui_sample_chest_screen.hotbar_slot_62": {}
+      }
+    ]
+  }
+}

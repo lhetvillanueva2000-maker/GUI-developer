@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.daemon=false
+
+jobs:
+  verify:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up the Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Validate the bundled templates
+        run: ./gradlew validateProjects
+
+      - name: Fail if regenerating the templates changed anything
+        shell: bash
+        run: |
+          # `validateProjects` rewrites templates/ from the Kotlin definitions.
+          # A diff here means someone edited the generated files by hand, or
+          # changed the catalog without re-running the task.
+          if ! git diff --quiet -- templates; then
+            echo "::error::templates/ is out of date - run ./gradlew exportTemplates and commit the result."
+            git --no-pager diff --stat -- templates
+            exit 1
+          fi
+
+      - name: Run the unit tests
+        run: ./gradlew allTests
+
+      - name: Compile the desktop app
+        run: ./gradlew :desktopApp:compileKotlin
+
+      - name: Build the debug APK
+        run: ./gradlew :androidApp:assembleDebug
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ matrix.os }}
+          path: '**/build/reports/tests/**'
+          retention-days: 7
+
+  desktop-only-build:
+    name: Build without the Android SDK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # The repository has to stay buildable for contributors who only work on
+      # the desktop editor, so this job deliberately never installs the SDK.
+      - name: Build the desktop app with -PskipAndroid
+        run: ./gradlew -PskipAndroid=true :desktopApp:compileKotlin :sharedCore:allTests

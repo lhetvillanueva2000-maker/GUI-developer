@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+build/
+!build-scripts/
+local.properties
+build-scripts/keystore.properties
+*.jks
+*.keystore
+
+# IDE
+.idea/
+*.iml
+.kotlin/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Packaging output
+dist/

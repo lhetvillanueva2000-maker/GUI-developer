@@ -1,0 +1,639 @@
+{
+  "formatVersion": 1,
+  "id": "project_1xwnm59way3l",
+  "name": "Java Options Menu",
+  "edition": "java",
+  "canvas": {
+    "width": 256,
+    "height": 200,
+    "guiScale": 3,
+    "gridSize": 4,
+    "backdrop": "DIRT_PANORAMA",
+    "backdropColor": 3222278168,
+    "targetForm": "desktop",
+    "safeArea": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 0
+    }
+  },
+  "elements": [
+    {
+      "id": "header_evcelq0ejxi9",
+      "type": "bar.header",
+      "name": "Screen Title",
+      "bounds": {
+        "x": 28,
+        "y": 12,
+        "width": 200,
+        "height": 18
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "title": {
+          "kind": "s",
+          "value": "Options"
+        },
+        "icon": {
+          "kind": "tex"
+        },
+        "showDivider": {
+          "kind": "b",
+          "value": true
+        },
+        "showCloseButton": {
+          "kind": "b",
+          "value": false
+        },
+        "background": {
+          "kind": "c",
+          "argb": 0
+        },
+        "dividerColor": {
+          "kind": "c",
+          "argb": 4281808695
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "center"
+        },
+        "font": {
+          "kind": "e",
+          "value": "minecraft"
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "frame_1zh49kuvxa71",
+      "type": "panel.frame",
+      "name": "Settings Panel",
+      "bounds": {
+        "x": 20,
+        "y": 34,
+        "width": 216,
+        "height": 128
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 3222278160
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4283321934
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 8
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": [
+        {
+          "id": "slider_rxjqpcr9asmx",
+          "type": "input.slider",
+          "name": "Music Volume",
+          "bounds": {
+            "x": 8,
+            "y": 8,
+            "width": 200,
+            "height": 20
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Music"
+            },
+            "value": {
+              "kind": "f",
+              "value": 0.7
+            },
+            "minValue": {
+              "kind": "f",
+              "value": 0.0
+            },
+            "maxValue": {
+              "kind": "f",
+              "value": 100.0
+            },
+            "stepSize": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "showValue": {
+              "kind": "b",
+              "value": true
+            },
+            "suffix": {
+              "kind": "s",
+              "value": "%"
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "trackColor": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "knobColor": {
+              "kind": "c",
+              "argb": 4291217094
+            },
+            "knobWidth": {
+              "kind": "i",
+              "value": 8
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "minecraft"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "slider_59z3lbu0a5iq",
+          "type": "input.slider",
+          "name": "FOV",
+          "bounds": {
+            "x": 8,
+            "y": 32,
+            "width": 200,
+            "height": 20
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "FOV"
+            },
+            "value": {
+              "kind": "f",
+              "value": 0.45
+            },
+            "minValue": {
+              "kind": "f",
+              "value": 0.0
+            },
+            "maxValue": {
+              "kind": "f",
+              "value": 100.0
+            },
+            "stepSize": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "showValue": {
+              "kind": "b",
+              "value": true
+            },
+            "suffix": {
+              "kind": "s",
+              "value": ""
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "trackColor": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "knobColor": {
+              "kind": "c",
+              "argb": 4291217094
+            },
+            "knobWidth": {
+              "kind": "i",
+              "value": 8
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "minecraft"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "dropdown_1091t816chqo",
+          "type": "input.dropdown",
+          "name": "Graphics",
+          "bounds": {
+            "x": 8,
+            "y": 56,
+            "width": 200,
+            "height": 20
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "items": {
+              "kind": "l",
+              "values": [
+                {
+                  "kind": "s",
+                  "value": "Fast"
+                },
+                {
+                  "kind": "s",
+                  "value": "Fancy"
+                },
+                {
+                  "kind": "s",
+                  "value": "Fabulous"
+                }
+              ]
+            },
+            "selectedIndex": {
+              "kind": "i",
+              "value": 0
+            },
+            "placeholder": {
+              "kind": "s",
+              "value": "Select..."
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "popupBackground": {
+              "kind": "c",
+              "argb": 4027580432
+            },
+            "openMode": {
+              "kind": "e",
+              "value": "cycle"
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "minecraft"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "checkbox_sbbjwh64lxtr",
+          "type": "input.checkbox",
+          "name": "VSync",
+          "bounds": {
+            "x": 8,
+            "y": 80,
+            "width": 200,
+            "height": 12
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Enable VSync"
+            },
+            "checked": {
+              "kind": "b",
+              "value": true
+            },
+            "boxSize": {
+              "kind": "i",
+              "value": 12
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "tooltip": {
+              "kind": "s",
+              "value": ""
+            },
+            "boxColor": {
+              "kind": "c",
+              "argb": 4280953386
+            },
+            "checkColor": {
+              "kind": "c",
+              "argb": 4283873355
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "minecraft"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "separator_i119y197s2yt",
+          "type": "decor.separator",
+          "name": "Divider",
+          "bounds": {
+            "x": 8,
+            "y": 98,
+            "width": 200,
+            "height": 2
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "orientation": {
+              "kind": "e",
+              "value": "horizontal"
+            },
+            "style": {
+              "kind": "e",
+              "value": "bevel"
+            },
+            "color": {
+              "kind": "c",
+              "argb": 4281808695
+            },
+            "highlightColor": {
+              "kind": "c",
+              "argb": 4285427310
+            },
+            "thickness": {
+              "kind": "i",
+              "value": 2
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "label_86hj3bc9funj",
+          "type": "text.label",
+          "name": "Hint",
+          "bounds": {
+            "x": 8,
+            "y": 104,
+            "width": 200,
+            "height": 10
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "Changes apply immediately."
+            },
+            "scale": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4288716960
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "minecraft"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "rectbutton_b48g2b7gdehg",
+      "type": "java.rectButton",
+      "name": "Done",
+      "bounds": {
+        "x": 78,
+        "y": 172,
+        "width": 100,
+        "height": 20
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "label": {
+          "kind": "s",
+          "value": "Done"
+        },
+        "width": {
+          "kind": "e",
+          "value": "custom"
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": ""
+        },
+        "action": {
+          "kind": "s",
+          "value": "close_screen"
+        },
+        "useVanillaTexture": {
+          "kind": "b",
+          "value": true
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "icon_8saitocp57mz",
+      "type": "button.icon",
+      "name": "Help",
+      "bounds": {
+        "x": 220,
+        "y": 12,
+        "width": 20,
+        "height": 20
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "icon": {
+          "kind": "tex"
+        },
+        "iconPadding": {
+          "kind": "i",
+          "value": 3
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": "Open the wiki"
+        },
+        "action": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 4285295724
+        },
+        "iconTint": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    }
+  ],
+  "textures": [],
+  "meta": {
+    "author": "",
+    "description": "Full-screen settings menu using vanilla sliders, toggles and buttons.",
+    "createdAt": "",
+    "modifiedAt": "",
+    "tags": [
+      "java",
+      "menu",
+      "settings"
+    ],
+    "namespace": "mcgui",
+    "screenId": "java_options_menu"
+  }
+}
