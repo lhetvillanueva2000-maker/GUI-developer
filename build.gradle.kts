@@ -88,6 +88,11 @@ tasks.register("testAll") {
         ":exporters:allTests",
         ":desktopApp:test",
     )
+    // The Android module is dropped from the build entirely when there is no
+    // SDK, so its tests can only be required when it is actually there.
+    if (findProject(":androidApp") != null) {
+        dependsOn(":androidApp:testDebugUnitTest")
+    }
 }
 
 /**

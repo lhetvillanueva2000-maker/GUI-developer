@@ -57,13 +57,7 @@ object SessionStore {
                 target.writeText(temporary.readText())
                 temporary.delete()
             }
-            File(directory, URI_MARKER).writeText(
-                buildString {
-                    append(if (dirty) "1" else "0")
-                    append('\n')
-                    append(uri?.toString().orEmpty())
-                },
-            )
+            File(directory, URI_MARKER).writeText(encodeMarker(dirty, uri?.toString()))
             File(directory, NAME_MARKER).writeText(name.orEmpty())
         }
     }
@@ -79,17 +73,41 @@ object SessionStore {
             }
         }
 
-        val marker = runCatching { File(directory(context), URI_MARKER).readText() }.getOrDefault("")
-        val lines = marker.lines()
-        val dirty = lines.firstOrNull() == "1"
-        val uri = lines.getOrNull(1)?.takeIf { it.isNotBlank() }?.let { runCatching { Uri.parse(it) }.getOrNull() }
+        val marker = decodeMarker(
+            runCatching { File(directory(context), URI_MARKER).readText() }.getOrDefault(""),
+        )
+        val uri = marker.uri?.let { runCatching { Uri.parse(it) }.getOrNull() }
         val name = runCatching { File(directory(context), NAME_MARKER).readText() }
             .getOrNull()?.takeIf { it.isNotBlank() }
 
-        return Session(project, uri, name, dirty)
+        return Session(project, uri, name, marker.dirty)
     }
 
     fun clear(context: Context) {
         runCatching { directory(context).listFiles()?.forEach { it.delete() } }
+    }
+
+    // -- Marker encoding ---------------------------------------------------
+
+    /** The non-document half of a session: was it dirty, and where did it come from. */
+    internal data class Marker(val dirty: Boolean, val uri: String?)
+
+    /**
+     * `"<0|1>\n<uri>"`.
+     *
+     * Kept as its own pair of pure functions so the format can be tested
+     * without an Android runtime. Getting the dirty flag wrong in either
+     * direction is silent and costly: false when it should be true loses the
+     * user's edits, true when it should be false nags about a saved document.
+     */
+    internal fun encodeMarker(dirty: Boolean, uri: String?): String =
+        (if (dirty) "1" else "0") + "\n" + uri.orEmpty()
+
+    internal fun decodeMarker(text: String): Marker {
+        val lines = text.lines()
+        return Marker(
+            dirty = lines.firstOrNull()?.trim() == "1",
+            uri = lines.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() },
+        )
     }
 }

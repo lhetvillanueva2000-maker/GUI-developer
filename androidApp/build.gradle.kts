@@ -129,4 +129,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.window)
     implementation(libs.kotlinx.coroutines.android)
+
+    testImplementation(libs.kotlin.test)
 }
