@@ -37,7 +37,7 @@ jobs:
           echo "Building version $version"
 
   # ---------------------------------------------------------------------------
-  # Windows: the .exe installer. Compose Desktop can only produce it here.
+  # Windows: the .exe installer. jpackage can only produce it on Windows.
   # ---------------------------------------------------------------------------
   windows-desktop:
     needs: version
@@ -52,11 +52,36 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build the Windows installer
+      # jpackage builds its Windows installers with WiX, and it needs WiX 3.x
+      # specifically - the runner images no longer ship it, and the `wix`
+      # dotnet tool is v4/v5, which jpackage does not accept.
+      - name: Install WiX Toolset 3.14
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip'
+          $zip = "$env:RUNNER_TEMP\wix314.zip"
+          $dir = "$env:RUNNER_TEMP\wix314"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath $dir -Force
+          echo $dir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & "$dir\candle.exe" -? | Select-Object -First 1
+
+      - name: Build the Windows .exe installer
         run: >
           ./gradlew -PskipAndroid=true -Pmcgui.version=${{ needs.version.outputs.version }}
           :desktopApp:packageReleaseExe
+
+      # The .msi is a nice-to-have alongside the .exe; never fail the release
+      # over it.
+      - name: Build the Windows .msi package
+        continue-on-error: true
+        run: >
+          ./gradlew -PskipAndroid=true -Pmcgui.version=${{ needs.version.outputs.version }}
           :desktopApp:packageReleaseMsi
+
+      - name: Build the portable Windows jar
+        run: >
+          ./gradlew -PskipAndroid=true -Pmcgui.version=${{ needs.version.outputs.version }}
           :desktopApp:packageUberJarForCurrentOS
 
       - name: Collect the installers
@@ -66,6 +91,11 @@ jobs:
           find desktopApp/build/compose/binaries -type f \( -name '*.exe' -o -name '*.msi' \) -exec cp {} out/ \;
           find desktopApp/build/compose/jars -type f -name '*.jar' -exec cp {} out/ \;
           ls -la out
+          # A release without the .exe is not the release we promised.
+          if ! ls out/*.exe >/dev/null 2>&1; then
+            echo "::error::jpackage did not produce a .exe"
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -91,15 +121,17 @@ jobs:
 
       - uses: android-actions/setup-android@v3
 
+      # jpackage shells out to these to build a .deb.
+      - name: Install the Linux packaging tools
+        run: sudo apt-get update && sudo apt-get install -y fakeroot binutils
+
       - name: Decode the release keystore
-        # Optional: set ANDROID_KEYSTORE_BASE64 / ANDROID_KEY_* secrets to get a
-        # signed APK. Without them the build still produces an unsigned one.
-        if: env.ANDROID_KEYSTORE_BASE64 != ''
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        # Optional: set the ANDROID_KEYSTORE_* secrets to get a signed APK.
+        # Without them the build still produces an unsigned one.
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
         shell: bash
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > build-scripts/release.jks
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > build-scripts/release.jks
           cat > build-scripts/keystore.properties <<EOF
           storeFile=build-scripts/release.jks
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -123,6 +155,10 @@ jobs:
           find androidApp/build/outputs/apk/release -type f -name '*.apk' -exec cp {} out/ \;
           find desktopApp/build/compose/binaries -type f -name '*.deb' -exec cp {} out/ \;
           ls -la out
+          if ! ls out/*.apk >/dev/null 2>&1; then
+            echo "::error::the Android build did not produce an .apk"
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -152,7 +188,10 @@ jobs:
           ./build-scripts/bundle-release.sh artifacts "${{ needs.version.outputs.version }}" dist
 
       - name: Show what went in
-        run: unzip -l dist/*.zip | head -40
+        run: |
+          unzip -l dist/*.zip | head -40
+          echo
+          unzip -p dist/*.zip MANIFEST.txt | head -40
 
       - uses: actions/upload-artifact@v4
         with:
@@ -161,24 +200,31 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      # The GitHub CLI is preinstalled on the runner, so publishing needs no
+      # third-party action.
       - name: Publish the GitHub release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*.zip
-          generate_release_notes: true
-          body: |
-            ## Minecraft GUI Designer ${{ needs.version.outputs.version }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          cat > notes.md <<'EOF'
+          ## Minecraft GUI Designer
 
-            `minecraft-gui-designer-${{ needs.version.outputs.version }}.zip` contains:
+          The attached ZIP contains:
 
-            | Folder | Contents |
-            | --- | --- |
-            | `desktop/` | Windows installer (`.exe`, `.msi`), Linux `.deb`, and a portable `.jar` |
-            | `android/` | The Android APK |
-            | `templates/` | Bundled `.mcgui` templates plus a full set of sample exports |
-            | `docs/` | Architecture, project format and export documentation |
-            | `build-scripts/` | The scripts that produced this archive |
-            | `source.zip` | The complete source tree, including the Gradle build |
+          | Folder | Contents |
+          | --- | --- |
+          | `desktop/` | Windows installer (`.exe`, `.msi`), Linux `.deb`, and a portable Windows `.jar` |
+          | `android/` | The Android APK |
+          | `templates/` | Bundled `.mcgui` templates plus a full set of sample exports |
+          | `docs/` | Architecture, project format and export documentation |
+          | `build-scripts/` | The scripts that produced this archive |
+          | `source.zip` | The complete source tree, including the Gradle build |
 
-            `MANIFEST.txt` inside the archive lists every file with its SHA-256.
+          `MANIFEST.txt` inside the archive lists every file with its SHA-256.
+          EOF
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Minecraft GUI Designer $VERSION" \
+            --notes-file notes.md \
+            dist/*.zip

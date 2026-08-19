@@ -39,7 +39,7 @@ fun main(args: Array<String>) {
     index.appendLine("| --- | --- | --- | --- | --- | --- |")
 
     BuiltInTemplates.all.forEach { template ->
-        val project = template.instantiate()
+        val project = template.canonical()
         val file = File(templatesDir, "${template.id}.mcgui")
         file.writeText(ProjectSerializer.encode(project))
 
@@ -66,7 +66,7 @@ fun main(args: Array<String>) {
     // One fully worked example of every export the app can produce, so the
     // repository documents the output formats without anyone having to run
     // the GUI first.
-    val demo = BuiltInTemplates.demo.instantiate("Sample Chest Screen")
+    val demo = BuiltInTemplates.demo.canonical("Sample Chest Screen")
     ExportManager.exportAll(demo).forEach { bundle ->
         val targetDir = File(sampleDir, bundle.target.id)
         bundle.files.forEach { exportFile ->

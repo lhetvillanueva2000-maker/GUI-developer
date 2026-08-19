@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "id": "project_8t0db1s6n6ej",
+  "id": "template_bedrock-settings",
   "name": "Bedrock Settings Sheet",
   "edition": "bedrock",
   "canvas": {
@@ -20,7 +20,7 @@
   },
   "elements": [
     {
-      "id": "frame_zxlp30yq692k",
+      "id": "bedrock-settings_0_frame",
       "type": "panel.frame",
       "name": "Settings Sheet",
       "bounds": {
@@ -80,7 +80,7 @@
       "stateOverrides": {},
       "children": [
         {
-          "id": "header_2gvnoia8sn91",
+          "id": "bedrock-settings_1_header",
           "type": "bar.header",
           "name": "Sheet Title",
           "bounds": {
@@ -137,7 +137,7 @@
           "children": []
         },
         {
-          "id": "search_1rxd79c5p00m",
+          "id": "bedrock-settings_2_search",
           "type": "input.search",
           "name": "Search Settings",
           "bounds": {
@@ -187,7 +187,7 @@
           "children": []
         },
         {
-          "id": "scroll_tc87tdpbbs44",
+          "id": "bedrock-settings_3_scroll",
           "type": "container.scroll",
           "name": "Settings List",
           "bounds": {
@@ -232,7 +232,7 @@
           "stateOverrides": {},
           "children": [
             {
-              "id": "toggle_1djfaysuehrw",
+              "id": "bedrock-settings_4_toggle",
               "type": "button.toggle",
               "name": "Vibration",
               "bounds": {
@@ -302,7 +302,7 @@
               "children": []
             },
             {
-              "id": "toggle_t7394p6ullh3",
+              "id": "bedrock-settings_5_toggle",
               "type": "button.toggle",
               "name": "Auto Jump",
               "bounds": {
@@ -372,7 +372,7 @@
               "children": []
             },
             {
-              "id": "slider_y6pjq6jtgjdc",
+              "id": "bedrock-settings_6_slider",
               "type": "input.slider",
               "name": "Sensitivity",
               "bounds": {
@@ -450,7 +450,7 @@
               "children": []
             },
             {
-              "id": "checkbox_hamcsemknxmq",
+              "id": "bedrock-settings_7_checkbox",
               "type": "input.checkbox",
               "name": "Show Coordinates",
               "bounds": {

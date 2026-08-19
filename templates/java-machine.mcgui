@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "id": "project_y7vozfo95f76",
+  "id": "template_java-machine",
   "name": "Java Machine UI",
   "edition": "java",
   "canvas": {
@@ -20,7 +20,7 @@
   },
   "elements": [
     {
-      "id": "chest_i4k33is7vgwh",
+      "id": "java-machine_0_chest",
       "type": "panel.chest",
       "name": "Machine Background",
       "bounds": {
@@ -72,7 +72,7 @@
       "stateOverrides": {},
       "children": [
         {
-          "id": "header_3c9trt78smc9",
+          "id": "java-machine_1_header",
           "type": "bar.header",
           "name": "Title",
           "bounds": {
@@ -129,7 +129,7 @@
           "children": []
         },
         {
-          "id": "inventory_8y7kqossc3a4",
+          "id": "java-machine_2_inventory",
           "type": "slot.inventory",
           "name": "Input A",
           "bounds": {
@@ -170,7 +170,7 @@
           "children": []
         },
         {
-          "id": "inventory_mu8q61s9h0uc",
+          "id": "java-machine_3_inventory",
           "type": "slot.inventory",
           "name": "Input B",
           "bounds": {
@@ -211,7 +211,7 @@
           "children": []
         },
         {
-          "id": "inventory_r2nq6s288smb",
+          "id": "java-machine_4_inventory",
           "type": "slot.inventory",
           "name": "Fuel",
           "bounds": {
@@ -252,7 +252,7 @@
           "children": []
         },
         {
-          "id": "inventory_nyx34o61d016",
+          "id": "java-machine_5_inventory",
           "type": "slot.inventory",
           "name": "Output",
           "bounds": {
@@ -293,7 +293,7 @@
           "children": []
         },
         {
-          "id": "bar_vfzb81cknqpc",
+          "id": "java-machine_6_bar",
           "type": "progress.bar",
           "name": "Smelt Progress",
           "bounds": {
@@ -354,7 +354,7 @@
           "children": []
         },
         {
-          "id": "bar_wyuo0m6n3sof",
+          "id": "java-machine_7_bar",
           "type": "progress.bar",
           "name": "Fuel Gauge",
           "bounds": {
@@ -415,7 +415,7 @@
           "children": []
         },
         {
-          "id": "tooltip_cs86jt6xdveu",
+          "id": "java-machine_8_tooltip",
           "type": "panel.tooltip",
           "name": "Recipe Tooltip",
           "bounds": {
@@ -457,7 +457,7 @@
           "children": []
         },
         {
-          "id": "inventory_ke1pran4y8qc",
+          "id": "java-machine_9_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 10",
           "bounds": {
@@ -498,7 +498,7 @@
           "children": []
         },
         {
-          "id": "inventory_d33oha7tkl8m",
+          "id": "java-machine_10_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 11",
           "bounds": {
@@ -539,7 +539,7 @@
           "children": []
         },
         {
-          "id": "inventory_vjw3qtpp2rvm",
+          "id": "java-machine_11_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 12",
           "bounds": {
@@ -580,7 +580,7 @@
           "children": []
         },
         {
-          "id": "inventory_h2rl2lg5xycz",
+          "id": "java-machine_12_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 13",
           "bounds": {
@@ -621,7 +621,7 @@
           "children": []
         },
         {
-          "id": "inventory_c3m2fka09igw",
+          "id": "java-machine_13_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 14",
           "bounds": {
@@ -662,7 +662,7 @@
           "children": []
         },
         {
-          "id": "inventory_f2bx757h9pbe",
+          "id": "java-machine_14_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 15",
           "bounds": {
@@ -703,7 +703,7 @@
           "children": []
         },
         {
-          "id": "inventory_1sd32r3vxwhb",
+          "id": "java-machine_15_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 16",
           "bounds": {
@@ -744,7 +744,7 @@
           "children": []
         },
         {
-          "id": "inventory_pf4oc19ly5rq",
+          "id": "java-machine_16_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 17",
           "bounds": {
@@ -785,7 +785,7 @@
           "children": []
         },
         {
-          "id": "inventory_ngbthvfmgq35",
+          "id": "java-machine_17_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 18",
           "bounds": {
@@ -826,7 +826,7 @@
           "children": []
         },
         {
-          "id": "inventory_ja2oedxhctuv",
+          "id": "java-machine_18_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 19",
           "bounds": {
@@ -867,7 +867,7 @@
           "children": []
         },
         {
-          "id": "inventory_me2qe71nt9xy",
+          "id": "java-machine_19_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 20",
           "bounds": {
@@ -908,7 +908,7 @@
           "children": []
         },
         {
-          "id": "inventory_v8ptofhu1ksx",
+          "id": "java-machine_20_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 21",
           "bounds": {
@@ -949,7 +949,7 @@
           "children": []
         },
         {
-          "id": "inventory_2pspgbjdxywa",
+          "id": "java-machine_21_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 22",
           "bounds": {
@@ -990,7 +990,7 @@
           "children": []
         },
         {
-          "id": "inventory_csdp88oyv5qs",
+          "id": "java-machine_22_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 23",
           "bounds": {
@@ -1031,7 +1031,7 @@
           "children": []
         },
         {
-          "id": "inventory_vo68qy8ejlhr",
+          "id": "java-machine_23_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 24",
           "bounds": {
@@ -1072,7 +1072,7 @@
           "children": []
         },
         {
-          "id": "inventory_bnveul74svqb",
+          "id": "java-machine_24_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 25",
           "bounds": {
@@ -1113,7 +1113,7 @@
           "children": []
         },
         {
-          "id": "inventory_tvizsdy5vmxm",
+          "id": "java-machine_25_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 26",
           "bounds": {
@@ -1154,7 +1154,7 @@
           "children": []
         },
         {
-          "id": "inventory_d6xiho95dmq8",
+          "id": "java-machine_26_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 27",
           "bounds": {
@@ -1195,7 +1195,7 @@
           "children": []
         },
         {
-          "id": "inventory_ogkl8iyed30x",
+          "id": "java-machine_27_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 28",
           "bounds": {
@@ -1236,7 +1236,7 @@
           "children": []
         },
         {
-          "id": "inventory_xomyen5o4x6y",
+          "id": "java-machine_28_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 29",
           "bounds": {
@@ -1277,7 +1277,7 @@
           "children": []
         },
         {
-          "id": "inventory_zxi6lca31z3i",
+          "id": "java-machine_29_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 30",
           "bounds": {
@@ -1318,7 +1318,7 @@
           "children": []
         },
         {
-          "id": "inventory_16j4gwr884ek",
+          "id": "java-machine_30_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 31",
           "bounds": {
@@ -1359,7 +1359,7 @@
           "children": []
         },
         {
-          "id": "inventory_yhzx9s4auoul",
+          "id": "java-machine_31_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 32",
           "bounds": {
@@ -1400,7 +1400,7 @@
           "children": []
         },
         {
-          "id": "inventory_6u9snpmwgn8q",
+          "id": "java-machine_32_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 33",
           "bounds": {
@@ -1441,7 +1441,7 @@
           "children": []
         },
         {
-          "id": "inventory_n60vk7px8176",
+          "id": "java-machine_33_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 34",
           "bounds": {
@@ -1482,7 +1482,7 @@
           "children": []
         },
         {
-          "id": "inventory_lsvm4k3mpixg",
+          "id": "java-machine_34_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 35",
           "bounds": {
@@ -1523,7 +1523,7 @@
           "children": []
         },
         {
-          "id": "inventory_bdrfv18mb623",
+          "id": "java-machine_35_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 36",
           "bounds": {
@@ -1564,7 +1564,7 @@
           "children": []
         },
         {
-          "id": "inventory_5uvswavtjuu3",
+          "id": "java-machine_36_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 37",
           "bounds": {
@@ -1605,7 +1605,7 @@
           "children": []
         },
         {
-          "id": "inventory_t0vf8d4zl0zo",
+          "id": "java-machine_37_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 38",
           "bounds": {
@@ -1646,7 +1646,7 @@
           "children": []
         },
         {
-          "id": "inventory_i2cx7jx727x0",
+          "id": "java-machine_38_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 39",
           "bounds": {
@@ -1687,7 +1687,7 @@
           "children": []
         },
         {
-          "id": "inventory_646osxlt46o9",
+          "id": "java-machine_39_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 40",
           "bounds": {
@@ -1728,7 +1728,7 @@
           "children": []
         },
         {
-          "id": "inventory_v7tvy5qxr9gs",
+          "id": "java-machine_40_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 41",
           "bounds": {
@@ -1769,7 +1769,7 @@
           "children": []
         },
         {
-          "id": "inventory_d0k06sdxl51d",
+          "id": "java-machine_41_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 42",
           "bounds": {
@@ -1810,7 +1810,7 @@
           "children": []
         },
         {
-          "id": "inventory_2v6bt7p3l1ax",
+          "id": "java-machine_42_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 43",
           "bounds": {
@@ -1851,7 +1851,7 @@
           "children": []
         },
         {
-          "id": "inventory_vmw2e6rlc8r6",
+          "id": "java-machine_43_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 44",
           "bounds": {
@@ -1892,7 +1892,7 @@
           "children": []
         },
         {
-          "id": "inventory_tj78xu5hjdea",
+          "id": "java-machine_44_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 45",
           "bounds": {

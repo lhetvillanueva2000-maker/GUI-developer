@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "id": "project_o0yf7h4b9q5c",
+  "id": "template_java-chest",
   "name": "Sample Chest Screen",
   "edition": "java",
   "canvas": {
@@ -20,7 +20,7 @@
   },
   "elements": [
     {
-      "id": "chest_ebcxlncvpt95",
+      "id": "java-chest_0_chest",
       "type": "panel.chest",
       "name": "Chest Background",
       "bounds": {
@@ -72,7 +72,7 @@
       "stateOverrides": {},
       "children": [
         {
-          "id": "header_cv3ksa18iebh",
+          "id": "java-chest_1_header",
           "type": "bar.header",
           "name": "Title Bar",
           "bounds": {
@@ -129,7 +129,7 @@
           "children": []
         },
         {
-          "id": "inventory_p8w0zdqjwkee",
+          "id": "java-chest_2_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 0",
           "bounds": {
@@ -170,7 +170,7 @@
           "children": []
         },
         {
-          "id": "inventory_vck9iqswmtbh",
+          "id": "java-chest_3_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 1",
           "bounds": {
@@ -211,7 +211,7 @@
           "children": []
         },
         {
-          "id": "inventory_bu1q689qhmld",
+          "id": "java-chest_4_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 2",
           "bounds": {
@@ -252,7 +252,7 @@
           "children": []
         },
         {
-          "id": "inventory_w8je0i60dsh8",
+          "id": "java-chest_5_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 3",
           "bounds": {
@@ -293,7 +293,7 @@
           "children": []
         },
         {
-          "id": "inventory_cb5d698oelvg",
+          "id": "java-chest_6_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 4",
           "bounds": {
@@ -334,7 +334,7 @@
           "children": []
         },
         {
-          "id": "inventory_rrcw5edfgbbp",
+          "id": "java-chest_7_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 5",
           "bounds": {
@@ -375,7 +375,7 @@
           "children": []
         },
         {
-          "id": "inventory_82769za1fjai",
+          "id": "java-chest_8_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 6",
           "bounds": {
@@ -416,7 +416,7 @@
           "children": []
         },
         {
-          "id": "inventory_1psoqjiqhcz0",
+          "id": "java-chest_9_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 7",
           "bounds": {
@@ -457,7 +457,7 @@
           "children": []
         },
         {
-          "id": "inventory_l698lf8av3mx",
+          "id": "java-chest_10_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 8",
           "bounds": {
@@ -498,7 +498,7 @@
           "children": []
         },
         {
-          "id": "inventory_43s924pygx5z",
+          "id": "java-chest_11_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 9",
           "bounds": {
@@ -539,7 +539,7 @@
           "children": []
         },
         {
-          "id": "inventory_n1uu6sun7oiu",
+          "id": "java-chest_12_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 10",
           "bounds": {
@@ -580,7 +580,7 @@
           "children": []
         },
         {
-          "id": "inventory_pgs50u7u3plf",
+          "id": "java-chest_13_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 11",
           "bounds": {
@@ -621,7 +621,7 @@
           "children": []
         },
         {
-          "id": "inventory_zbdn0dzofquy",
+          "id": "java-chest_14_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 12",
           "bounds": {
@@ -662,7 +662,7 @@
           "children": []
         },
         {
-          "id": "inventory_dqoybwsh2pzn",
+          "id": "java-chest_15_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 13",
           "bounds": {
@@ -703,7 +703,7 @@
           "children": []
         },
         {
-          "id": "inventory_011f16u6bqml",
+          "id": "java-chest_16_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 14",
           "bounds": {
@@ -744,7 +744,7 @@
           "children": []
         },
         {
-          "id": "inventory_lsa0ham7ul9t",
+          "id": "java-chest_17_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 15",
           "bounds": {
@@ -785,7 +785,7 @@
           "children": []
         },
         {
-          "id": "inventory_zga0tq8r4av2",
+          "id": "java-chest_18_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 16",
           "bounds": {
@@ -826,7 +826,7 @@
           "children": []
         },
         {
-          "id": "inventory_4y72esj1y1s3",
+          "id": "java-chest_19_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 17",
           "bounds": {
@@ -867,7 +867,7 @@
           "children": []
         },
         {
-          "id": "inventory_qyyb47c9qhh2",
+          "id": "java-chest_20_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 18",
           "bounds": {
@@ -908,7 +908,7 @@
           "children": []
         },
         {
-          "id": "inventory_sw76zabcqn15",
+          "id": "java-chest_21_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 19",
           "bounds": {
@@ -949,7 +949,7 @@
           "children": []
         },
         {
-          "id": "inventory_qyj2zt9jcgqs",
+          "id": "java-chest_22_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 20",
           "bounds": {
@@ -990,7 +990,7 @@
           "children": []
         },
         {
-          "id": "inventory_ydx2i2kk3jeo",
+          "id": "java-chest_23_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 21",
           "bounds": {
@@ -1031,7 +1031,7 @@
           "children": []
         },
         {
-          "id": "inventory_rk8tkygb5r80",
+          "id": "java-chest_24_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 22",
           "bounds": {
@@ -1072,7 +1072,7 @@
           "children": []
         },
         {
-          "id": "inventory_4k4hxa2y3ivg",
+          "id": "java-chest_25_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 23",
           "bounds": {
@@ -1113,7 +1113,7 @@
           "children": []
         },
         {
-          "id": "inventory_5i4uon0icm6q",
+          "id": "java-chest_26_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 24",
           "bounds": {
@@ -1154,7 +1154,7 @@
           "children": []
         },
         {
-          "id": "inventory_419r0l4eeee1",
+          "id": "java-chest_27_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 25",
           "bounds": {
@@ -1195,7 +1195,7 @@
           "children": []
         },
         {
-          "id": "inventory_v03g3nhygqm9",
+          "id": "java-chest_28_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 26",
           "bounds": {
@@ -1236,7 +1236,7 @@
           "children": []
         },
         {
-          "id": "inventory_muzheif9tlwz",
+          "id": "java-chest_29_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 27",
           "bounds": {
@@ -1277,7 +1277,7 @@
           "children": []
         },
         {
-          "id": "inventory_c3kduhff6rk3",
+          "id": "java-chest_30_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 28",
           "bounds": {
@@ -1318,7 +1318,7 @@
           "children": []
         },
         {
-          "id": "inventory_f0wdbfi9aams",
+          "id": "java-chest_31_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 29",
           "bounds": {
@@ -1359,7 +1359,7 @@
           "children": []
         },
         {
-          "id": "inventory_knah1d19on80",
+          "id": "java-chest_32_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 30",
           "bounds": {
@@ -1400,7 +1400,7 @@
           "children": []
         },
         {
-          "id": "inventory_helh6a0sebik",
+          "id": "java-chest_33_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 31",
           "bounds": {
@@ -1441,7 +1441,7 @@
           "children": []
         },
         {
-          "id": "inventory_7tq3tud44qn9",
+          "id": "java-chest_34_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 32",
           "bounds": {
@@ -1482,7 +1482,7 @@
           "children": []
         },
         {
-          "id": "inventory_6defeldsvwg9",
+          "id": "java-chest_35_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 33",
           "bounds": {
@@ -1523,7 +1523,7 @@
           "children": []
         },
         {
-          "id": "inventory_om7uslz7b7lr",
+          "id": "java-chest_36_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 34",
           "bounds": {
@@ -1564,7 +1564,7 @@
           "children": []
         },
         {
-          "id": "inventory_w422pg1kc5zv",
+          "id": "java-chest_37_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 35",
           "bounds": {
@@ -1605,7 +1605,7 @@
           "children": []
         },
         {
-          "id": "inventory_h4hez2ate9x4",
+          "id": "java-chest_38_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 36",
           "bounds": {
@@ -1646,7 +1646,7 @@
           "children": []
         },
         {
-          "id": "inventory_hnw3jwmqbif4",
+          "id": "java-chest_39_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 37",
           "bounds": {
@@ -1687,7 +1687,7 @@
           "children": []
         },
         {
-          "id": "inventory_q9iacq0nr8gi",
+          "id": "java-chest_40_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 38",
           "bounds": {
@@ -1728,7 +1728,7 @@
           "children": []
         },
         {
-          "id": "inventory_0ansyhy50f37",
+          "id": "java-chest_41_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 39",
           "bounds": {
@@ -1769,7 +1769,7 @@
           "children": []
         },
         {
-          "id": "inventory_76r845g5bj1d",
+          "id": "java-chest_42_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 40",
           "bounds": {
@@ -1810,7 +1810,7 @@
           "children": []
         },
         {
-          "id": "inventory_ccjdipkjvidd",
+          "id": "java-chest_43_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 41",
           "bounds": {
@@ -1851,7 +1851,7 @@
           "children": []
         },
         {
-          "id": "inventory_pewxupk6599d",
+          "id": "java-chest_44_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 42",
           "bounds": {
@@ -1892,7 +1892,7 @@
           "children": []
         },
         {
-          "id": "inventory_zyjzkbzdzmzz",
+          "id": "java-chest_45_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 43",
           "bounds": {
@@ -1933,7 +1933,7 @@
           "children": []
         },
         {
-          "id": "inventory_eeeiy21hwfup",
+          "id": "java-chest_46_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 44",
           "bounds": {
@@ -1974,7 +1974,7 @@
           "children": []
         },
         {
-          "id": "inventory_f160tbang9yq",
+          "id": "java-chest_47_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 45",
           "bounds": {
@@ -2015,7 +2015,7 @@
           "children": []
         },
         {
-          "id": "inventory_oxyh834aioba",
+          "id": "java-chest_48_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 46",
           "bounds": {
@@ -2056,7 +2056,7 @@
           "children": []
         },
         {
-          "id": "inventory_pkpg0j5wiz87",
+          "id": "java-chest_49_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 47",
           "bounds": {
@@ -2097,7 +2097,7 @@
           "children": []
         },
         {
-          "id": "inventory_ayui19rvol0a",
+          "id": "java-chest_50_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 48",
           "bounds": {
@@ -2138,7 +2138,7 @@
           "children": []
         },
         {
-          "id": "inventory_yt05n0k6tc3v",
+          "id": "java-chest_51_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 49",
           "bounds": {
@@ -2179,7 +2179,7 @@
           "children": []
         },
         {
-          "id": "inventory_1j3iduxsuhl0",
+          "id": "java-chest_52_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 50",
           "bounds": {
@@ -2220,7 +2220,7 @@
           "children": []
         },
         {
-          "id": "inventory_0emwg6zsctr6",
+          "id": "java-chest_53_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 51",
           "bounds": {
@@ -2261,7 +2261,7 @@
           "children": []
         },
         {
-          "id": "inventory_965ru6vzs568",
+          "id": "java-chest_54_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 52",
           "bounds": {
@@ -2302,7 +2302,7 @@
           "children": []
         },
         {
-          "id": "inventory_e3wzueyw0c4t",
+          "id": "java-chest_55_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 53",
           "bounds": {
@@ -2343,7 +2343,7 @@
           "children": []
         },
         {
-          "id": "inventory_lmdebvjzlyg4",
+          "id": "java-chest_56_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 54",
           "bounds": {
@@ -2384,7 +2384,7 @@
           "children": []
         },
         {
-          "id": "inventory_hn5jr4r1z0hh",
+          "id": "java-chest_57_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 55",
           "bounds": {
@@ -2425,7 +2425,7 @@
           "children": []
         },
         {
-          "id": "inventory_2g44vwczxiio",
+          "id": "java-chest_58_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 56",
           "bounds": {
@@ -2466,7 +2466,7 @@
           "children": []
         },
         {
-          "id": "inventory_0qqsbfy3pq1e",
+          "id": "java-chest_59_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 57",
           "bounds": {
@@ -2507,7 +2507,7 @@
           "children": []
         },
         {
-          "id": "inventory_41n7dhxe6wxt",
+          "id": "java-chest_60_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 58",
           "bounds": {
@@ -2548,7 +2548,7 @@
           "children": []
         },
         {
-          "id": "inventory_p6bmuikkgods",
+          "id": "java-chest_61_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 59",
           "bounds": {
@@ -2589,7 +2589,7 @@
           "children": []
         },
         {
-          "id": "inventory_1ydddhakt2vi",
+          "id": "java-chest_62_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 60",
           "bounds": {
@@ -2630,7 +2630,7 @@
           "children": []
         },
         {
-          "id": "inventory_f1jc42940toe",
+          "id": "java-chest_63_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 61",
           "bounds": {
@@ -2671,7 +2671,7 @@
           "children": []
         },
         {
-          "id": "inventory_d39yr0aummdg",
+          "id": "java-chest_64_inventory",
           "type": "slot.inventory",
           "name": "Hotbar Slot 62",
           "bounds": {

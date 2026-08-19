@@ -41,6 +41,34 @@ data class GuiTemplate(
         )
     }
 
+    /**
+     * The same project with **deterministic** ids.
+     *
+     * This is what gets written to `/templates`. Random ids would make the
+     * committed `.mcgui` files churn on every regeneration, which would turn
+     * the CI drift check into noise and every template update into an
+     * unreviewable diff.
+     */
+    fun canonical(name: String = title): GuiProject {
+        val base = factory()
+        var counter = 0
+
+        fun assign(element: GuiElement): GuiElement {
+            val ordinal = counter++
+            return element.copy(
+                id = "${id}_${ordinal}_${element.type.substringAfterLast('.')}",
+                children = element.children.map { assign(it) },
+            )
+        }
+
+        return base.copy(
+            id = "template_$id",
+            name = name,
+            meta = base.meta.copy(screenId = Ids.slug(name)),
+            elements = base.elements.map { assign(it) },
+        )
+    }
+
     private fun regenerate(element: GuiElement): GuiElement = element.copy(
         id = Ids.prefixed(element.type.substringAfterLast('.')),
         children = element.children.map { regenerate(it) },

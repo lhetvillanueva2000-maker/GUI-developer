@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "id": "project_4n7aqddkgw61",
+  "id": "template_bedrock-form",
   "name": "Bedrock Action Form",
   "edition": "bedrock",
   "canvas": {
@@ -20,7 +20,7 @@
   },
   "elements": [
     {
-      "id": "frame_vv8rvye9kp9l",
+      "id": "bedrock-form_0_frame",
       "type": "panel.frame",
       "name": "Form Body",
       "bounds": {
@@ -80,7 +80,7 @@
       "stateOverrides": {},
       "children": [
         {
-          "id": "header_7ecs9d9syt6x",
+          "id": "bedrock-form_1_header",
           "type": "bar.header",
           "name": "Form Title",
           "bounds": {
@@ -137,7 +137,7 @@
           "children": []
         },
         {
-          "id": "label_wzoah76dvknf",
+          "id": "bedrock-form_2_label",
           "type": "text.label",
           "name": "Form Body Text",
           "bounds": {
@@ -187,7 +187,7 @@
           "children": []
         },
         {
-          "id": "normal_el5vpn3yi6dj",
+          "id": "bedrock-form_3_normal",
           "type": "button.normal",
           "name": "Buy Button",
           "bounds": {
@@ -256,7 +256,7 @@
           "children": []
         },
         {
-          "id": "normal_xirp9cbuhju2",
+          "id": "bedrock-form_4_normal",
           "type": "button.normal",
           "name": "Sell Button",
           "bounds": {
@@ -325,7 +325,7 @@
           "children": []
         },
         {
-          "id": "placeholder_rt52htfyyy9s",
+          "id": "bedrock-form_5_placeholder",
           "type": "image.placeholder",
           "name": "Shop Icon",
           "bounds": {

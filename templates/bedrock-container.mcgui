@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "id": "project_r43qiab55kdo",
+  "id": "template_bedrock-container",
   "name": "Bedrock Pocket Container",
   "edition": "bedrock",
   "canvas": {
@@ -20,7 +20,7 @@
   },
   "elements": [
     {
-      "id": "chest_agdtxofmaha6",
+      "id": "bedrock-container_0_chest",
       "type": "panel.chest",
       "name": "Pocket Container",
       "bounds": {
@@ -76,7 +76,7 @@
       "stateOverrides": {},
       "children": [
         {
-          "id": "header_2pvy5mo5g46o",
+          "id": "bedrock-container_1_header",
           "type": "bar.header",
           "name": "Title",
           "bounds": {
@@ -133,7 +133,7 @@
           "children": []
         },
         {
-          "id": "inventory_3qgk6qh3kfc1",
+          "id": "bedrock-container_2_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 0",
           "bounds": {
@@ -174,7 +174,7 @@
           "children": []
         },
         {
-          "id": "inventory_35gzdqoad0w2",
+          "id": "bedrock-container_3_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 1",
           "bounds": {
@@ -215,7 +215,7 @@
           "children": []
         },
         {
-          "id": "inventory_az2vp4v5jbk2",
+          "id": "bedrock-container_4_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 2",
           "bounds": {
@@ -256,7 +256,7 @@
           "children": []
         },
         {
-          "id": "inventory_f8cz06ja4zj5",
+          "id": "bedrock-container_5_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 3",
           "bounds": {
@@ -297,7 +297,7 @@
           "children": []
         },
         {
-          "id": "inventory_vnur6f9z7u3t",
+          "id": "bedrock-container_6_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 4",
           "bounds": {
@@ -338,7 +338,7 @@
           "children": []
         },
         {
-          "id": "inventory_03l9sjodaqq5",
+          "id": "bedrock-container_7_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 5",
           "bounds": {
@@ -379,7 +379,7 @@
           "children": []
         },
         {
-          "id": "inventory_2le44889ybnu",
+          "id": "bedrock-container_8_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 6",
           "bounds": {
@@ -420,7 +420,7 @@
           "children": []
         },
         {
-          "id": "inventory_lo7vfsff0qwq",
+          "id": "bedrock-container_9_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 7",
           "bounds": {
@@ -461,7 +461,7 @@
           "children": []
         },
         {
-          "id": "inventory_zhraw41992lh",
+          "id": "bedrock-container_10_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 8",
           "bounds": {
@@ -502,7 +502,7 @@
           "children": []
         },
         {
-          "id": "inventory_xh6134ehl70r",
+          "id": "bedrock-container_11_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 9",
           "bounds": {
@@ -543,7 +543,7 @@
           "children": []
         },
         {
-          "id": "inventory_423e4ghdgwky",
+          "id": "bedrock-container_12_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 10",
           "bounds": {
@@ -584,7 +584,7 @@
           "children": []
         },
         {
-          "id": "inventory_ik6i92555jct",
+          "id": "bedrock-container_13_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 11",
           "bounds": {
@@ -625,7 +625,7 @@
           "children": []
         },
         {
-          "id": "inventory_26g2rg5i4wlx",
+          "id": "bedrock-container_14_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 12",
           "bounds": {
@@ -666,7 +666,7 @@
           "children": []
         },
         {
-          "id": "inventory_m45akc08sndz",
+          "id": "bedrock-container_15_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 13",
           "bounds": {
@@ -707,7 +707,7 @@
           "children": []
         },
         {
-          "id": "inventory_8m6bmthx9gg0",
+          "id": "bedrock-container_16_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 14",
           "bounds": {
@@ -748,7 +748,7 @@
           "children": []
         },
         {
-          "id": "inventory_bee5j1xlzoxp",
+          "id": "bedrock-container_17_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 15",
           "bounds": {
@@ -789,7 +789,7 @@
           "children": []
         },
         {
-          "id": "inventory_ucildw1ikics",
+          "id": "bedrock-container_18_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 16",
           "bounds": {
@@ -830,7 +830,7 @@
           "children": []
         },
         {
-          "id": "inventory_rr87iqv7p83y",
+          "id": "bedrock-container_19_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 17",
           "bounds": {
@@ -871,7 +871,7 @@
           "children": []
         },
         {
-          "id": "inventory_r95wm6e8k6r9",
+          "id": "bedrock-container_20_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 18",
           "bounds": {
@@ -912,7 +912,7 @@
           "children": []
         },
         {
-          "id": "inventory_wa28up1yd1q0",
+          "id": "bedrock-container_21_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 19",
           "bounds": {
@@ -953,7 +953,7 @@
           "children": []
         },
         {
-          "id": "inventory_xbt41x82i9r0",
+          "id": "bedrock-container_22_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 20",
           "bounds": {
@@ -994,7 +994,7 @@
           "children": []
         },
         {
-          "id": "inventory_6tabmai51jj9",
+          "id": "bedrock-container_23_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 21",
           "bounds": {
@@ -1035,7 +1035,7 @@
           "children": []
         },
         {
-          "id": "inventory_ztsq9l6jlqmc",
+          "id": "bedrock-container_24_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 22",
           "bounds": {
@@ -1076,7 +1076,7 @@
           "children": []
         },
         {
-          "id": "inventory_h0jkr8gcxh1k",
+          "id": "bedrock-container_25_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 23",
           "bounds": {
@@ -1117,7 +1117,7 @@
           "children": []
         },
         {
-          "id": "inventory_rrby4gwh5nrt",
+          "id": "bedrock-container_26_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 24",
           "bounds": {
@@ -1158,7 +1158,7 @@
           "children": []
         },
         {
-          "id": "inventory_2jjxtltmlsk2",
+          "id": "bedrock-container_27_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 25",
           "bounds": {
@@ -1199,7 +1199,7 @@
           "children": []
         },
         {
-          "id": "inventory_al6cf147y46n",
+          "id": "bedrock-container_28_inventory",
           "type": "slot.inventory",
           "name": "Chest Slot 26",
           "bounds": {
@@ -1240,7 +1240,7 @@
           "children": []
         },
         {
-          "id": "separator_lt6mot5il1tb",
+          "id": "bedrock-container_29_separator",
           "type": "decor.separator",
           "name": "Divider",
           "bounds": {
@@ -1278,7 +1278,7 @@
           "children": []
         },
         {
-          "id": "inventory_f18jdoo2sy5s",
+          "id": "bedrock-container_30_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 27",
           "bounds": {
@@ -1319,7 +1319,7 @@
           "children": []
         },
         {
-          "id": "inventory_9mg9lo17j6gf",
+          "id": "bedrock-container_31_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 28",
           "bounds": {
@@ -1360,7 +1360,7 @@
           "children": []
         },
         {
-          "id": "inventory_4kdzgn4fdy0l",
+          "id": "bedrock-container_32_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 29",
           "bounds": {
@@ -1401,7 +1401,7 @@
           "children": []
         },
         {
-          "id": "inventory_j4bp2qxt8jgo",
+          "id": "bedrock-container_33_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 30",
           "bounds": {
@@ -1442,7 +1442,7 @@
           "children": []
         },
         {
-          "id": "inventory_bx9g1cyngm5l",
+          "id": "bedrock-container_34_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 31",
           "bounds": {
@@ -1483,7 +1483,7 @@
           "children": []
         },
         {
-          "id": "inventory_sdwpnm3qidfj",
+          "id": "bedrock-container_35_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 32",
           "bounds": {
@@ -1524,7 +1524,7 @@
           "children": []
         },
         {
-          "id": "inventory_f26i0f6wvmq4",
+          "id": "bedrock-container_36_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 33",
           "bounds": {
@@ -1565,7 +1565,7 @@
           "children": []
         },
         {
-          "id": "inventory_6ewz0gtncm1k",
+          "id": "bedrock-container_37_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 34",
           "bounds": {
@@ -1606,7 +1606,7 @@
           "children": []
         },
         {
-          "id": "inventory_kgcncrveoqum",
+          "id": "bedrock-container_38_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 35",
           "bounds": {
@@ -1647,7 +1647,7 @@
           "children": []
         },
         {
-          "id": "inventory_iollzr8ob7hy",
+          "id": "bedrock-container_39_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 36",
           "bounds": {
@@ -1688,7 +1688,7 @@
           "children": []
         },
         {
-          "id": "inventory_xkdf4zill85u",
+          "id": "bedrock-container_40_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 37",
           "bounds": {
@@ -1729,7 +1729,7 @@
           "children": []
         },
         {
-          "id": "inventory_wkfo0g45mxcd",
+          "id": "bedrock-container_41_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 38",
           "bounds": {
@@ -1770,7 +1770,7 @@
           "children": []
         },
         {
-          "id": "inventory_e1lr5013zd3q",
+          "id": "bedrock-container_42_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 39",
           "bounds": {
@@ -1811,7 +1811,7 @@
           "children": []
         },
         {
-          "id": "inventory_sfgsatbpgmvs",
+          "id": "bedrock-container_43_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 40",
           "bounds": {
@@ -1852,7 +1852,7 @@
           "children": []
         },
         {
-          "id": "inventory_7ujztonrjid4",
+          "id": "bedrock-container_44_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 41",
           "bounds": {
@@ -1893,7 +1893,7 @@
           "children": []
         },
         {
-          "id": "inventory_2ksimzhuyj31",
+          "id": "bedrock-container_45_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 42",
           "bounds": {
@@ -1934,7 +1934,7 @@
           "children": []
         },
         {
-          "id": "inventory_8s60rnhy6gny",
+          "id": "bedrock-container_46_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 43",
           "bounds": {
@@ -1975,7 +1975,7 @@
           "children": []
         },
         {
-          "id": "inventory_2we7j8cnq057",
+          "id": "bedrock-container_47_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 44",
           "bounds": {
@@ -2016,7 +2016,7 @@
           "children": []
         },
         {
-          "id": "inventory_x0dv04q22uvv",
+          "id": "bedrock-container_48_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 45",
           "bounds": {
@@ -2057,7 +2057,7 @@
           "children": []
         },
         {
-          "id": "inventory_xj4pv1gook7w",
+          "id": "bedrock-container_49_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 46",
           "bounds": {
@@ -2098,7 +2098,7 @@
           "children": []
         },
         {
-          "id": "inventory_gntov59ellpr",
+          "id": "bedrock-container_50_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 47",
           "bounds": {
@@ -2139,7 +2139,7 @@
           "children": []
         },
         {
-          "id": "inventory_spmfshvrhgvw",
+          "id": "bedrock-container_51_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 48",
           "bounds": {
@@ -2180,7 +2180,7 @@
           "children": []
         },
         {
-          "id": "inventory_vmrlv6da7z2g",
+          "id": "bedrock-container_52_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 49",
           "bounds": {
@@ -2221,7 +2221,7 @@
           "children": []
         },
         {
-          "id": "inventory_oyfmocx8mc5v",
+          "id": "bedrock-container_53_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 50",
           "bounds": {
@@ -2262,7 +2262,7 @@
           "children": []
         },
         {
-          "id": "inventory_d61lp90ip8xo",
+          "id": "bedrock-container_54_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 51",
           "bounds": {
@@ -2303,7 +2303,7 @@
           "children": []
         },
         {
-          "id": "inventory_079k7msquri9",
+          "id": "bedrock-container_55_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 52",
           "bounds": {
@@ -2344,7 +2344,7 @@
           "children": []
         },
         {
-          "id": "inventory_k98zlfrbknp9",
+          "id": "bedrock-container_56_inventory",
           "type": "slot.inventory",
           "name": "Inventory Slot 53",
           "bounds": {
@@ -2385,7 +2385,7 @@
           "children": []
         },
         {
-          "id": "hotbar_bdhsh51i7grh",
+          "id": "bedrock-container_57_hotbar",
           "type": "strip.hotbar",
           "name": "Hotbar",
           "bounds": {
@@ -2430,7 +2430,7 @@
           "children": []
         },
         {
-          "id": "actionbutton_txv1um11qja3",
+          "id": "bedrock-container_58_actionButton",
           "type": "bedrock.actionButton",
           "name": "Sort",
           "bounds": {

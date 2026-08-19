@@ -184,6 +184,61 @@ class CrossEditionAndCodeTest {
         assertTrue(result is com.mcguidesigner.core.serialization.LoadResult.Success)
     }
 
+    /**
+     * The committed files under `/templates` are generated, and CI fails the
+     * build when regenerating them produces a diff. That check is only
+     * meaningful while generation is deterministic - random element ids or
+     * random pack UUIDs would make it fire on every unrelated commit.
+     */
+    @Test
+    fun regeneratingTheBundledOutputIsByteIdentical() {
+        BuiltInTemplates.all.forEach { template ->
+            assertEquals(
+                template.canonical(),
+                template.canonical(),
+                "${template.id} does not canonicalise deterministically",
+            )
+        }
+
+        val project = BuiltInTemplates.demo.canonical("Sample Chest Screen")
+        ExportManager.exportAll(project).zip(ExportManager.exportAll(project)).forEach { (first, second) ->
+            assertEquals(
+                first.files.map { it.path },
+                second.files.map { it.path },
+                "${first.target.id} emitted a different file list",
+            )
+            first.files.zip(second.files).forEach { (a, b) ->
+                assertEquals(a, b, "${first.target.id}/${a.path} is not reproducible")
+            }
+        }
+    }
+
+    @Test
+    fun bedrockPackUuidsAreStablePerProjectButDifferPerModule() {
+        val project = BuiltInTemplates["bedrock-hud"]!!.canonical()
+
+        fun manifestOf(p: com.mcguidesigner.core.model.GuiProject) =
+            Json.parseToJsonElement(
+                BedrockEditionExporter.export(p).files
+                    .filterIsInstance<ExportFile.Text>()
+                    .first { it.path.endsWith("manifest.json") }
+                    .content,
+            ) as JsonObject
+
+        val first = manifestOf(project)
+        val second = manifestOf(project)
+
+        val headerUuid = (first["header"] as JsonObject)["uuid"]!!.jsonPrimitive.content
+        assertEquals(headerUuid, (second["header"] as JsonObject)["uuid"]!!.jsonPrimitive.content)
+
+        val moduleUuid = ((first["modules"] as kotlinx.serialization.json.JsonArray)[0] as JsonObject)["uuid"]!!
+            .jsonPrimitive.content
+        assertTrue(headerUuid != moduleUuid, "header and module must not share a UUID")
+        assertEquals(36, headerUuid.length)
+        assertEquals('4', headerUuid[14], "expected a version-4 UUID")
+        assertTrue(headerUuid[19] in "89ab", "expected an RFC 4122 variant nibble")
+    }
+
     @Test
     fun exportAllCoversBothEditionsPlusTheDocumentAndCode() {
         val bundles = ExportManager.exportAll(BuiltInTemplates.demo.instantiate())
