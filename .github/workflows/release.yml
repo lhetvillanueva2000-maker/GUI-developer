@@ -3,6 +3,10 @@ name: Release
 on:
   push:
     tags: ['v*']
+    # A `release/vX.Y.Z` branch triggers the same build. Tag pushes are
+    # restricted in some setups (and for some tokens), and shipping a release
+    # should not depend on having that particular permission.
+    branches: ['release/v*']
   workflow_dispatch:
     inputs:
       version:
@@ -28,11 +32,14 @@ jobs:
       - id: resolve
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            version="${{ inputs.version }}"
-          else
-            version="${GITHUB_REF_NAME#v}"
-          fi
+          case "${{ github.event_name }}" in
+            workflow_dispatch) version="${{ inputs.version }}" ;;
+            *)
+              # refs/tags/v1.2.3 -> 1.2.3, refs/heads/release/v1.2.3 -> 1.2.3
+              version="${GITHUB_REF_NAME#release/}"
+              version="${version#v}"
+              ;;
+          esac
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Building version $version"
 
@@ -203,7 +210,7 @@ jobs:
       # The GitHub CLI is preinstalled on the runner, so publishing needs no
       # third-party action.
       - name: Publish the GitHub release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || startsWith(github.ref, 'refs/heads/release/')
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.version.outputs.version }}
@@ -224,7 +231,16 @@ jobs:
 
           `MANIFEST.txt` inside the archive lists every file with its SHA-256.
           EOF
-          gh release create "$GITHUB_REF_NAME" \
-            --title "Minecraft GUI Designer $VERSION" \
-            --notes-file notes.md \
-            dist/*.zip
+          # From a release branch there is no tag yet; gh creates one at this
+          # commit. From a tag push the tag already exists and --target is a
+          # no-op.
+          tag="v$VERSION"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/*.zip --clobber
+          else
+            gh release create "$tag" \
+              --target "$GITHUB_SHA" \
+              --title "Minecraft GUI Designer $VERSION" \
+              --notes-file notes.md \
+              dist/*.zip
+          fi

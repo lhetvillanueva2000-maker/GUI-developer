@@ -2,7 +2,11 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    # Every branch except the release ones: those run the release workflow,
+    # which does the same checks plus the packaging.
+    # (`branches` and `branches-ignore` are mutually exclusive, so this has to
+    # be expressed as an ignore list.)
+    branches-ignore: ["release/**"]
   pull_request:
   workflow_dispatch:
 
