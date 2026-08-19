@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "id": "project_l1obnz9iquy3",
+  "id": "project_i0946oc38nsi",
   "name": "Bedrock Touch HUD",
   "edition": "bedrock",
   "canvas": {
@@ -20,7 +20,7 @@
   },
   "elements": [
     {
-      "id": "touchpad_8o57k9nbr9wn",
+      "id": "touchpad_nll4p9gexhuu",
       "type": "bedrock.touchpad",
       "name": "Movement Pad",
       "bounds": {
@@ -73,7 +73,7 @@
       "children": []
     },
     {
-      "id": "actionbutton_5tg79pqarbz2",
+      "id": "actionbutton_sb9ntfjps0oj",
       "type": "bedrock.actionButton",
       "name": "Jump",
       "bounds": {
@@ -141,7 +141,7 @@
       "children": []
     },
     {
-      "id": "actionbutton_3p9e459qgytp",
+      "id": "actionbutton_qxva2za5wlno",
       "type": "bedrock.actionButton",
       "name": "Sneak",
       "bounds": {
@@ -209,7 +209,7 @@
       "children": []
     },
     {
-      "id": "actionbutton_i1vxrzx23f6z",
+      "id": "actionbutton_3ex9wgsdarww",
       "type": "bedrock.actionButton",
       "name": "Inventory",
       "bounds": {
@@ -277,7 +277,7 @@
       "children": []
     },
     {
-      "id": "hotbar_7ka1clui2zfk",
+      "id": "hotbar_2pfwyxcq5pic",
       "type": "strip.hotbar",
       "name": "Hotbar",
       "bounds": {
@@ -322,7 +322,7 @@
       "children": []
     },
     {
-      "id": "bar_k9w5hpyq1w9o",
+      "id": "bar_5rq72jt92az9",
       "type": "progress.bar",
       "name": "Health",
       "bounds": {
@@ -383,7 +383,7 @@
       "children": []
     },
     {
-      "id": "bar_xwcg61ycxcmi",
+      "id": "bar_5km6tdlr8kmf",
       "type": "progress.bar",
       "name": "Hunger",
       "bounds": {
@@ -444,7 +444,7 @@
       "children": []
     },
     {
-      "id": "icon_rx96slq3zck4",
+      "id": "icon_xw6aj4fe4qkd",
       "type": "button.icon",
       "name": "Chat",
       "bounds": {

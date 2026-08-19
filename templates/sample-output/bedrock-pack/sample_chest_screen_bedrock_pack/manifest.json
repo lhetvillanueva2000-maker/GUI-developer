@@ -3,7 +3,7 @@
   "header": {
     "name": "Sample Chest Screen",
     "description": "A vanilla-accurate three-row chest with the full player inventory.",
-    "uuid": "a06e09f8-1447-44ca-ad7b-d4a6f0d6e59b",
+    "uuid": "c07eb394-bde3-4a5b-a811-957464fde2e9",
     "version": [
       1,
       0,
@@ -18,7 +18,7 @@
   "modules": [
     {
       "type": "resources",
-      "uuid": "8e6c4a34-0ef6-4f6c-a19e-61a901aa03ac",
+      "uuid": "4170be67-c674-4c21-a92b-af9adbbc0876",
       "version": [
         1,
         0,

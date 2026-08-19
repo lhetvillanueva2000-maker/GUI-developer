@@ -25,7 +25,7 @@ enum class ActiveDialog { NONE, NEW_PROJECT, TEMPLATES, EXPORT, PROJECT_SETTINGS
 enum class InspectorTab(val title: String) { PROPERTIES("Properties"), ASSETS("Assets"), ISSUES("Issues") }
 
 /** Left-hand dock tab. */
-enum class ToolboxTab(val title: String) { PALETTE("Components"), LAYERS("Layers"), TEMPLATES("Templates") }
+enum class ToolboxTab(val title: String) { PALETTE("Palette"), LAYERS("Layers"), TEMPLATES("Templates") }
 
 /**
  * Everything the desktop shell owns on top of the shared editor: which

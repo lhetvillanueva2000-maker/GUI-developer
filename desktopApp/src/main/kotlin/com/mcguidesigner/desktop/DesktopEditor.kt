@@ -83,7 +83,7 @@ fun DesktopEditor(
 
         Row(Modifier.weight(1f).fillMaxWidth()) {
             if (app.showLeftDock) {
-                LeftDock(app, controller, state, textures, Modifier.width(288.dp).fillMaxHeight())
+                LeftDock(app, controller, state, textures, Modifier.width(320.dp).fillMaxHeight())
                 Divider(Modifier.fillMaxHeight().width(1.dp), color = palette.chromeBorder)
             }
 

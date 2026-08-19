@@ -129,6 +129,9 @@ object BuiltInTemplates {
                 "rows" to num(rows),
                 "showPlayerInventory" to flag(true),
                 "skin" to choice("vanilla"),
+                // The Header Bar below already draws the title; letting the
+                // panel draw its own as well would print it twice.
+                "showTitle" to flag(false),
             ),
             children = buildList {
                 add(node(ElementCatalog.BAR_HEADER, "Title Bar", 8, 6, 160, 12, mapOf("title" to text("Custom Chest"), "showDivider" to flag(false))))
@@ -198,7 +201,12 @@ object BuiltInTemplates {
     private fun javaMachine(): GuiProject {
         val panel = node(
             ElementCatalog.PANEL_CHEST, "Machine Background", 0, 0, 176, 166,
-            mapOf("title" to text("Alloy Smelter"), "rows" to num(3), "skin" to choice("dark")),
+            mapOf(
+                "title" to text("Alloy Smelter"),
+                "rows" to num(3),
+                "skin" to choice("dark"),
+                "showTitle" to flag(false),
+            ),
             children = buildList {
                 add(node(ElementCatalog.BAR_HEADER, "Title", 8, 5, 160, 12, mapOf("title" to text("Alloy Smelter"), "showDivider" to flag(false))))
                 add(node(ElementCatalog.SLOT_INVENTORY, "Input A", 34, 22, 18, 18, mapOf("slotIndex" to num(0))))
@@ -365,6 +373,7 @@ object BuiltInTemplates {
                 "rows" to num(3),
                 "bedrockSkin" to choice("pocket"),
                 "showPlayerInventory" to flag(true),
+                "showTitle" to flag(false),
             ),
             edition = e,
             children = buildList {

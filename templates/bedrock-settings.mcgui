@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "id": "project_uf0le5siwi90",
+  "id": "project_8t0db1s6n6ej",
   "name": "Bedrock Settings Sheet",
   "edition": "bedrock",
   "canvas": {
@@ -20,7 +20,7 @@
   },
   "elements": [
     {
-      "id": "frame_xtc8hir8ytjo",
+      "id": "frame_zxlp30yq692k",
       "type": "panel.frame",
       "name": "Settings Sheet",
       "bounds": {
@@ -80,7 +80,7 @@
       "stateOverrides": {},
       "children": [
         {
-          "id": "header_xgjnsayhgx1p",
+          "id": "header_2gvnoia8sn91",
           "type": "bar.header",
           "name": "Sheet Title",
           "bounds": {
@@ -137,7 +137,7 @@
           "children": []
         },
         {
-          "id": "search_bmoq1ockkdod",
+          "id": "search_1rxd79c5p00m",
           "type": "input.search",
           "name": "Search Settings",
           "bounds": {
@@ -187,7 +187,7 @@
           "children": []
         },
         {
-          "id": "scroll_yoh32msc44l1",
+          "id": "scroll_tc87tdpbbs44",
           "type": "container.scroll",
           "name": "Settings List",
           "bounds": {
@@ -232,7 +232,7 @@
           "stateOverrides": {},
           "children": [
             {
-              "id": "toggle_zxnf6whmlkjv",
+              "id": "toggle_1djfaysuehrw",
               "type": "button.toggle",
               "name": "Vibration",
               "bounds": {
@@ -302,7 +302,7 @@
               "children": []
             },
             {
-              "id": "toggle_kavf44qrdx67",
+              "id": "toggle_t7394p6ullh3",
               "type": "button.toggle",
               "name": "Auto Jump",
               "bounds": {
@@ -372,7 +372,7 @@
               "children": []
             },
             {
-              "id": "slider_k5pday7thbyn",
+              "id": "slider_y6pjq6jtgjdc",
               "type": "input.slider",
               "name": "Sensitivity",
               "bounds": {
@@ -450,7 +450,7 @@
               "children": []
             },
             {
-              "id": "checkbox_708yy62pe3jx",
+              "id": "checkbox_hamcsemknxmq",
               "type": "input.checkbox",
               "name": "Show Coordinates",
               "bounds": {

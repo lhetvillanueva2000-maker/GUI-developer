@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "id": "project_7wb1nmjxq3m9",
+  "id": "project_y7vozfo95f76",
   "name": "Java Machine UI",
   "edition": "java",
   "canvas": {
@@ -20,7 +20,7 @@
   },
   "elements": [
     {
-      "id": "chest_a8jfcfu4rsba",
+      "id": "chest_i4k33is7vgwh",
       "type": "panel.chest",
       "name": "Machine Background",
       "bounds": {
@@ -47,7 +47,7 @@
         },
         "showTitle": {
           "kind": "b",
-          "value": true
+          "value": false
         },
         "titleColor": {
           "kind": "c",
@@ -72,7 +72,7 @@
       "stateOverrides": {},
       "children": [
         {
-          "id": "header_k0to4u1ba8lv",
+          "id": "header_3c9trt78smc9",
           "type": "bar.header",
           "name": "Title",
           "bounds": {
@@ -129,7 +129,7 @@
           "children": []
         },
         {
-          "id": "inventory_8mhs5a88xhq3",
+          "id": "inventory_8y7kqossc3a4",
           "type": "slot.inventory",
           "name": "Input A",
           "bounds": {
@@ -170,7 +170,7 @@
           "children": []
         },
         {
-          "id": "inventory_znmmset44ikh",
+          "id": "inventory_mu8q61s9h0uc",
           "type": "slot.inventory",
           "name": "Input B",
           "bounds": {
@@ -211,7 +211,7 @@
           "children": []
         },
         {
-          "id": "inventory_jx5a83sos586",
+          "id": "inventory_r2nq6s288smb",
           "type": "slot.inventory",
           "name": "Fuel",
           "bounds": {
@@ -252,7 +252,7 @@
           "children": []
         },
         {
-          "id": "inventory_1wy4k0t8g2i4",
+          "id": "inventory_nyx34o61d016",
           "type": "slot.inventory",
           "name": "Output",
           "bounds": {
@@ -293,7 +293,7 @@
           "children": []
         },
         {
-          "id": "bar_2abmfugp266d",
+          "id": "bar_vfzb81cknqpc",
           "type": "progress.bar",
           "name": "Smelt Progress",
           "bounds": {
@@ -354,7 +354,7 @@
           "children": []
         },
         {
-          "id": "bar_5kh5wqg4asm8",
+          "id": "bar_wyuo0m6n3sof",
           "type": "progress.bar",
           "name": "Fuel Gauge",
           "bounds": {
@@ -415,7 +415,7 @@
           "children": []
         },
         {
-          "id": "tooltip_n5ws16cv60ze",
+          "id": "tooltip_cs86jt6xdveu",
           "type": "panel.tooltip",
           "name": "Recipe Tooltip",
           "bounds": {
@@ -457,7 +457,7 @@
           "children": []
         },
         {
-          "id": "inventory_k3jnxws7nfvb",
+          "id": "inventory_ke1pran4y8qc",
           "type": "slot.inventory",
           "name": "Inventory Slot 10",
           "bounds": {
@@ -498,7 +498,7 @@
           "children": []
         },
         {
-          "id": "inventory_mcqj0r3eukc0",
+          "id": "inventory_d33oha7tkl8m",
           "type": "slot.inventory",
           "name": "Inventory Slot 11",
           "bounds": {
@@ -539,7 +539,7 @@
           "children": []
         },
         {
-          "id": "inventory_82yh2sf2x48r",
+          "id": "inventory_vjw3qtpp2rvm",
           "type": "slot.inventory",
           "name": "Inventory Slot 12",
           "bounds": {
@@ -580,7 +580,7 @@
           "children": []
         },
         {
-          "id": "inventory_3f65xli529h3",
+          "id": "inventory_h2rl2lg5xycz",
           "type": "slot.inventory",
           "name": "Inventory Slot 13",
           "bounds": {
@@ -621,7 +621,7 @@
           "children": []
         },
         {
-          "id": "inventory_pim42guh4a54",
+          "id": "inventory_c3m2fka09igw",
           "type": "slot.inventory",
           "name": "Inventory Slot 14",
           "bounds": {
@@ -662,7 +662,7 @@
           "children": []
         },
         {
-          "id": "inventory_nswibm0xiy98",
+          "id": "inventory_f2bx757h9pbe",
           "type": "slot.inventory",
           "name": "Inventory Slot 15",
           "bounds": {
@@ -703,7 +703,7 @@
           "children": []
         },
         {
-          "id": "inventory_lqco88ei6s4b",
+          "id": "inventory_1sd32r3vxwhb",
           "type": "slot.inventory",
           "name": "Inventory Slot 16",
           "bounds": {
@@ -744,7 +744,7 @@
           "children": []
         },
         {
-          "id": "inventory_r61fo1pnbwvk",
+          "id": "inventory_pf4oc19ly5rq",
           "type": "slot.inventory",
           "name": "Inventory Slot 17",
           "bounds": {
@@ -785,7 +785,7 @@
           "children": []
         },
         {
-          "id": "inventory_ac8ncs46l5q6",
+          "id": "inventory_ngbthvfmgq35",
           "type": "slot.inventory",
           "name": "Inventory Slot 18",
           "bounds": {
@@ -826,7 +826,7 @@
           "children": []
         },
         {
-          "id": "inventory_x3nvvqvtei6r",
+          "id": "inventory_ja2oedxhctuv",
           "type": "slot.inventory",
           "name": "Inventory Slot 19",
           "bounds": {
@@ -867,7 +867,7 @@
           "children": []
         },
         {
-          "id": "inventory_igwdvx7zzsyz",
+          "id": "inventory_me2qe71nt9xy",
           "type": "slot.inventory",
           "name": "Inventory Slot 20",
           "bounds": {
@@ -908,7 +908,7 @@
           "children": []
         },
         {
-          "id": "inventory_ijm40l2aww9n",
+          "id": "inventory_v8ptofhu1ksx",
           "type": "slot.inventory",
           "name": "Inventory Slot 21",
           "bounds": {
@@ -949,7 +949,7 @@
           "children": []
         },
         {
-          "id": "inventory_xamyc4b9nvmj",
+          "id": "inventory_2pspgbjdxywa",
           "type": "slot.inventory",
           "name": "Inventory Slot 22",
           "bounds": {
@@ -990,7 +990,7 @@
           "children": []
         },
         {
-          "id": "inventory_idymb8pj2zn8",
+          "id": "inventory_csdp88oyv5qs",
           "type": "slot.inventory",
           "name": "Inventory Slot 23",
           "bounds": {
@@ -1031,7 +1031,7 @@
           "children": []
         },
         {
-          "id": "inventory_l74e7p3tze1i",
+          "id": "inventory_vo68qy8ejlhr",
           "type": "slot.inventory",
           "name": "Inventory Slot 24",
           "bounds": {
@@ -1072,7 +1072,7 @@
           "children": []
         },
         {
-          "id": "inventory_2f664qq3wyyu",
+          "id": "inventory_bnveul74svqb",
           "type": "slot.inventory",
           "name": "Inventory Slot 25",
           "bounds": {
@@ -1113,7 +1113,7 @@
           "children": []
         },
         {
-          "id": "inventory_ahqi0q1ocsj6",
+          "id": "inventory_tvizsdy5vmxm",
           "type": "slot.inventory",
           "name": "Inventory Slot 26",
           "bounds": {
@@ -1154,7 +1154,7 @@
           "children": []
         },
         {
-          "id": "inventory_fmlsm5bmqlm4",
+          "id": "inventory_d6xiho95dmq8",
           "type": "slot.inventory",
           "name": "Inventory Slot 27",
           "bounds": {
@@ -1195,7 +1195,7 @@
           "children": []
         },
         {
-          "id": "inventory_hwvfhhx4zusm",
+          "id": "inventory_ogkl8iyed30x",
           "type": "slot.inventory",
           "name": "Inventory Slot 28",
           "bounds": {
@@ -1236,7 +1236,7 @@
           "children": []
         },
         {
-          "id": "inventory_81nha2osb83t",
+          "id": "inventory_xomyen5o4x6y",
           "type": "slot.inventory",
           "name": "Inventory Slot 29",
           "bounds": {
@@ -1277,7 +1277,7 @@
           "children": []
         },
         {
-          "id": "inventory_fnyih352wvsx",
+          "id": "inventory_zxi6lca31z3i",
           "type": "slot.inventory",
           "name": "Inventory Slot 30",
           "bounds": {
@@ -1318,7 +1318,7 @@
           "children": []
         },
         {
-          "id": "inventory_dvu8xem1meuo",
+          "id": "inventory_16j4gwr884ek",
           "type": "slot.inventory",
           "name": "Inventory Slot 31",
           "bounds": {
@@ -1359,7 +1359,7 @@
           "children": []
         },
         {
-          "id": "inventory_nfjvl6ppyd76",
+          "id": "inventory_yhzx9s4auoul",
           "type": "slot.inventory",
           "name": "Inventory Slot 32",
           "bounds": {
@@ -1400,7 +1400,7 @@
           "children": []
         },
         {
-          "id": "inventory_ep06nl0p6gab",
+          "id": "inventory_6u9snpmwgn8q",
           "type": "slot.inventory",
           "name": "Inventory Slot 33",
           "bounds": {
@@ -1441,7 +1441,7 @@
           "children": []
         },
         {
-          "id": "inventory_o9bym0y6u3fj",
+          "id": "inventory_n60vk7px8176",
           "type": "slot.inventory",
           "name": "Inventory Slot 34",
           "bounds": {
@@ -1482,7 +1482,7 @@
           "children": []
         },
         {
-          "id": "inventory_g5ziqgm0pnxc",
+          "id": "inventory_lsvm4k3mpixg",
           "type": "slot.inventory",
           "name": "Inventory Slot 35",
           "bounds": {
@@ -1523,7 +1523,7 @@
           "children": []
         },
         {
-          "id": "inventory_dkhu6xd68o7d",
+          "id": "inventory_bdrfv18mb623",
           "type": "slot.inventory",
           "name": "Inventory Slot 36",
           "bounds": {
@@ -1564,7 +1564,7 @@
           "children": []
         },
         {
-          "id": "inventory_18s8mvf84bwr",
+          "id": "inventory_5uvswavtjuu3",
           "type": "slot.inventory",
           "name": "Hotbar Slot 37",
           "bounds": {
@@ -1605,7 +1605,7 @@
           "children": []
         },
         {
-          "id": "inventory_s8yi3qy67lie",
+          "id": "inventory_t0vf8d4zl0zo",
           "type": "slot.inventory",
           "name": "Hotbar Slot 38",
           "bounds": {
@@ -1646,7 +1646,7 @@
           "children": []
         },
         {
-          "id": "inventory_zyjhuv4s8afh",
+          "id": "inventory_i2cx7jx727x0",
           "type": "slot.inventory",
           "name": "Hotbar Slot 39",
           "bounds": {
@@ -1687,7 +1687,7 @@
           "children": []
         },
         {
-          "id": "inventory_9ohgwes97u06",
+          "id": "inventory_646osxlt46o9",
           "type": "slot.inventory",
           "name": "Hotbar Slot 40",
           "bounds": {
@@ -1728,7 +1728,7 @@
           "children": []
         },
         {
-          "id": "inventory_ah66e9viu0u8",
+          "id": "inventory_v7tvy5qxr9gs",
           "type": "slot.inventory",
           "name": "Hotbar Slot 41",
           "bounds": {
@@ -1769,7 +1769,7 @@
           "children": []
         },
         {
-          "id": "inventory_3fszfmdldj1e",
+          "id": "inventory_d0k06sdxl51d",
           "type": "slot.inventory",
           "name": "Hotbar Slot 42",
           "bounds": {
@@ -1810,7 +1810,7 @@
           "children": []
         },
         {
-          "id": "inventory_uqiq4l7bbj6m",
+          "id": "inventory_2v6bt7p3l1ax",
           "type": "slot.inventory",
           "name": "Hotbar Slot 43",
           "bounds": {
@@ -1851,7 +1851,7 @@
           "children": []
         },
         {
-          "id": "inventory_ek9135ci9rsz",
+          "id": "inventory_vmw2e6rlc8r6",
           "type": "slot.inventory",
           "name": "Hotbar Slot 44",
           "bounds": {
@@ -1892,7 +1892,7 @@
           "children": []
         },
         {
-          "id": "inventory_xm9kemuq3vyj",
+          "id": "inventory_tj78xu5hjdea",
           "type": "slot.inventory",
           "name": "Hotbar Slot 45",
           "bounds": {

@@ -36,8 +36,13 @@ GRADLE_ARGS=(--no-daemon "-Pmcgui.version=$VERSION")
 echo "==> Running checks"
 ./gradlew "${GRADLE_ARGS[@]}" validateProjects allTests
 
-echo "==> Building the desktop distributable"
-./gradlew "${GRADLE_ARGS[@]}" :desktopApp:packageDistributionForCurrentOS
+# The native installer needs host tooling that is not always present (dpkg-deb
+# and fakeroot on Linux, WiX on Windows), so a failure here must not lose the
+# rest of the bundle - the portable jar below is always produced.
+echo "==> Building the native desktop installer"
+if ! ./gradlew "${GRADLE_ARGS[@]}" :desktopApp:packageDistributionForCurrentOS; then
+  echo "==> Native installer failed on this host; continuing with the portable jar"
+fi
 
 echo "==> Building the portable desktop jar"
 ./gradlew "${GRADLE_ARGS[@]}" :desktopApp:packageUberJarForCurrentOS
