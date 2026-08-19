@@ -33,18 +33,44 @@ android {
     }
 
     signingConfigs {
-        // Release builds are signed with a keystore supplied by CI (or by a
-        // local `keystore.properties`). Without one, `assembleRelease` still
-        // produces an unsigned APK that can be signed later.
-        val keystoreFile = rootProject.file("build-scripts/keystore.properties")
-        if (keystoreFile.exists()) {
-            val props = Properties().apply { keystoreFile.inputStream().use { load(it) } }
-            create("release") {
+        // Android refuses to install an unsigned package outright - it reports
+        // "package appears to be invalid" - so a release build must always end
+        // up signed with *something*.
+        //
+        // Preferred: a real keystore supplied through `keystore.properties`
+        // (CI writes it from the ANDROID_KEYSTORE_* secrets).
+        //
+        // Fallback: the development key committed at
+        // `build-scripts/dev-signing.jks`. Its password is in this file and in
+        // the repository, so it is not a secret and must never be used for
+        // anything you publish - it exists purely so that every build produces
+        // an APK you can actually install. Because it is stable, successive
+        // builds also upgrade cleanly over each other.
+        val releaseProperties = rootProject.file("build-scripts/keystore.properties")
+        val developmentKeystore = rootProject.file("build-scripts/dev-signing.jks")
+
+        create("release") {
+            if (releaseProperties.exists()) {
+                val props = Properties().apply { releaseProperties.inputStream().use { load(it) } }
                 storeFile = rootProject.file(props.getProperty("storeFile"))
                 storePassword = props.getProperty("storePassword")
                 keyAlias = props.getProperty("keyAlias")
                 keyPassword = props.getProperty("keyPassword")
+            } else {
+                logger.lifecycle(
+                    "[androidApp] No keystore.properties found - signing the release build with the " +
+                        "development key. Do not publish this APK; see build-scripts/README.md.",
+                )
+                storeFile = developmentKeystore
+                storePassword = "mcguidev"
+                keyAlias = "mcgui-dev"
+                keyPassword = "mcguidev"
             }
+            // Both signature schemes: v1 for older devices, v2/v3 for modern
+            // ones (and v2+ is mandatory from Android 11 for targetSdk 30+).
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
         }
     }
 
@@ -57,7 +83,7 @@ android {
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.findByName("release")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

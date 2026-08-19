@@ -6,6 +6,10 @@ local.properties
 build-scripts/keystore.properties
 *.jks
 *.keystore
+# ...except the development signing key, which is deliberately committed so
+# every build produces an installable APK. It is not a secret - see
+# build-scripts/README.md.
+!build-scripts/dev-signing.jks
 
 # IDE
 .idea/
