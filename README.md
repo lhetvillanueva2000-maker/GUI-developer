@@ -9,7 +9,35 @@ Edition, each with its own widget set, visual identity and export pipeline.**
 
 Windows desktop app · Android app · one shared editor core
 
+**[⬇ Download the latest release](https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/latest)**
+
 </div>
+
+---
+
+## Download
+
+Everything is published on the
+[releases page](https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/latest).
+
+| You want | Grab |
+| --- | --- |
+| **Windows** | `MinecraftGuiDesigner-<version>.exe` — installer, no Java needed |
+| **Android** | `androidApp-release.apk` — enable "install from unknown sources" when prompted |
+| **Linux** | `minecraft-gui-designer_<version>-1_amd64.deb` |
+| **Any OS with a JVM** | `MinecraftGuiDesigner-windows-x64-<version>.jar` — `java -jar <file>` |
+| **Everything at once** | `minecraft-gui-designer-<version>.zip` — all of the above plus source, templates and docs |
+
+The individual installers are attached to the release alongside the combined
+ZIP, so there is no need to download ~360 MB just to get one of them. Each
+desktop package embeds its own Java runtime, which is why they are large and
+why nothing has to be installed first.
+
+`MANIFEST.txt` inside the ZIP lists every file with its SHA-256.
+
+> Release binaries are attached to releases, never committed to the repository —
+> GitHub rejects files over 100 MB in git, and a binary in history bloats every
+> clone forever.
 
 ---
 
