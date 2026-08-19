@@ -49,6 +49,14 @@ jobs:
   windows-desktop:
     needs: version
     runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    # Every Gradle step below is pinned to bash. The Windows default is
+    # PowerShell, which splits `-Pmcgui.version=1.0.0` into two arguments, and
+    # Gradle then reports a missing task called `.version=1.0.0`.
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -74,22 +82,16 @@ jobs:
           & "$dir\candle.exe" -? | Select-Object -First 1
 
       - name: Build the Windows .exe installer
-        run: >
-          ./gradlew -PskipAndroid=true -Pmcgui.version=${{ needs.version.outputs.version }}
-          :desktopApp:packageReleaseExe
+        run: ./gradlew -PskipAndroid=true "-Pmcgui.version=$VERSION" :desktopApp:packageReleaseExe
 
       # The .msi is a nice-to-have alongside the .exe; never fail the release
       # over it.
       - name: Build the Windows .msi package
         continue-on-error: true
-        run: >
-          ./gradlew -PskipAndroid=true -Pmcgui.version=${{ needs.version.outputs.version }}
-          :desktopApp:packageReleaseMsi
+        run: ./gradlew -PskipAndroid=true "-Pmcgui.version=$VERSION" :desktopApp:packageReleaseMsi
 
       - name: Build the portable Windows jar
-        run: >
-          ./gradlew -PskipAndroid=true -Pmcgui.version=${{ needs.version.outputs.version }}
-          :desktopApp:packageUberJarForCurrentOS
+        run: ./gradlew -PskipAndroid=true "-Pmcgui.version=$VERSION" :desktopApp:packageUberJarForCurrentOS
 
       - name: Collect the installers
         shell: bash
@@ -123,6 +125,7 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -154,11 +157,11 @@ jobs:
           EOF
 
       - name: Validate templates and run the tests
-        run: ./gradlew -Pmcgui.version=${{ needs.version.outputs.version }} validateProjects allTests
+        run: ./gradlew "-Pmcgui.version=$VERSION" validateProjects allTests
 
       - name: Build the APK and the Linux package
         run: >
-          ./gradlew -Pmcgui.version=${{ needs.version.outputs.version }}
+          ./gradlew "-Pmcgui.version=$VERSION"
           :androidApp:assembleRelease
           :desktopApp:packageReleaseDeb
 
