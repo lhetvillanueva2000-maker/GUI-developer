@@ -2,6 +2,8 @@
 
 package com.mcguidesigner.android.ui
 
+import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -15,23 +17,30 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -44,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mcguidesigner.android.AndroidAppState
 import com.mcguidesigner.android.MobileSection
@@ -55,6 +65,7 @@ import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.styles.render.rememberTextureCache
 import com.mcguidesigner.styles.theme.LocalSkinPalette
+import com.mcguidesigner.styles.theme.WarningAmber
 
 /**
  * The Android shell.
@@ -125,7 +136,9 @@ fun AndroidEditor(
                     app = app,
                     controller = controller,
                     state = state,
-                    onOpen = { openLauncher.launch(arrayOf("*/*")) },
+                    onOpen = {
+                        app.guardUnsaved("open another project") { openLauncher.launch(arrayOf("*/*")) }
+                    },
                     onSave = { if (!app.saveDocument(context)) createLauncher.launch(app.suggestedFileName()) },
                     onSaveAs = { createLauncher.launch(app.suggestedFileName()) },
                     onImportImages = { imageLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
@@ -189,6 +202,83 @@ fun AndroidEditor(
                 exportLauncher.launch(app.exportFileName(target))
             },
         )
+
+        app.unsavedPrompt?.let { prompt ->
+            UnsavedChangesSheet(
+                prompt = prompt,
+                projectName = state.project.name,
+                onSave = { if (!app.saveThenContinue(context)) createLauncher.launch(app.suggestedFileName()) },
+                onDiscard = { app.confirmDiscard() },
+                onCancel = { app.cancelUnsavedPrompt() },
+            )
+        }
+    }
+
+    // Back navigation, innermost first: close a sheet, then leave a secondary
+    // section, then offer to save. Only when there is nothing left to unwind
+    // does back actually leave the app - and never silently on unsaved work.
+    val activity = LocalContext.current as? Activity
+    BackHandler(enabled = true) {
+        when {
+            app.unsavedPrompt != null -> app.cancelUnsavedPrompt()
+            app.sheet != MobileSheet.NONE -> app.sheet = MobileSheet.NONE
+            state.hasSelection -> controller.clearSelection()
+            app.section != MobileSection.DESIGN -> app.section = MobileSection.DESIGN
+            else -> app.guardUnsaved("leave the app") { activity?.finish() }
+        }
+    }
+}
+
+/**
+ * The mobile equivalent of the desktop's Save / Discard / Cancel prompt.
+ *
+ * A bottom sheet rather than a dialog so the buttons land under the thumb
+ * instead of in the middle of the screen.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun UnsavedChangesSheet(
+    prompt: String,
+    projectName: String,
+    onSave: () -> Unit,
+    onDiscard: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    val palette = LocalSkinPalette.current
+
+    ModalBottomSheet(
+        onDismissRequest = onCancel,
+        containerColor = palette.chromePanel,
+    ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
+            Text(
+                "Save '$projectName'?",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "There are changes that have not been written to a file. " +
+                    "Discarding them will $prompt and the edits will be lost.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = palette.chromeTextMuted,
+            )
+            Spacer(Modifier.height(20.dp))
+            Button(
+                onClick = onSave,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) { Text("Save") }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onCancel,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) { Text("Keep editing") }
+            Spacer(Modifier.height(8.dp))
+            TextButton(
+                onClick = onDiscard,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) { Text("Discard changes", color = WarningAmber) }
+        }
     }
 }
 

@@ -36,6 +36,15 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 - **Continuous validation.** Broken sizes, missing textures, out-of-canvas
   elements, unsupported edition-specific properties and undersized touch targets
   are flagged as you work, with a one-click jump to the offending element.
+- **It does not lose your work.** Nothing replaces the open document without
+  asking first — New, Open, templates, quitting and the Android back gesture all
+  offer Save / Discard / Cancel. The desktop app autosaves a recovery snapshot
+  every ten seconds while there are unsaved edits and offers it back if it was
+  killed; the Android app writes the working document to internal storage
+  whenever it is backgrounded, so a process kill is not a lost afternoon.
+- **It remembers where you were.** Window size and position, which docks were
+  open, the last export target and the recent-projects list are all restored on
+  the next launch.
 
 ---
 
@@ -160,7 +169,7 @@ Binaries are not committed to the repository — they are release artifacts.
 ## Other tasks
 
 ```bash
-./gradlew allTests           # unit tests for the core and the exporters
+./gradlew testAll            # every unit test: core, exporters and desktop shell
 ./gradlew validateProjects   # regenerate + validate every bundled template
 ./gradlew generateIcons      # re-render the app icon for every platform
 ./gradlew assembleAll        # everything this host can produce

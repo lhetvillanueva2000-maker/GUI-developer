@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.mcguidesigner.android.io.AndroidFileIO
+import com.mcguidesigner.android.io.SessionStore
 import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.GuiProject
@@ -55,6 +56,78 @@ class AndroidAppState(initial: GuiProject) {
 
     /** Set while an export is pending a "create document" result from SAF. */
     var pendingExportTarget: ExportTarget? = null
+
+    // -- Guarding unsaved work ---------------------------------------------
+
+    /** Shown when something would replace a document with unsaved edits. */
+    var unsavedPrompt by mutableStateOf<String?>(null)
+        private set
+
+    private var pendingAction: (() -> Unit)? = null
+
+    /**
+     * Runs [action], first asking about unsaved edits.
+     *
+     * The phone has no window to close, but it has a back gesture and a New
+     * button that are just as capable of throwing away an afternoon's work.
+     */
+    fun guardUnsaved(prompt: String, action: () -> Unit) {
+        if (!controller.current.dirty) {
+            action()
+            return
+        }
+        unsavedPrompt = prompt
+        pendingAction = action
+    }
+
+    /** "Discard" on the unsaved prompt. */
+    fun confirmDiscard() {
+        val action = pendingAction
+        pendingAction = null
+        unsavedPrompt = null
+        action?.invoke()
+    }
+
+    /** "Save first" on the unsaved prompt; returns false when a picker is needed. */
+    fun saveThenContinue(context: Context): Boolean {
+        if (!saveDocument(context)) return false
+        confirmDiscard()
+        return true
+    }
+
+    fun cancelUnsavedPrompt() {
+        pendingAction = null
+        unsavedPrompt = null
+    }
+
+    // -- Session persistence -----------------------------------------------
+
+    /**
+     * Writes the working document to internal storage.
+     *
+     * Called when the app is backgrounded, because Android may never give it
+     * another chance.
+     */
+    fun persistSession(context: Context) {
+        SessionStore.save(
+            context = context,
+            project = controller.project,
+            uri = documentUri,
+            name = documentName,
+            dirty = controller.current.dirty,
+        )
+    }
+
+    /** Adopts a document written by [persistSession] on a previous run. */
+    fun restoreSession(session: SessionStore.Session) {
+        controller = EditorController(session.project)
+        documentUri = session.documentUri
+        documentName = session.documentName
+        if (session.dirty) {
+            controller.markUnsaved()
+            status = "Restored unsaved changes to '${session.project.name}'."
+        }
+    }
 
     // -- Documents ---------------------------------------------------------
 

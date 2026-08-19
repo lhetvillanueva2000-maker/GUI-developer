@@ -438,7 +438,11 @@ private fun TemplatesSheet(app: AndroidAppState, state: EditorState, textures: T
                         .padding(vertical = 6.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(palette.chromePanelAlt)
-                        .clickable { app.newFromTemplate(template.id) },
+                        .clickable {
+                            app.guardUnsaved("load the '${template.title}' template") {
+                                app.newFromTemplate(template.id)
+                            }
+                        },
                 ) {
                     Box(
                         Modifier.fillMaxWidth().height(150.dp).background(palette.chromeBackground),

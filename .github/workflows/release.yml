@@ -157,7 +157,7 @@ jobs:
           EOF
 
       - name: Validate templates and run the tests
-        run: ./gradlew "-Pmcgui.version=$VERSION" validateProjects allTests
+        run: ./gradlew "-Pmcgui.version=$VERSION" validateProjects testAll
 
       - name: Build the APK and the Linux package
         run: >

@@ -57,7 +57,7 @@ jobs:
           fi
 
       - name: Run the unit tests
-        run: ./gradlew allTests
+        run: ./gradlew testAll
 
       - name: Compile the desktop app
         run: ./gradlew :desktopApp:compileKotlin

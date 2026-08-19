@@ -58,7 +58,9 @@ fun TemplatesPanel(
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
             items(ordered, key = { it.id }) { template ->
                 TemplateCard(template, textures, template.edition == state.edition) {
-                    app.newFromTemplate(template.id)
+                    app.guardUnsaved("load the '${template.title}' template") {
+                        app.newFromTemplate(template.id)
+                    }
                 }
             }
             item { Box(Modifier.height(20.dp)) }

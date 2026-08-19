@@ -6,7 +6,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
@@ -19,8 +22,13 @@ import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.MenuBar
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPlacement
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.mcguidesigner.desktop.io.Workspace
+import com.mcguidesigner.styles.render.decodeImageBitmap
+import kotlinx.coroutines.delay
 import com.mcguidesigner.core.editor.EditorTool
 import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.AlignMode
@@ -38,24 +46,97 @@ import androidx.compose.ui.input.key.KeyShortcut
  * differently.
  */
 fun main() = application {
-    val appState = remember { AppState(BuiltInTemplates.demo.instantiate()) }
+    // Preferences are read before the first frame so the window opens at the
+    // size and position it was last closed at, rather than jumping.
+    val preferences = remember { Workspace.loadPreferences() }
+    val recovery = remember { Workspace.pendingRecovery() }
+
+    val appState = remember {
+        AppState(BuiltInTemplates.demo.instantiate()).apply {
+            applyPreferences(preferences)
+            dialog = when {
+                // A leftover autosave means the last session was killed. That
+                // takes priority over everything else on screen.
+                recovery != null -> ActiveDialog.RECOVERY
+                preferences.showWelcomeOnStart -> ActiveDialog.WELCOME
+                else -> ActiveDialog.NONE
+            }
+        }
+    }
+
     DesignerWindow(appState)
 }
 
 @Composable
 private fun ApplicationScope.DesignerWindow(appState: AppState) {
-    val windowState = rememberWindowState(size = DpSize(1600.dp, 1000.dp))
+    val preferences = appState.preferences
+    val windowState = rememberWindowState(
+        size = DpSize(preferences.windowWidth.dp, preferences.windowHeight.dp),
+        position = if (preferences.windowX >= 0 && preferences.windowY >= 0) {
+            WindowPosition(preferences.windowX.dp, preferences.windowY.dp)
+        } else {
+            WindowPosition(Alignment.Center)
+        },
+        placement = if (preferences.maximized) WindowPlacement.Maximized else WindowPlacement.Floating,
+    )
     val controller = appState.controller
     val editorState by controller.state.collectAsState()
 
+    /** Writes the shell state out, including the live window geometry. */
+    fun persist() {
+        val floating = windowState.placement == WindowPlacement.Floating
+        appState.persistPreferences(
+            windowWidth = if (floating) windowState.size.width.value.toInt() else preferences.windowWidth,
+            windowHeight = if (floating) windowState.size.height.value.toInt() else preferences.windowHeight,
+            windowX = if (floating) windowState.position.x.value.toInt() else preferences.windowX,
+            windowY = if (floating) windowState.position.y.value.toInt() else preferences.windowY,
+            maximized = windowState.placement == WindowPlacement.Maximized,
+        )
+    }
+
+    /** Save preferences and drop the autosave, then quit for real. */
+    fun quit() {
+        persist()
+        Workspace.clearRecovery()
+        exitApplication()
+    }
+
     LaunchedEffect(appState.pendingExit) {
-        if (appState.pendingExit) exitApplication()
+        if (appState.pendingExit) {
+            appState.pendingExit = false
+            appState.guardUnsaved("quit the designer") { quit() }
+        }
+    }
+
+    // Autosave ticks while the document is dirty. Ten seconds is short enough
+    // that a crash costs almost nothing and long enough that it never lands in
+    // the middle of a drag.
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(AUTOSAVE_INTERVAL_MILLIS)
+            appState.autosaveIfDirty()
+        }
+    }
+
+    // Window geometry and dock visibility are cheap to write and annoying to
+    // lose, so they are persisted whenever they settle rather than only on exit.
+    LaunchedEffect(
+        windowState.size,
+        windowState.position,
+        windowState.placement,
+        appState.showLeftDock,
+        appState.showRightDock,
+        appState.showBottomDock,
+    ) {
+        delay(PERSIST_DEBOUNCE_MILLIS)
+        persist()
     }
 
     Window(
-        onCloseRequest = ::exitApplication,
+        onCloseRequest = { appState.guardUnsaved("close the designer") { quit() } },
         state = windowState,
         title = appState.windowTitle,
+        icon = rememberAppIcon(),
         onPreviewKeyEvent = { event ->
             if (event.type != KeyEventType.KeyDown) return@Window false
             handleShortcut(appState, event.key, event.isCtrlPressed, event.isShiftPressed)
@@ -69,6 +150,27 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
             DesktopEditor(appState, controller, editorState, Modifier.fillMaxSize())
         }
     }
+}
+
+/** How often the working document is snapshotted while it has unsaved edits. */
+private const val AUTOSAVE_INTERVAL_MILLIS = 10_000L
+
+/** Settle time before window geometry changes are written to disk. */
+private const val PERSIST_DEBOUNCE_MILLIS = 700L
+
+/**
+ * The window and taskbar icon.
+ *
+ * jpackage stamps the executable itself, but a window opened from `gradle run`
+ * or from the portable jar has no icon unless it is set here.
+ */
+@Composable
+private fun rememberAppIcon(): Painter? = remember {
+    runCatching {
+        val bytes = object {}.javaClass.getResourceAsStream("/app-icon.png")
+            ?.use { it.readBytes() } ?: return@runCatching null
+        decodeImageBitmap(bytes)?.let(::BitmapPainter)
+    }.getOrNull()
 }
 
 /**
@@ -85,8 +187,11 @@ private fun handleShortcut(app: AppState, key: Key, ctrl: Boolean, shift: Boolea
         ctrl && (key == Key.Y || (key == Key.Z && shift)) -> { controller.redo(); true }
         ctrl && key == Key.S && !shift -> { app.save(); true }
         ctrl && key == Key.S && shift -> { app.saveAs(); true }
-        ctrl && key == Key.O -> { app.open(); true }
-        ctrl && key == Key.N -> { app.dialog = ActiveDialog.NEW_PROJECT; true }
+        ctrl && key == Key.O -> { app.guardUnsaved("open another project") { app.open() }; true }
+        ctrl && key == Key.N -> {
+            app.guardUnsaved("start a new project") { app.dialog = ActiveDialog.NEW_PROJECT }
+            true
+        }
         ctrl && key == Key.E -> { app.dialog = ActiveDialog.EXPORT; true }
         ctrl && key == Key.D -> { controller.duplicateSelection(); true }
         ctrl && key == Key.A -> { controller.selectAll(); true }
@@ -136,18 +241,26 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
     MenuBar {
         Menu("File", mnemonic = 'F') {
             Item("New Project...", shortcut = KeyShortcut(Key.N, ctrl = true)) {
-                app.dialog = ActiveDialog.NEW_PROJECT
+                app.guardUnsaved("start a new project") { app.dialog = ActiveDialog.NEW_PROJECT }
             }
-            Item("New from Template...") { app.dialog = ActiveDialog.TEMPLATES }
+            Item("New from Template...") {
+                app.guardUnsaved("load a template") { app.dialog = ActiveDialog.TEMPLATES }
+            }
             Separator()
-            Item("Open...", shortcut = KeyShortcut(Key.O, ctrl = true)) { app.open() }
+            Item("Open...", shortcut = KeyShortcut(Key.O, ctrl = true)) {
+                app.guardUnsaved("open another project") { app.open() }
+            }
             Menu("Open Recent") {
                 if (app.recentFiles.isEmpty()) {
                     Item("(nothing yet)", enabled = false) {}
                 } else {
                     app.recentFiles.forEach { file ->
-                        Item(file.name) { app.openFile(file) }
+                        Item(file.name) {
+                            app.guardUnsaved("open ${file.name}") { app.openFile(file) }
+                        }
                     }
+                    Separator()
+                    Item("Clear Recent") { app.clearRecentFiles() }
                 }
             }
             Separator()
@@ -250,7 +363,9 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
         }
 
         Menu("Help", mnemonic = 'H') {
+            Item("Welcome Screen") { app.dialog = ActiveDialog.WELCOME }
             Item("Keyboard Shortcuts") { app.dialog = ActiveDialog.SHORTCUTS }
+            Separator()
             Item("About") { app.dialog = ActiveDialog.ABOUT }
         }
     }

@@ -2,6 +2,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     kotlin("jvm")
+    alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
 }
@@ -17,9 +18,25 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
     implementation(compose.materialIconsExtended)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.swing)
     testImplementation(kotlin("test"))
 }
+
+// The window and taskbar icon is the same artwork the installers stamp onto
+// the executable, copied onto the classpath at build time so `gradle run` and
+// the portable jar are not the odd ones out with a blank default icon. Copied
+// rather than duplicated so `assets/icon` stays the single source of truth.
+val copyAppIcon by tasks.registering(Copy::class) {
+    from(rootProject.file("assets/icon/icon-256.png")) { rename { "app-icon.png" } }
+    into(layout.buildDirectory.dir("generated/appIcon"))
+}
+
+sourceSets.named("main") {
+    resources.srcDir(layout.buildDirectory.dir("generated/appIcon"))
+}
+
+tasks.named("processResources") { dependsOn(copyAppIcon) }
 
 compose.desktop {
     application {

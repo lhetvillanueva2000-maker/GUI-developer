@@ -11,6 +11,8 @@ import com.mcguidesigner.core.serialization.LoadResult
 import com.mcguidesigner.core.templates.BuiltInTemplates
 import com.mcguidesigner.core.util.Ids
 import com.mcguidesigner.desktop.io.DesktopFileIO
+import com.mcguidesigner.desktop.io.DesktopPreferences
+import com.mcguidesigner.desktop.io.Workspace
 import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
@@ -19,7 +21,18 @@ import java.awt.Frame
 import java.io.File
 
 /** Which auxiliary window is currently open. */
-enum class ActiveDialog { NONE, NEW_PROJECT, TEMPLATES, EXPORT, PROJECT_SETTINGS, ABOUT, SHORTCUTS }
+enum class ActiveDialog {
+    NONE,
+    NEW_PROJECT,
+    TEMPLATES,
+    EXPORT,
+    PROJECT_SETTINGS,
+    ABOUT,
+    SHORTCUTS,
+    WELCOME,
+    UNSAVED_CHANGES,
+    RECOVERY,
+}
 
 /** Right-hand dock tab. */
 enum class InspectorTab(val title: String) { PROPERTIES("Properties"), ASSETS("Assets"), ISSUES("Issues") }
@@ -59,6 +72,60 @@ class AppState(initial: GuiProject) {
     /** Provider for the AWT frame the file dialogs should parent to. */
     var frameProvider: () -> Frame? = { null }
 
+    // -- Persisted preferences ---------------------------------------------
+
+    /**
+     * Last-known preferences.
+     *
+     * Held rather than re-read because the window geometry is written back on
+     * every resize; [persistPreferences] merges the live shell state into it.
+     */
+    var preferences: DesktopPreferences = DesktopPreferences()
+        private set
+
+    /** Applied once at startup, before the first frame is composed. */
+    fun applyPreferences(loaded: DesktopPreferences) {
+        preferences = loaded
+        showLeftDock = loaded.showLeftDock
+        showRightDock = loaded.showRightDock
+        showBottomDock = loaded.showBottomDock
+        recentFiles.clear()
+        recentFiles.addAll(loaded.existingRecents())
+        loaded.lastDirectory?.let { path ->
+            File(path).takeIf { it.isDirectory }?.let { DesktopFileIO.lastDirectory = it }
+        }
+        loaded.codeTarget?.let { id -> CodeTarget.entries.firstOrNull { it.name == id }?.let { codeTarget = it } }
+        loaded.exportTarget?.let { id -> ExportTarget.entries.firstOrNull { it.name == id }?.let { exportTarget = it } }
+    }
+
+    /** Folds the current shell state into [preferences] and writes it out. */
+    fun persistPreferences(
+        windowWidth: Int = preferences.windowWidth,
+        windowHeight: Int = preferences.windowHeight,
+        windowX: Int = preferences.windowX,
+        windowY: Int = preferences.windowY,
+        maximized: Boolean = preferences.maximized,
+        showWelcomeOnStart: Boolean = preferences.showWelcomeOnStart,
+    ) {
+        preferences = preferences.copy(
+            recentFiles = recentFiles.map { it.absolutePath },
+            lastDirectory = DesktopFileIO.lastDirectory.absolutePath,
+            windowWidth = windowWidth,
+            windowHeight = windowHeight,
+            windowX = windowX,
+            windowY = windowY,
+            maximized = maximized,
+            showLeftDock = showLeftDock,
+            showRightDock = showRightDock,
+            showBottomDock = showBottomDock,
+            lastEdition = controller.current.edition.name,
+            codeTarget = codeTarget.name,
+            exportTarget = exportTarget.name,
+            showWelcomeOnStart = showWelcomeOnStart,
+        )
+        Workspace.savePreferences(preferences)
+    }
+
     val windowTitle: String
         get() = buildString {
             append(controller.current.documentTitle)
@@ -68,12 +135,109 @@ class AppState(initial: GuiProject) {
             append("  |  Minecraft GUI Designer")
         }
 
+    // -- Guarding unsaved work ---------------------------------------------
+
+    /**
+     * The thing to do once the user has decided what to do about unsaved
+     * changes. Held here rather than passed through the dialog so the dialog
+     * stays a pure function of [dialog].
+     */
+    private var pendingAction: (() -> Unit)? = null
+
+    /** Human-readable name of what the pending action will do, for the prompt. */
+    var pendingActionLabel by mutableStateOf("continue")
+        private set
+
+    /**
+     * Runs [action], first offering to save if the document has unsaved edits.
+     *
+     * Every path that replaces or discards the document goes through here -
+     * New, Open, Open Recent, templates and quitting - because silently
+     * throwing away someone's work is the fastest way to lose their trust in
+     * a design tool.
+     */
+    fun guardUnsaved(label: String, action: () -> Unit) {
+        if (!controller.current.dirty) {
+            action()
+            return
+        }
+        pendingActionLabel = label
+        pendingAction = action
+        dialog = ActiveDialog.UNSAVED_CHANGES
+    }
+
+    /** "Save" on the unsaved-changes prompt: save, then continue if it worked. */
+    fun resolveUnsavedBySaving() {
+        if (!save()) {
+            // The save dialog was cancelled or the write failed - stay put
+            // rather than discarding the document anyway.
+            dialog = ActiveDialog.NONE
+            pendingAction = null
+            return
+        }
+        continuePendingAction()
+    }
+
+    /** "Discard" on the unsaved-changes prompt. */
+    fun resolveUnsavedByDiscarding() {
+        Workspace.clearRecovery()
+        continuePendingAction()
+    }
+
+    /** "Cancel" on the unsaved-changes prompt. */
+    fun cancelPendingAction() {
+        pendingAction = null
+        dialog = ActiveDialog.NONE
+    }
+
+    private fun continuePendingAction() {
+        val action = pendingAction
+        pendingAction = null
+        dialog = ActiveDialog.NONE
+        action?.invoke()
+    }
+
+    // -- Autosave and recovery ---------------------------------------------
+
+    /**
+     * Snapshot of the working document, taken on a timer while it is dirty.
+     *
+     * Cleared on a clean save and on a clean exit, so a snapshot that is still
+     * present at startup means the previous session was killed.
+     */
+    fun autosaveIfDirty() {
+        if (!preferences.autosaveEnabled) return
+        if (!controller.current.dirty) return
+        Workspace.writeRecoverySnapshot(controller.project, currentFile?.absolutePath)
+    }
+
+    /** Adopts a document recovered from a previous session's snapshot. */
+    fun adoptRecovery(recovery: Workspace.Recovery) {
+        controller = EditorController(recovery.project)
+        currentFile = recovery.originalFile?.takeIf { it.isFile }
+        // Recovered work is by definition unsaved: it was never written to the
+        // user's own file, so the editor has to keep asking about it.
+        controller.markUnsaved()
+        dialog = ActiveDialog.NONE
+        status = buildString {
+            append("Recovered '${recovery.project.name}' from the previous session.")
+            if (currentFile != null) append(" Save to write it back to ${currentFile?.name}.")
+        }
+    }
+
+    fun discardRecovery() {
+        Workspace.clearRecovery()
+        dialog = if (preferences.showWelcomeOnStart) ActiveDialog.WELCOME else ActiveDialog.NONE
+        status = "Discarded the recovered document."
+    }
+
     // -- Document lifecycle ------------------------------------------------
 
     fun newProject(edition: Edition, name: String) {
         controller = EditorController(EditorController.newProject(edition, name))
         currentFile = null
         dialog = ActiveDialog.NONE
+        Workspace.clearRecovery()
         status = "Created a new ${edition.displayName} screen."
     }
 
@@ -82,6 +246,7 @@ class AppState(initial: GuiProject) {
         controller = EditorController(template.instantiate())
         currentFile = null
         dialog = ActiveDialog.NONE
+        Workspace.clearRecovery()
         status = "Loaded template '${template.title}'."
     }
 
@@ -96,13 +261,20 @@ class AppState(initial: GuiProject) {
                 controller = EditorController(result.project)
                 currentFile = file
                 rememberRecent(file)
+                dialog = ActiveDialog.NONE
+                Workspace.clearRecovery()
                 status = buildString {
                     append("Opened ${file.name}.")
                     if (result.warnings.isNotEmpty()) append(" ").append(result.warnings.joinToString(" "))
                 }
             }
 
-            is LoadResult.Failure -> status = "Open failed: ${result.message}"
+            is LoadResult.Failure -> {
+                // A recent entry pointing at a file that has been moved or
+                // deleted should not stay in the menu offering to fail again.
+                if (!file.isFile) recentFiles.removeAll { it.absolutePath == file.absolutePath }
+                status = "Open failed: ${result.message}"
+            }
         }
     }
 
@@ -113,6 +285,7 @@ class AppState(initial: GuiProject) {
             onSuccess = {
                 controller.markSaved(it.absolutePath)
                 rememberRecent(it)
+                Workspace.clearRecovery()
                 status = "Saved ${it.name}."
                 true
             },
@@ -131,9 +304,16 @@ class AppState(initial: GuiProject) {
     }
 
     private fun rememberRecent(file: File) {
-        recentFiles.remove(file)
-        recentFiles.add(0, file)
-        while (recentFiles.size > 8) recentFiles.removeLast()
+        val updated = Workspace.withRecent(recentFiles.toList(), file)
+        recentFiles.clear()
+        recentFiles.addAll(updated)
+        persistPreferences()
+    }
+
+    fun clearRecentFiles() {
+        recentFiles.clear()
+        persistPreferences()
+        status = "Cleared the recent files list."
     }
 
     // -- Textures ----------------------------------------------------------
@@ -183,6 +363,7 @@ class AppState(initial: GuiProject) {
             onFailure = { "Export failed: ${it.message}" },
         )
         dialog = ActiveDialog.NONE
+        persistPreferences()
     }
 
     /** Saves the current Code tab's output to a single file. */

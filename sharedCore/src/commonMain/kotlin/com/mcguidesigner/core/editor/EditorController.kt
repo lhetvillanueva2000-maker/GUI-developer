@@ -115,6 +115,17 @@ class EditorController(initial: GuiProject) {
         touch { it.copy(dirty = false, filePath = path ?: it.filePath) }
     }
 
+    /**
+     * Flags the document as having edits that are not on disk.
+     *
+     * Needed when a document is restored from an autosave or a crash-recovery
+     * snapshot: the content came back but it was never written to the user's
+     * own file, so the editor must keep asking to save it.
+     */
+    fun markUnsaved() {
+        touch { it.copy(dirty = true) }
+    }
+
     fun setStatus(message: String?) = touch { it.copy(statusMessage = message) }
 
     fun renameProject(name: String) = edit("Rename project") { s ->

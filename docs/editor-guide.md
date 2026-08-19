@@ -178,3 +178,42 @@ stretch. Without insets, custom art can only be used at its native size.
 Any element with a `texture` property can use an imported image - buttons,
 panels, the hotbar, icon buttons, tab icons, item previews in slots, and the
 dedicated Image / Texture Slot component.
+
+### Not losing work
+
+Nothing replaces the open document without asking. **New**, **Open**, **Open
+Recent**, loading a template, quitting the desktop app and the Android back
+gesture all check for unsaved edits first and offer **Save**, **Discard** or
+**Cancel**. Cancelling a save dialog cancels the whole action rather than
+falling through and discarding the document anyway.
+
+On top of that, each platform guards against being killed rather than closed:
+
+| | Desktop | Android |
+| --- | --- | --- |
+| What is written | A recovery snapshot in the app data directory | The working document in internal storage |
+| When | Every 10 seconds while the document is dirty | Whenever the app is backgrounded (`onStop`) |
+| On next launch | Offers to recover, naming the project and the time | Restores silently, still marked unsaved |
+| Cleared when | The document is saved, or the app exits normally | The session is replaced |
+
+Recovered work is always restored as **unsaved**: it was never written to your
+own file, so the editor keeps asking about it until you save it yourself.
+Recovering never overwrites anything.
+
+The desktop app data directory is `%APPDATA%\MinecraftGuiDesigner` on Windows,
+`~/Library/Application Support/MinecraftGuiDesigner` on macOS and
+`$XDG_CONFIG_HOME/MinecraftGuiDesigner` (usually `~/.config/...`) elsewhere. It
+holds `preferences.json` and, only after an unclean shutdown, the recovery
+snapshot.
+
+### What is remembered between runs
+
+The desktop app restores its window size and position, whether it was
+maximised, which docks were open, the last export target and code language, and
+the ten most recent projects. Recent entries whose file has since been moved or
+deleted are dropped rather than offered. A corrupt or unreadable
+`preferences.json` is treated as a first run instead of failing to start.
+
+The welcome screen appears on launch and offers a blank screen in either
+edition, the template gallery and the recent list. Turn it off with **Don't
+show this on startup**; reopen it any time from **Help › Welcome Screen**.

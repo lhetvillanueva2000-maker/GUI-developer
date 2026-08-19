@@ -43,8 +43,11 @@ import com.mcguidesigner.desktop.dialogs.AboutDialog
 import com.mcguidesigner.desktop.dialogs.ExportDialog
 import com.mcguidesigner.desktop.dialogs.NewProjectDialog
 import com.mcguidesigner.desktop.dialogs.ProjectSettingsDialog
+import com.mcguidesigner.desktop.dialogs.RecoveryDialog
 import com.mcguidesigner.desktop.dialogs.ShortcutsDialog
 import com.mcguidesigner.desktop.dialogs.TemplateGalleryDialog
+import com.mcguidesigner.desktop.dialogs.UnsavedChangesDialog
+import com.mcguidesigner.desktop.dialogs.WelcomeDialog
 import com.mcguidesigner.desktop.panels.AssetsPanel
 import com.mcguidesigner.desktop.panels.CodePanel
 import com.mcguidesigner.desktop.panels.InspectorPanel
@@ -117,6 +120,9 @@ fun DesktopEditor(
         ActiveDialog.PROJECT_SETTINGS -> ProjectSettingsDialog(app, controller, state)
         ActiveDialog.ABOUT -> AboutDialog(app)
         ActiveDialog.SHORTCUTS -> ShortcutsDialog(app)
+        ActiveDialog.WELCOME -> WelcomeDialog(app)
+        ActiveDialog.UNSAVED_CHANGES -> UnsavedChangesDialog(app)
+        ActiveDialog.RECOVERY -> RecoveryDialog(app)
         ActiveDialog.NONE -> Unit
     }
 }

@@ -70,6 +70,27 @@ tasks.register("validateProjects") {
 }
 
 /**
+ * Runs every test in the repository.
+ *
+ * `allTests` is a Kotlin Multiplatform task, so it covers `:sharedCore`,
+ * `:styles` and `:exporters` but silently skips the plain-JVM `:desktopApp` -
+ * which is exactly the kind of gap that lets a whole test class sit in the
+ * repository never being run. This is what CI should call.
+ */
+tasks.register("testAll") {
+    group = "verification"
+    description = "Runs the multiplatform tests and the desktop app's own tests."
+    // Named one by one rather than by convention: a module whose tests stop
+    // being run should break this list loudly, not disappear from it quietly.
+    dependsOn(
+        ":sharedCore:allTests",
+        ":styles:allTests",
+        ":exporters:allTests",
+        ":desktopApp:test",
+    )
+}
+
+/**
  * Convenience aggregate: assembles every artifact that the current machine is
  * able to produce.  On Linux/macOS this is the desktop distributable plus the
  * Android APK; on Windows it additionally produces the `.exe` installer.
