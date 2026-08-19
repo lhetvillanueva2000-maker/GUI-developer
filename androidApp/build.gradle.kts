@@ -11,6 +11,20 @@ kotlin {
     jvmToolchain(17)
 }
 
+/**
+ * Turns `1.2.3` into `10203`, a monotonically increasing integer.
+ *
+ * Two digits per component caps minor and patch at 99, which is plenty and
+ * keeps the number readable. Anything unparseable falls back to 1 rather than
+ * failing the build.
+ */
+fun androidVersionCode(version: String): Int {
+    val parts = version.substringBefore('-').split('.')
+    fun part(index: Int) = parts.getOrNull(index)?.trim()?.toIntOrNull() ?: 0
+    val code = part(0) * 10_000 + part(1) * 100 + part(2)
+    return if (code > 0) code else 1
+}
+
 android {
     namespace = "com.mcguidesigner.android"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -19,7 +33,11 @@ android {
         applicationId = "com.mcguidesigner.android"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
+        // Derived from the version string so a release always outranks the
+        // one before it. Android refuses to install an APK whose versionCode
+        // is not greater than the installed one, and a hardcoded 1 would make
+        // every update look like a downgrade.
+        versionCode = androidVersionCode(project.version.toString())
         versionName = project.version.toString()
     }
 
