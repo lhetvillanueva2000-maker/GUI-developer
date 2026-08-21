@@ -2,6 +2,7 @@ package com.mcguidesigner.styles.java
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.mcguidesigner.styles.theme.ChromeColors
 import com.mcguidesigner.styles.theme.SkinPalette
 
 /**
@@ -64,6 +65,38 @@ object JavaPalette {
     val GridLine = Color(0x1AFFFFFF)
     val GridLineMajor = Color(0x33FFFFFF)
 
+    /**
+     * The same Java identity in a light editor: paper-white stone with the
+     * emerald accent darkened enough to stay legible on it.
+     *
+     * Only the chrome flips.  Every widget colour above is a vanilla value and
+     * stays exactly as it is, because the canvas has to keep showing what the
+     * game will actually draw.
+     */
+    val LightChrome = ChromeColors(
+        background = Color(0xFFEDEFF1),
+        panel = Color(0xFFF7F8F9),
+        panelAlt = Color(0xFFE3E6E9),
+        border = Color(0xFFC7CDD2),
+        text = Color(0xFF1B1F23),
+        textMuted = Color(0xFF5B646D),
+        gridLine = Color(0x1A000000),
+        gridLineMajor = Color(0x33000000),
+        backdropScrim = Color(0xC2F2F4F6),
+    )
+
+    val DarkChrome = ChromeColors(
+        background = ChromeBackground,
+        panel = ChromePanel,
+        panelAlt = ChromePanelAlt,
+        border = ChromeBorder,
+        text = ChromeText,
+        textMuted = ChromeTextMuted,
+        gridLine = GridLine,
+        gridLineMajor = GridLineMajor,
+        backdropScrim = Color(0xAA16181A),
+    )
+
     val palette = SkinPalette(
         surface = ContainerBody,
         surfaceRaised = ButtonFill,
@@ -97,6 +130,7 @@ object JavaPalette {
         guideLine = GuideLine,
         gridLine = GridLine,
         gridLineMajor = GridLineMajor,
+        backdropScrim = DarkChrome.backdropScrim,
         borderWidth = 1,
         cornerRadius = 0,
         chromeCorner = 3.dp,

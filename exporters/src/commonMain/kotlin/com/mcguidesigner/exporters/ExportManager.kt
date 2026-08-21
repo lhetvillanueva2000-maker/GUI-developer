@@ -32,6 +32,7 @@ object ExportManager {
             Edition.JAVA -> ExportTarget.BEDROCK_UI_PACK
             Edition.BEDROCK -> ExportTarget.JAVA_RESOURCE_PACK
         },
+        ExportTarget.EVERYTHING,
     )
 
     fun export(project: GuiProject, target: ExportTarget, codeTarget: CodeTarget = CodeTarget.HTML_CSS): ExportBundle =
@@ -44,7 +45,69 @@ object ExportManager {
 
             ExportTarget.PROJECT_JSON -> projectBundle(project)
             ExportTarget.CODE -> codeBundle(project, codeTarget)
+            ExportTarget.EVERYTHING -> everythingBundle(project)
         }
+
+    /**
+     * Both edition packs, every code target and the project document, in one
+     * tree.
+     *
+     * The opposite edition's pack and its edition-specific code target are
+     * included on purpose: this target means "everything", and someone porting
+     * a screen between editions is exactly who reaches for it.  The parity
+     * warnings that come with a cross-edition export are carried through, so
+     * the output is never quietly wrong.
+     */
+    private fun everythingBundle(project: GuiProject): ExportBundle {
+        val base = Ids.slug(project.name)
+        val root = "${base}_everything"
+        val files = mutableListOf<ExportFile>()
+        val warnings = mutableListOf<ValidationIssue>()
+
+        fun adopt(folder: String, bundle: ExportBundle) {
+            bundle.files.forEach { files += it.movedTo("$root/$folder/${it.path}") }
+            warnings += bundle.warnings
+        }
+
+        adopt("java-edition", export(project, ExportTarget.JAVA_RESOURCE_PACK))
+        adopt("bedrock-edition", export(project, ExportTarget.BEDROCK_UI_PACK))
+        adopt("project", projectBundle(project))
+
+        // One file per language rather than one bundle per language: the code
+        // targets all describe the same screen, so they belong side by side.
+        CodeTarget.entries.forEach { codeTarget ->
+            val generated = CodeGenerator.generate(project, codeTarget)
+            files += ExportFile.Text("$root/code/${generated.fileName}", generated.source)
+        }
+        warnings += ProjectValidator.validate(project).issues.filter { it.severity != Severity.INFO }
+
+        files += ExportFile.Text("$root/README.md", everythingReadme(project, base))
+
+        return ExportBundle(
+            target = ExportTarget.EVERYTHING,
+            rootName = root,
+            files = files.distinctBy { it.path },
+            warnings = warnings.distinct(),
+        )
+    }
+
+    private fun everythingReadme(project: GuiProject, base: String): String = buildString {
+        appendLine("# ${project.name}")
+        appendLine()
+        appendLine("Everything this screen exports to, produced in one pass by Minecraft GUI Designer.")
+        appendLine("Designed for **${project.edition.displayName}**, ${project.canvas.width}x${project.canvas.height} GUI pixels.")
+        appendLine()
+        appendLine("| Folder | What it is |")
+        appendLine("| --- | --- |")
+        appendLine("| `java-edition/` | Java Edition resource pack plus a `Screen` subclass. |")
+        appendLine("| `bedrock-edition/` | Bedrock Edition JSON-UI resource pack. |")
+        appendLine("| `code/` | The same screen as HTML, CSS, Compose, Java and Bedrock JSON. |")
+        appendLine("| `project/` | `$base.mcgui` - reopen this to keep editing. |")
+        appendLine()
+        appendLine("The pack for the edition this screen was **not** designed for is a best-effort")
+        appendLine("port: elements with no equivalent are exported as plain panels. Check the")
+        appendLine("warnings the export reported before shipping it.")
+    }
 
     private fun projectBundle(project: GuiProject): ExportBundle {
         val base = Ids.slug(project.name)

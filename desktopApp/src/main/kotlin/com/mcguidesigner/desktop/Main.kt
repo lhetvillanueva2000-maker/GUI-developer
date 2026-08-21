@@ -2,12 +2,14 @@ package com.mcguidesigner.desktop
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.Key
@@ -34,7 +36,11 @@ import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.AlignMode
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.templates.BuiltInTemplates
+import com.mcguidesigner.exporters.ExportTarget
+import com.mcguidesigner.styles.theme.BackdropArtwork
 import com.mcguidesigner.styles.theme.DesignerTheme
+import com.mcguidesigner.styles.theme.LocalBackdropArtwork
+import com.mcguidesigner.styles.theme.LocalBackdropMotion
 import androidx.compose.ui.input.key.KeyShortcut
 
 /**
@@ -54,6 +60,7 @@ fun main() = application {
     val appState = remember {
         AppState(BuiltInTemplates.demo.instantiate()).apply {
             applyPreferences(preferences)
+            loadLibraries()
             dialog = when {
                 // A leftover autosave means the last session was killed. That
                 // takes priority over everything else on screen.
@@ -146,8 +153,41 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
 
         DesignerMenuBar(appState)
 
-        DesignerTheme(edition = editorState.edition, touchMode = false) {
-            DesktopEditor(appState, controller, editorState, Modifier.fillMaxSize())
+        DesignerTheme(
+            edition = editorState.edition,
+            touchMode = false,
+            dark = appState.darkChrome,
+        ) {
+            CompositionLocalProvider(
+                LocalBackdropArtwork provides if (appState.backdropEnabled) DesktopBackdrops else BackdropArtwork.None,
+                LocalBackdropMotion provides appState.backdropMotion,
+            ) {
+                DesktopEditor(appState, controller, editorState, Modifier.fillMaxSize())
+            }
+        }
+    }
+}
+
+/**
+ * The wallpaper artwork, read once from the classpath.
+ *
+ * The images are generated at build time from `build-scripts/backdrop` and
+ * copied onto the classpath, so `gradle run`, the portable jar and every
+ * installer all find them the same way.  A missing file is not an error -
+ * [DesignerBackdrop] draws its own scene instead.
+ */
+private object DesktopBackdrops : BackdropArtwork {
+
+    private val cache = mutableMapOf<String, ImageBitmap?>()
+
+    override fun imageFor(edition: Edition, dark: Boolean): ImageBitmap? {
+        val name = "backdrop-${edition.slug}-${if (dark) "dark" else "light"}"
+        return cache.getOrPut(name) {
+            runCatching {
+                val bytes = javaClass.getResourceAsStream("/$name.png")?.use { it.readBytes() }
+                    ?: return@runCatching null
+                decodeImageBitmap(bytes)
+            }.getOrNull()
         }
     }
 }
@@ -192,7 +232,14 @@ private fun handleShortcut(app: AppState, key: Key, ctrl: Boolean, shift: Boolea
             app.guardUnsaved("start a new project") { app.dialog = ActiveDialog.NEW_PROJECT }
             true
         }
+        ctrl && shift && key == Key.E -> {
+            app.exportTarget = ExportTarget.EVERYTHING
+            app.dialog = ActiveDialog.EXPORT
+            true
+        }
         ctrl && key == Key.E -> { app.dialog = ActiveDialog.EXPORT; true }
+        ctrl && shift && key == Key.P -> { app.beginSavePrefab(); true }
+        key == Key.F1 -> { app.dialog = ActiveDialog.COMPONENT_GALLERY; true }
         ctrl && key == Key.D -> { controller.duplicateSelection(); true }
         ctrl && key == Key.A -> { controller.selectAll(); true }
         ctrl && key == Key.C -> { controller.copySelectionToText()?.let(Clipboard::write); true }
@@ -268,7 +315,12 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
             Item("Save As...", shortcut = KeyShortcut(Key.S, ctrl = true, shift = true)) { app.saveAs() }
             Separator()
             Item("Import Textures...") { app.importTextures() }
+            Item("Import Resource Pack...") { app.browsePack() }
             Item("Export...", shortcut = KeyShortcut(Key.E, ctrl = true)) { app.dialog = ActiveDialog.EXPORT }
+            Item("Export Everything...", shortcut = KeyShortcut(Key.E, ctrl = true, shift = true)) {
+                app.exportTarget = ExportTarget.EVERYTHING
+                app.dialog = ActiveDialog.EXPORT
+            }
             Separator()
             Item("Exit") { app.pendingExit = true }
         }
@@ -304,6 +356,12 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
             Separator()
             Item("Select All", shortcut = KeyShortcut(Key.A, ctrl = true)) { controller.selectAll() }
             Item("Deselect", shortcut = KeyShortcut(Key.Escape)) { controller.clearSelection() }
+            Separator()
+            Item(
+                "Save Selection as Prefab...",
+                shortcut = KeyShortcut(Key.P, ctrl = true, shift = true),
+                enabled = state.hasSelection,
+            ) { app.beginSavePrefab() }
         }
 
         Menu("Arrange", mnemonic = 'A') {
@@ -337,6 +395,18 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
                 controller.toggleSnapToElements()
             }
             Item("Clear Guides") { controller.clearGuides() }
+            Menu("Grid Size") {
+                // The pitches Minecraft's own art is built on, plus "off".
+                listOf(0, 1, 2, 4, 8, 16).forEach { size ->
+                    Item(
+                        if (size == 0) "Off" else "$size px",
+                        enabled = state.project.canvas.gridSize != size,
+                    ) { controller.updateCanvas { it.copy(gridSize = size) } }
+                }
+            }
+            Separator()
+            Item("Appearance...") { app.dialog = ActiveDialog.APPEARANCE }
+            Item("Switch Theme (${app.themeMode.displayName})") { app.cycleTheme() }
             Separator()
             Item("Zoom In", shortcut = KeyShortcut(Key.Equals, ctrl = true)) { controller.zoomBy(1.25f) }
             Item("Zoom Out", shortcut = KeyShortcut(Key.Minus, ctrl = true)) { controller.zoomBy(0.8f) }
@@ -363,6 +433,9 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
         }
 
         Menu("Help", mnemonic = 'H') {
+            Item("Component Library...", shortcut = KeyShortcut(Key.F1)) {
+                app.dialog = ActiveDialog.COMPONENT_GALLERY
+            }
             Item("Welcome Screen") { app.dialog = ActiveDialog.WELCOME }
             Item("Keyboard Shortcuts") { app.dialog = ActiveDialog.SHORTCUTS }
             Separator()

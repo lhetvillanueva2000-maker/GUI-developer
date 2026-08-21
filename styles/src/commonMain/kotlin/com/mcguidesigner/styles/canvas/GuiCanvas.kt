@@ -35,6 +35,8 @@ import com.mcguidesigner.styles.render.fillRect
 import com.mcguidesigner.styles.render.strokeRect
 import com.mcguidesigner.styles.theme.ErrorRed
 import com.mcguidesigner.styles.theme.LocalEditionSkin
+import com.mcguidesigner.styles.theme.LocalSkinPalette
+import com.mcguidesigner.styles.theme.SkinPalette
 import com.mcguidesigner.styles.theme.WarningAmber
 import kotlin.math.abs
 
@@ -63,6 +65,8 @@ fun GuiCanvas(
     handleSize: Float = DEFAULT_HANDLE_SIZE,
     snapFeedback: SnapResult = SnapResult.None,
     skin: EditionSkin = LocalEditionSkin.current,
+    chrome: SkinPalette = LocalSkinPalette.current,
+    workspaceColor: Color = chrome.chromeBackground,
 ) {
     val measurer = rememberTextMeasurer()
     Box(modifier) {
@@ -73,6 +77,8 @@ fun GuiCanvas(
                 textures = textures,
                 measurer = measurer,
                 skin = skin,
+                chrome = chrome,
+                workspaceColor = workspaceColor,
                 handleSize = handleSize,
                 snapFeedback = snapFeedback,
             )
@@ -139,6 +145,8 @@ private fun DrawScope.drawCanvasSurface(
     textures: TextureResolver,
     measurer: TextMeasurer,
     skin: EditionSkin,
+    chrome: SkinPalette,
+    workspaceColor: Color,
     handleSize: Float,
     snapFeedback: SnapResult,
 ) {
@@ -147,7 +155,13 @@ private fun DrawScope.drawCanvasSurface(
     val designMode = state.viewMode == ViewMode.DESIGN
 
     // Workspace behind the canvas.
-    drawRect(skin.palette.chromeBackground, size = size)
+    //
+    // Transparent when the shell is showing wallpaper behind the editor - this
+    // is the only place the artwork can actually be seen, since every dock
+    // above it is opaque.
+    if (workspaceColor != Color.Transparent) {
+        drawRect(workspaceColor, size = size)
+    }
 
     // Drop shadow so the canvas reads as a sheet floating over the workspace.
     drawRect(
@@ -156,10 +170,19 @@ private fun DrawScope.drawCanvasSurface(
         size = Size(canvasRect.width, canvasRect.height),
     )
 
+    // The screen itself is always opaque, whatever is behind the workspace: a
+    // project whose backdrop is NONE must show the app's own surface, not
+    // somebody's wallpaper bleeding through the design.
+    drawRect(
+        color = chrome.chromeBackground,
+        topLeft = canvasRect.topLeft,
+        size = Size(canvasRect.width, canvasRect.height),
+    )
+
     skin.drawBackdropOn(this, canvasRect, project, transform.zoom)
 
     if (designMode && state.showGrid) {
-        drawGrid(canvasRect, transform, project.canvas.gridSize, skin)
+        drawGrid(canvasRect, transform, project.canvas.gridSize, chrome)
     }
 
     val bounds = state.absoluteBounds
@@ -179,17 +202,17 @@ private fun DrawScope.drawCanvasSurface(
     }
 
     // Canvas outline is always visible so the screen edge is unambiguous.
-    strokeRect(canvasRect, skin.palette.chromeBorder, 1f)
+    strokeRect(canvasRect, chrome.chromeBorder, 1f)
 
     if (!designMode) return
 
     if (state.showSafeArea && project.canvas.targetForm == TargetForm.MOBILE) {
-        drawSafeArea(state, transform, skin)
+        drawSafeArea(state, transform, chrome)
     }
 
     if (state.showGuides) {
         state.guides.forEach { guide ->
-            val color = skin.palette.guideLine.copy(alpha = 0.85f)
+            val color = chrome.guideLine.copy(alpha = 0.85f)
             if (guide.vertical) {
                 val x = transform.toView(guide.position.toFloat(), 0f).x
                 drawLine(color, Offset(x, 0f), Offset(x, size.height), 1f)
@@ -201,22 +224,22 @@ private fun DrawScope.drawCanvasSurface(
     }
 
     drawValidationBadges(state, transform)
-    drawSelectionChrome(state, transform, skin, handleSize)
+    drawSelectionChrome(state, transform, chrome, handleSize)
 
     snapFeedback.verticalLines.forEach { x ->
         val vx = transform.toView(x.toFloat(), 0f).x
-        drawLine(skin.palette.accent, Offset(vx, 0f), Offset(vx, size.height), 1f)
+        drawLine(chrome.accent, Offset(vx, 0f), Offset(vx, size.height), 1f)
     }
     snapFeedback.horizontalLines.forEach { y ->
         val vy = transform.toView(0f, y.toFloat()).y
-        drawLine(skin.palette.accent, Offset(0f, vy), Offset(size.width, vy), 1f)
+        drawLine(chrome.accent, Offset(0f, vy), Offset(size.width, vy), 1f)
     }
 
     (state.interaction as? Interaction.Marquee)?.let { marquee ->
         val rect = transform.toView(marquee.rect)
-        drawRect(skin.palette.selectionFill, topLeft = rect.topLeft, size = rect.size)
+        drawRect(chrome.selectionFill, topLeft = rect.topLeft, size = rect.size)
         drawRect(
-            color = skin.palette.selection,
+            color = chrome.selection,
             topLeft = rect.topLeft,
             size = rect.size,
             style = Stroke(width = 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))),
@@ -275,7 +298,7 @@ private fun DrawScope.drawGrid(
     canvasRect: Rect,
     transform: CanvasTransform,
     gridSize: Int,
-    skin: EditionSkin,
+    chrome: SkinPalette,
 ) {
     if (gridSize <= 0) return
     val step = gridSize * transform.zoom
@@ -288,7 +311,7 @@ private fun DrawScope.drawGrid(
         while (x <= canvasRect.right + 0.5f) {
             val major = index % 4 == 0
             drawLine(
-                color = if (major) skin.palette.gridLineMajor else skin.palette.gridLine,
+                color = if (major) chrome.gridLineMajor else chrome.gridLine,
                 start = Offset(x, canvasRect.top),
                 end = Offset(x, canvasRect.bottom),
                 strokeWidth = 1f,
@@ -301,7 +324,7 @@ private fun DrawScope.drawGrid(
         while (y <= canvasRect.bottom + 0.5f) {
             val major = index % 4 == 0
             drawLine(
-                color = if (major) skin.palette.gridLineMajor else skin.palette.gridLine,
+                color = if (major) chrome.gridLineMajor else chrome.gridLine,
                 start = Offset(canvasRect.left, y),
                 end = Offset(canvasRect.right, y),
                 strokeWidth = 1f,
@@ -312,7 +335,7 @@ private fun DrawScope.drawGrid(
     }
 }
 
-private fun DrawScope.drawSafeArea(state: EditorState, transform: CanvasTransform, skin: EditionSkin) {
+private fun DrawScope.drawSafeArea(state: EditorState, transform: CanvasTransform, chrome: SkinPalette) {
     val safe = state.project.canvas.safeArea
     val canvas = state.project.canvas
     val inner = IntRect.fromEdges(
@@ -322,7 +345,7 @@ private fun DrawScope.drawSafeArea(state: EditorState, transform: CanvasTransfor
     )
     val rect = transform.toView(inner)
     drawRect(
-        color = skin.palette.guideLine.copy(alpha = 0.5f),
+        color = chrome.guideLine.copy(alpha = 0.5f),
         topLeft = rect.topLeft,
         size = rect.size,
         style = Stroke(width = 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 4f))),
@@ -358,7 +381,7 @@ private fun DrawScope.drawValidationBadges(state: EditorState, transform: Canvas
 private fun DrawScope.drawSelectionChrome(
     state: EditorState,
     transform: CanvasTransform,
-    skin: EditionSkin,
+    chrome: SkinPalette,
     handleSize: Float,
 ) {
     val bounds = state.absoluteBounds
@@ -369,7 +392,7 @@ private fun DrawScope.drawSelectionChrome(
         ?.let { rect ->
             val view = transform.toView(rect)
             drawRect(
-                color = skin.palette.selection.copy(alpha = 0.5f),
+                color = chrome.selection.copy(alpha = 0.5f),
                 topLeft = view.topLeft,
                 size = view.size,
                 style = Stroke(width = 1f),
@@ -379,9 +402,9 @@ private fun DrawScope.drawSelectionChrome(
     state.selection.forEach { id ->
         val rect = bounds[id] ?: return@forEach
         val view = transform.toView(rect)
-        drawRect(skin.palette.selectionFill, topLeft = view.topLeft, size = view.size)
+        drawRect(chrome.selectionFill, topLeft = view.topLeft, size = view.size)
         drawRect(
-            color = skin.palette.selection,
+            color = chrome.selection,
             topLeft = view.topLeft,
             size = view.size,
             style = Stroke(width = if (id == state.primarySelection) 2f else 1f),
@@ -399,9 +422,9 @@ private fun DrawScope.drawSelectionChrome(
     val rect = bounds[primary] ?: return
 
     transform.handles(rect, handleSize).forEach { (_, handle) ->
-        drawRect(skin.palette.chromeBackground, topLeft = handle.topLeft, size = handle.size)
+        drawRect(chrome.chromeBackground, topLeft = handle.topLeft, size = handle.size)
         drawRect(
-            color = skin.palette.selection,
+            color = chrome.selection,
             topLeft = handle.topLeft,
             size = handle.size,
             style = Stroke(width = 1.5f),
@@ -421,8 +444,10 @@ fun CanvasRuler(
     transform: CanvasTransform,
     vertical: Boolean,
     modifier: Modifier = Modifier,
-    tickColor: Color = LocalEditionSkin.current.palette.chromeTextMuted,
-    background: Color = LocalEditionSkin.current.palette.chromePanel,
+    // The themed palette, not the skin's own: a ruler is editor chrome and has
+    // to follow the light/dark setting like every other strip around the canvas.
+    tickColor: Color = LocalSkinPalette.current.chromeTextMuted,
+    background: Color = LocalSkinPalette.current.chromePanel,
 ) {
     val measurer = rememberTextMeasurer()
     Canvas(modifier) {

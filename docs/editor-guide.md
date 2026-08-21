@@ -11,11 +11,24 @@ models are deliberately different. This page covers both.
 
 | Region | Contents |
 | --- | --- |
-| Toolbar | Edition badge, tools, undo/redo, grid and snap toggles, align tools, zoom, view mode |
-| Left dock | **Components** (palette with live thumbnails), **Layers** (tree), **Templates** |
+| Edition header | The **Java Edition / Bedrock Edition** tabs, the document title, and the component library, pack import, theme and appearance buttons |
+| Toolbar | Tools, undo/redo, grid size and snap toggles, align and distribute, zoom, view mode |
+| Left dock | **Palette** (live thumbnails), **Prefabs**, **Library** (textures), **Layers**, **Templates** |
 | Centre | Design canvas with rulers, or the live preview, or the code view |
-| Right dock | **Properties** (inspector), **Assets** (textures), **Issues** (validation) |
+| Right dock | **Properties** (inspector), **Assets** (textures in this project), **Issues** (validation) |
 | Status bar | Status message, issue counts, canvas size, selection, selected element bounds |
+
+### The edition tabs
+
+The two tabs across the top are the most consequential control in the editor:
+the edition decides which components exist, how they are drawn, which
+properties are legal, and what an export produces. Whichever tab is lit,
+everything below it belongs to that edition - the palette, the templates, the
+skin and the export targets all follow.
+
+Switching keeps the document rather than starting a new one, and re-runs
+validation immediately, so anything the new edition cannot express is reported
+in **Issues** instead of being silently dropped. Switching back restores it.
 
 ### Placing components
 
@@ -45,7 +58,9 @@ automatically parents the new element to it.
 | --- | --- |
 | `Ctrl+N` / `Ctrl+O` | New project / Open |
 | `Ctrl+S` / `Ctrl+Shift+S` | Save / Save as |
-| `Ctrl+E` | Export |
+| `Ctrl+E` / `Ctrl+Shift+E` | Export / Export everything at once |
+| `Ctrl+Shift+P` | Save the selection as a prefab |
+| `F1` | Browse the component library |
 | `Ctrl+Z` / `Ctrl+Y` | Undo / Redo |
 | `Ctrl+C` / `Ctrl+V` / `Ctrl+X` | Copy / Paste / Cut elements |
 | `Ctrl+D` | Duplicate |
@@ -62,6 +77,56 @@ automatically parents the new element to it.
 Copy and paste go through the real system clipboard as JSON, so you can paste
 elements between two running copies of the app - or into a text editor.
 
+### Prefabs
+
+Select a group of elements - a header and its buttons, a row of slots, a whole
+settings block - and save it from the **Prefabs** dock or `Ctrl+Shift+P`. It
+comes back as one piece in any later project, with the textures it uses
+travelling alongside it, so a prefab built in one document arrives fully skinned
+in the next.
+
+Prefabs are stored outside any project (`prefabs.json` in the app's data
+directory), which is the entire point: they are yours, not the document's. A
+prefab built for the other edition is still listed and still insertable, marked
+so you know to check it afterwards.
+
+### The texture library
+
+Every image you import - by hand or out of a resource pack - joins a library
+that outlives the project. The **Library** dock searches it, filters by which
+pack an image came from, and copies an entry into the open document with one
+click.
+
+It is always a *copy*: a `.mcgui` stays a single self-contained file, so a
+project can never break because the library moved on without it. Deleting a
+library entry never touches projects that already use it.
+
+### Importing a resource pack
+
+**File → Import Resource Pack…** reads any Minecraft pack archive (`.zip`,
+`.mcpack`, `.jar`) - Java or Bedrock, and a plain folder of images works too.
+The importer lists what it found grouped by role, with the GUI art pre-selected
+and the thousands of block textures left unticked. Only the entries you tick
+are decoded, so opening a full vanilla pack costs a directory listing rather
+than a hundred megabytes of bitmaps.
+
+### The component library
+
+`F1`, or the **Components** button in the header, opens the whole catalog at
+once: a live preview of every component with its default size, whether it
+resizes, whether it accepts children, how many states it supports and which
+editions it exists in. Clicking one drops it in the middle of the canvas.
+
+### Appearance
+
+The theme button in the header cycles **system / dark / light**, and
+**View → Appearance…** exposes the same choice plus the wallpaper.
+
+The theme only ever changes the application *around* the canvas. The canvas
+itself keeps drawing exactly what the game will draw - a vanilla button is the
+same grey in a light-themed editor as in a dark one - because a design surface
+that recoloured itself to match the app would be lying about the result.
+
 ---
 
 ## Android
@@ -77,8 +142,13 @@ a thumb.
   dismissible with a swipe, always leaving the canvas visible behind them.
 * A **floating selection bar** over the canvas holds the actions that live in
   menus on desktop: edit properties, duplicate, raise, lower, lock, delete.
-* The overflow menu holds save/open, templates, textures, canvas settings,
-  project settings, issues, export, and the edition switch.
+* **Edition tabs** sit directly under the title bar, exactly as on desktop.
+* The overflow menu holds save/open, templates, the texture library, prefabs,
+  the component library, resource-pack import, arrange, canvas settings,
+  appearance, project settings, issues and export.
+* The **Arrange** sheet carries alignment, distribution, z-order, nudge and the
+  grid controls that live in a toolbar row on desktop - lining elements up by
+  dragging on a touchscreen is exactly the job alignment tools exist to remove.
 
 ### Touch
 
@@ -143,6 +213,22 @@ Three sources feed it, and each can be toggled independently:
 
 Alignment lines are drawn live while dragging so you can see what it locked to.
 
+The grid pitch is set from the toolbar (`− 8px +`), from **View → Grid Size**,
+or from the Canvas sheet on Android. The ladder is the one Minecraft's own art
+is built on - 16 for a block texture, 8 for the Java container grid, 4 for
+Bedrock's finer layout, 2 and 1 for detail work - and `0` turns the grid off
+without touching the snap setting.
+
+### Aligning and distributing
+
+The align buttons work on whatever is selected. With **two or more** elements
+they align to each other; with **one**, to its container (or the canvas). The
+two distribute buttons need three or more and space them evenly between the
+outermost two.
+
+On Android these live in the **Arrange** sheet, reachable from the selection bar
+or the overflow menu.
+
 ### Validation
 
 The validator runs after every edit. It reports:
@@ -204,13 +290,13 @@ The desktop app data directory is `%APPDATA%\MinecraftGuiDesigner` on Windows,
 `~/Library/Application Support/MinecraftGuiDesigner` on macOS and
 `$XDG_CONFIG_HOME/MinecraftGuiDesigner` (usually `~/.config/...`) elsewhere. It
 holds `preferences.json` and, only after an unclean shutdown, the recovery
-snapshot.
+snapshot, plus `prefabs.json` and `texture-library.json`.
 
 ### What is remembered between runs
 
 The desktop app restores its window size and position, whether it was
-maximised, which docks were open, the last export target and code language, and
-the ten most recent projects. Recent entries whose file has since been moved or
+maximised, which docks were open, the theme and wallpaper settings, the last
+export target and code language, and the ten most recent projects. Recent entries whose file has since been moved or
 deleted are dropped rather than offered. A corrupt or unreadable
 `preferences.json` is treated as a first run instead of failing to start.
 

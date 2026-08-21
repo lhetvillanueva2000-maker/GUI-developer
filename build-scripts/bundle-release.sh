@@ -11,7 +11,7 @@
 #
 #   artifacts/
 #     windows-desktop/   MinecraftGuiDesigner-1.0.0.exe, ...msi
-#     android-apk/       androidApp-release.apk
+#     linux-and-android/ androidApp-release.apk / .aab, ...amd64.deb
 #     portable-jar/      MinecraftGuiDesigner-<os>-<arch>-1.0.0.jar
 #
 # Anything missing is reported and skipped rather than failing the build, so a
@@ -55,6 +55,7 @@ collect "portable jar" '*.jar' "$STAGE/desktop"
 
 echo "==> Android"
 collect "APK" '*.apk' "$STAGE/android"
+collect "app bundle" '*.aab' "$STAGE/android"
 
 echo "==> Project files"
 cp -r templates/. "$STAGE/templates/"
@@ -74,7 +75,7 @@ echo "    + source.zip ($(du -h "$STAGE/source.zip" | cut -f1))"
   echo
   echo "Contents:"
   echo "  desktop/       Windows installer (.exe/.msi), Linux .deb, portable .jar"
-  echo "  android/       Android APK"
+  echo "  android/       Android APK (sideload) and .aab (Google Play upload)"
   echo "  templates/     Bundled .mcgui templates plus one full set of sample exports"
   echo "  docs/          Architecture, project format and export documentation"
   echo "  build-scripts/ The scripts that produced this archive"

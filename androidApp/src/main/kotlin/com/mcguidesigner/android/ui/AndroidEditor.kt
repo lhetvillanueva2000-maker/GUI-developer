@@ -52,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,11 +60,14 @@ import com.mcguidesigner.android.AndroidAppState
 import com.mcguidesigner.android.MobileSection
 import com.mcguidesigner.android.MobileSheet
 import com.mcguidesigner.android.io.AndroidFileIO
+import com.mcguidesigner.android.io.AndroidPackImport
 import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.styles.render.rememberTextureCache
+import com.mcguidesigner.styles.theme.DesignerBackdrop
+import com.mcguidesigner.styles.theme.EditionTabs
 import com.mcguidesigner.styles.theme.LocalSkinPalette
 import com.mcguidesigner.styles.theme.WarningAmber
 
@@ -104,6 +108,10 @@ fun AndroidEditor(
         ActivityResultContracts.CreateDocument(AndroidFileIO.ZIP_MIME),
     ) { uri -> uri?.let { app.performExport(context, it) } }
 
+    val packLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri -> uri?.let { app.openPack(context, it) } }
+
     LaunchedEffect(app.status) {
         app.status?.let {
             snackbar.showSnackbar(it)
@@ -123,26 +131,39 @@ fun AndroidEditor(
         )
     }
 
-    BoxWithConstraints(Modifier.fillMaxSize().background(palette.chromeBackground)) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
         // Wide windows (landscape phones, tablets) get a side rail; portrait
         // keeps the bottom bar within thumb reach.
         val useRail = maxWidth > 600.dp
 
+        // The wallpaper, as the bottom layer of this Box rather than a wrapper
+        // around the scaffold: the scaffold is transparent so the artwork shows
+        // through around the canvas, and every bar and sheet stays opaque.
+        if (app.backdropEnabled) {
+            DesignerBackdrop(state.edition, Modifier.fillMaxSize()) {}
+        } else {
+            Box(Modifier.fillMaxSize().background(palette.chromeBackground))
+        }
+
         Scaffold(
-            containerColor = palette.chromeBackground,
+            containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets.safeDrawing,
             topBar = {
-                MobileTopBar(
-                    app = app,
-                    controller = controller,
-                    state = state,
-                    onOpen = {
-                        app.guardUnsaved("open another project") { openLauncher.launch(arrayOf("*/*")) }
-                    },
-                    onSave = { if (!app.saveDocument(context)) createLauncher.launch(app.suggestedFileName()) },
-                    onSaveAs = { createLauncher.launch(app.suggestedFileName()) },
-                    onImportImages = { imageLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
-                )
+                Column {
+                    MobileTopBar(
+                        app = app,
+                        controller = controller,
+                        state = state,
+                        onOpen = {
+                            app.guardUnsaved("open another project") { openLauncher.launch(arrayOf("*/*")) }
+                        },
+                        onSave = { if (!app.saveDocument(context)) createLauncher.launch(app.suggestedFileName()) },
+                        onSaveAs = { createLauncher.launch(app.suggestedFileName()) },
+                        onImportImages = { imageLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
+                        onImportPack = { packLauncher.launch(AndroidPackImport.PACK_MIME_TYPES) },
+                    )
+                    EditionStrip(app, controller, state)
+                }
             },
             bottomBar = {
                 if (!useRail) {
@@ -159,7 +180,11 @@ fun AndroidEditor(
                 Box(Modifier.weight(1f).fillMaxHeight()) {
                     when (app.section) {
                         MobileSection.DESIGN -> TouchDesignSurface(
-                            controller, state, textures, Modifier.fillMaxSize(),
+                            controller = controller,
+                            state = state,
+                            textures = textures,
+                            modifier = Modifier.fillMaxSize(),
+                            opaqueWorkspace = !app.backdropEnabled,
                         )
 
                         MobileSection.LAYERS -> MobileLayersSection(
@@ -197,6 +222,7 @@ fun AndroidEditor(
             state = state,
             textures = textures,
             onImportImages = { imageLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
+            onImportPack = { packLauncher.launch(AndroidPackImport.PACK_MIME_TYPES) },
             onExport = { target ->
                 app.pendingExportTarget = target
                 exportLauncher.launch(app.exportFileName(target))
@@ -221,6 +247,7 @@ fun AndroidEditor(
     BackHandler(enabled = true) {
         when {
             app.unsavedPrompt != null -> app.cancelUnsavedPrompt()
+            app.sheet == MobileSheet.PACK_IMPORT -> app.closePack()
             app.sheet != MobileSheet.NONE -> app.sheet = MobileSheet.NONE
             state.hasSelection -> controller.clearSelection()
             app.section != MobileSection.DESIGN -> app.section = MobileSection.DESIGN
@@ -286,6 +313,43 @@ private fun UnsavedChangesSheet(
 // Chrome
 // ---------------------------------------------------------------------------
 
+/**
+ * The edition switcher, directly under the title bar.
+ *
+ * Same reasoning as the desktop header: the edition decides the component set,
+ * the skin, the validation rules and the export format, so it is permanently on
+ * screen rather than buried in the overflow menu.  Everything below the strip
+ * is whichever edition is lit.
+ */
+@Composable
+private fun EditionStrip(
+    app: AndroidAppState,
+    controller: EditorController,
+    state: EditorState,
+) {
+    val palette = LocalSkinPalette.current
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(palette.chromePanel)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        EditionTabs(
+            selected = state.edition,
+            onSelect = { edition ->
+                controller.switchEdition(edition)
+                app.status = "Now designing for ${edition.displayName}."
+            },
+            compact = true,
+            modifier = Modifier.weight(1f),
+        )
+        TopBarAction("⌗") { app.sheet = MobileSheet.ARRANGE }
+        TopBarAction("◫") { app.sheet = MobileSheet.LIBRARY }
+    }
+}
+
 @Composable
 private fun MobileTopBar(
     app: AndroidAppState,
@@ -295,6 +359,7 @@ private fun MobileTopBar(
     onSave: () -> Unit,
     onSaveAs: () -> Unit,
     onImportImages: () -> Unit,
+    onImportPack: () -> Unit,
 ) {
     val palette = LocalSkinPalette.current
     var menuOpen by remember { mutableStateOf(false) }
@@ -342,12 +407,41 @@ private fun MobileTopBar(
                     onClick = { menuOpen = false; onImportImages() },
                 )
                 DropdownMenuItem(
-                    text = { Text("Textures (${state.project.textures.size})") },
+                    text = { Text("Import resource pack...") },
+                    onClick = { menuOpen = false; onImportPack() },
+                )
+                DropdownMenuItem(
+                    text = { Text("Texture library (${app.textureLibrary.size})") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.LIBRARY },
+                )
+                DropdownMenuItem(
+                    text = { Text("Prefabs (${app.prefabs.prefabs.size})") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.PREFABS },
+                )
+                DropdownMenuItem(
+                    text = { Text("Save selection as prefab") },
+                    enabled = state.hasSelection,
+                    onClick = { menuOpen = false; app.beginSavePrefab() },
+                )
+                DropdownMenuItem(
+                    text = { Text("Component library") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.GALLERY },
+                )
+                DropdownMenuItem(
+                    text = { Text("Textures in this project (${state.project.textures.size})") },
                     onClick = { menuOpen = false; app.sheet = MobileSheet.ASSETS },
+                )
+                DropdownMenuItem(
+                    text = { Text("Arrange & align") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.ARRANGE },
                 )
                 DropdownMenuItem(
                     text = { Text("Canvas & grid") },
                     onClick = { menuOpen = false; app.sheet = MobileSheet.CANVAS },
+                )
+                DropdownMenuItem(
+                    text = { Text("Appearance (${app.themeMode.displayName})") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.APPEARANCE },
                 )
                 DropdownMenuItem(
                     text = { Text("Project settings") },
@@ -361,13 +455,8 @@ private fun MobileTopBar(
                     text = { Text("Export...") },
                     onClick = { menuOpen = false; app.sheet = MobileSheet.EXPORT },
                 )
-                DropdownMenuItem(
-                    text = { Text("Switch to ${state.edition.other.displayName}") },
-                    onClick = {
-                        menuOpen = false
-                        controller.switchEdition(state.edition.other)
-                    },
-                )
+                // No "switch edition" item: the tabs under this bar own that,
+                // and offering it in two places invites the two to disagree.
             }
         },
     )
@@ -482,7 +571,9 @@ private fun SelectionActionBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ActionChip("Edit") { app.sheet = MobileSheet.PROPERTIES }
+            ActionChip("⌗") { app.sheet = MobileSheet.ARRANGE }
             ActionChip("⧉") { controller.duplicateSelection() }
+            ActionChip("★") { app.beginSavePrefab() }
             ActionChip("▲") { controller.bringForward() }
             ActionChip("▼") { controller.sendBackward() }
             state.primaryElement?.let { element ->

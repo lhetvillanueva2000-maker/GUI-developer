@@ -5,18 +5,28 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.mcguidesigner.core.editor.EditorController
+import com.mcguidesigner.core.library.LibraryTexture
+import com.mcguidesigner.core.library.Prefab
+import com.mcguidesigner.core.library.PrefabLibrary
+import com.mcguidesigner.core.library.TextureLibrary
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.GuiProject
+import com.mcguidesigner.core.model.IntPoint
+import com.mcguidesigner.core.model.TextureAsset
+import com.mcguidesigner.core.packs.PackTexture
 import com.mcguidesigner.core.serialization.LoadResult
 import com.mcguidesigner.core.templates.BuiltInTemplates
 import com.mcguidesigner.core.util.Ids
 import com.mcguidesigner.desktop.io.DesktopFileIO
 import com.mcguidesigner.desktop.io.DesktopPreferences
+import com.mcguidesigner.desktop.io.LibraryStore
+import com.mcguidesigner.desktop.io.PackImport
 import com.mcguidesigner.desktop.io.Workspace
 import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.render.createTextureAsset
+import com.mcguidesigner.styles.theme.ThemeMode
 import java.awt.Frame
 import java.io.File
 
@@ -32,13 +42,23 @@ enum class ActiveDialog {
     WELCOME,
     UNSAVED_CHANGES,
     RECOVERY,
+    SAVE_PREFAB,
+    COMPONENT_GALLERY,
+    PACK_IMPORT,
+    APPEARANCE,
 }
 
 /** Right-hand dock tab. */
 enum class InspectorTab(val title: String) { PROPERTIES("Properties"), ASSETS("Assets"), ISSUES("Issues") }
 
 /** Left-hand dock tab. */
-enum class ToolboxTab(val title: String) { PALETTE("Palette"), LAYERS("Layers"), TEMPLATES("Templates") }
+enum class ToolboxTab(val title: String) {
+    PALETTE("Palette"),
+    PREFABS("Prefabs"),
+    LIBRARY("Library"),
+    LAYERS("Layers"),
+    TEMPLATES("Templates"),
+}
 
 /**
  * Everything the desktop shell owns on top of the shared editor: which
@@ -69,6 +89,42 @@ class AppState(initial: GuiProject) {
 
     val recentFiles = mutableStateListOf<File>()
 
+    // -- Appearance --------------------------------------------------------
+
+    var themeMode by mutableStateOf(ThemeMode.SYSTEM)
+    var backdropEnabled by mutableStateOf(true)
+    var backdropMotion by mutableStateOf(true)
+
+    /**
+     * Whether the chrome is currently painted dark.
+     *
+     * Desktop toolkits have no portable "is the OS in dark mode" answer, so
+     * [ThemeMode.SYSTEM] resolves to dark here - which is what this app has
+     * always looked like, and therefore the least surprising default.
+     */
+    val darkChrome: Boolean get() = themeMode.isDark(systemIsDark = true)
+
+    fun cycleTheme() {
+        themeMode = when (themeMode) {
+            ThemeMode.SYSTEM -> ThemeMode.DARK
+            ThemeMode.DARK -> ThemeMode.LIGHT
+            ThemeMode.LIGHT -> ThemeMode.SYSTEM
+        }
+        persistPreferences()
+        status = "Theme: ${themeMode.displayName}."
+    }
+
+    fun setTheme(mode: ThemeMode) {
+        themeMode = mode
+        persistPreferences()
+    }
+
+    fun setBackdrop(enabled: Boolean, motion: Boolean = backdropMotion) {
+        backdropEnabled = enabled
+        backdropMotion = motion
+        persistPreferences()
+    }
+
     /** Provider for the AWT frame the file dialogs should parent to. */
     var frameProvider: () -> Frame? = { null }
 
@@ -96,6 +152,15 @@ class AppState(initial: GuiProject) {
         }
         loaded.codeTarget?.let { id -> CodeTarget.entries.firstOrNull { it.name == id }?.let { codeTarget = it } }
         loaded.exportTarget?.let { id -> ExportTarget.entries.firstOrNull { it.name == id }?.let { exportTarget = it } }
+        themeMode = loaded.theme
+        backdropEnabled = loaded.backdropEnabled
+        backdropMotion = loaded.backdropMotion
+    }
+
+    /** Reads the prefab and texture libraries. Called once, before the first frame. */
+    fun loadLibraries() {
+        prefabs = LibraryStore.loadPrefabs()
+        textureLibrary = LibraryStore.loadTextures()
     }
 
     /** Folds the current shell state into [preferences] and writes it out. */
@@ -122,6 +187,9 @@ class AppState(initial: GuiProject) {
             codeTarget = codeTarget.name,
             exportTarget = exportTarget.name,
             showWelcomeOnStart = showWelcomeOnStart,
+            themeMode = themeMode.name,
+            backdropEnabled = backdropEnabled,
+            backdropMotion = backdropMotion,
         )
         Workspace.savePreferences(preferences)
     }
@@ -321,22 +389,197 @@ class AppState(initial: GuiProject) {
     fun importTextures() {
         val files = DesktopFileIO.importImageDialog(frameProvider())
         if (files.isEmpty()) return
-        var imported = 0
+        val assets = mutableListOf<TextureAsset>()
         files.forEach { file ->
             runCatching {
-                val asset = createTextureAsset(
+                assets += createTextureAsset(
                     id = Ids.prefixed("tex"),
                     name = file.name,
                     bytes = file.readBytes(),
                     sourcePath = file.absolutePath,
                 )
-                controller.addTexture(asset)
-                imported++
             }.onFailure { status = "Could not import ${file.name}: ${it.message}" }
         }
-        if (imported > 0) {
+        if (assets.isEmpty()) return
+
+        val imported = controller.addTextures(assets)
+        // Anything imported by hand also joins the library, so the next project
+        // does not have to go looking for the same file again.
+        rememberInLibrary(assets, source = "Imported")
+        inspectorTab = InspectorTab.ASSETS
+        status = "Imported $imported texture(s). They are in your library too."
+    }
+
+    // -- Prefabs -----------------------------------------------------------
+
+    var prefabs by mutableStateOf(PrefabLibrary.Empty)
+        private set
+
+    /** Pre-filled name for the "save prefab" dialog. */
+    var prefabDraftName by mutableStateOf("")
+
+    /** Opens the save dialog with a sensible name already in the field. */
+    fun beginSavePrefab() {
+        val selected = controller.current.selectedElements
+        if (selected.isEmpty()) {
+            status = "Select something first - a prefab is a group of elements."
+            return
+        }
+        prefabDraftName = when (selected.size) {
+            1 -> selected.first().name
+            else -> "${selected.first().name} group"
+        }
+        dialog = ActiveDialog.SAVE_PREFAB
+    }
+
+    fun savePrefab(name: String, description: String, tags: List<String>) {
+        val prefab = controller.prefabFromSelection(
+            name = name,
+            description = description,
+            tags = tags,
+            createdAtMillis = System.currentTimeMillis(),
+        )
+        if (prefab == null) {
+            status = "Nothing to save - the selection is empty."
+            dialog = ActiveDialog.NONE
+            return
+        }
+        prefabs = prefabs.with(prefab)
+        val written = LibraryStore.savePrefabs(prefabs)
+        dialog = ActiveDialog.NONE
+        toolboxTab = ToolboxTab.PREFABS
+        status = if (written) {
+            "Saved '${prefab.name}' (${prefab.elementCount} element(s)) to your prefabs."
+        } else {
+            "Saved '${prefab.name}' for this session, but it could not be written to disk."
+        }
+    }
+
+    /** Drops a prefab into the middle of the canvas. */
+    fun insertPrefab(prefab: Prefab) {
+        val canvas = controller.project.canvas
+        val inserted = controller.insertPrefab(
+            prefab = prefab,
+            at = IntPoint(canvas.width / 2, canvas.height / 2),
+            centreOnPoint = true,
+        )
+        status = if (inserted.isEmpty()) {
+            "'${prefab.name}' is empty."
+        } else {
+            buildString {
+                append("Inserted '${prefab.name}'.")
+                if (prefab.edition != controller.current.edition) {
+                    append(" It was built for ${prefab.edition.displayName} - check the Issues tab.")
+                }
+            }
+        }
+    }
+
+    fun deletePrefab(id: String) {
+        val name = prefabs[id]?.name
+        prefabs = prefabs.without(id)
+        LibraryStore.savePrefabs(prefabs)
+        status = name?.let { "Deleted prefab '$it'." } ?: "Deleted prefab."
+    }
+
+    fun renamePrefab(id: String, name: String) {
+        prefabs = prefabs.renamed(id, name)
+        LibraryStore.savePrefabs(prefabs)
+    }
+
+    // -- Texture library ---------------------------------------------------
+
+    var textureLibrary by mutableStateOf(TextureLibrary.Empty)
+        private set
+
+    /** Adds assets to the cross-project library, skipping ones already stored. */
+    fun rememberInLibrary(assets: List<TextureAsset>, source: String): Int {
+        if (assets.isEmpty()) return 0
+        val before = textureLibrary.size
+        textureLibrary = textureLibrary.withAll(
+            assets.map {
+                LibraryTexture(asset = it, source = source, addedAtMillis = System.currentTimeMillis())
+            },
+        )
+        LibraryStore.saveTextures(textureLibrary)
+        return textureLibrary.size - before
+    }
+
+    /** Copies a library texture into the open project. */
+    fun useLibraryTexture(entry: LibraryTexture) {
+        val fresh = entry.asset.copy(id = Ids.prefixed("tex"))
+        controller.addTexture(fresh)
+        inspectorTab = InspectorTab.ASSETS
+        status = "Added '${fresh.name}' to this project."
+    }
+
+    fun forgetLibraryTexture(id: String) {
+        textureLibrary = textureLibrary.without(id)
+        LibraryStore.saveTextures(textureLibrary)
+        status = "Removed it from the library. Projects already using it keep their copy."
+    }
+
+    /** Puts every texture in the open project into the library. */
+    fun rememberProjectTextures() {
+        val added = rememberInLibrary(controller.project.textures, source = controller.project.name)
+        status = when {
+            controller.project.textures.isEmpty() -> "This project has no textures yet."
+            added == 0 -> "Every texture in this project was already in the library."
+            else -> "Added $added texture(s) to the library."
+        }
+    }
+
+    // -- Resource packs ----------------------------------------------------
+
+    /** The archive currently open in the pack-import dialog. */
+    var openedPack by mutableStateOf<PackImport.OpenedPack?>(null)
+        private set
+
+    fun browsePack() {
+        val file = DesktopFileIO.openPackDialog(frameProvider()) ?: return
+        PackImport.open(file).fold(
+            onSuccess = { pack ->
+                if (pack.scan.isEmpty) {
+                    status = "${file.name} contains no images the designer can read."
+                    return
+                }
+                openedPack = pack
+                dialog = ActiveDialog.PACK_IMPORT
+                status = "${pack.name}: ${pack.scan.kind.displayName}, ${pack.scan.textures.size} texture(s)."
+            },
+            onFailure = { status = "Could not read ${file.name}: ${it.message}" },
+        )
+    }
+
+    fun closePack() {
+        openedPack = null
+        dialog = ActiveDialog.NONE
+    }
+
+    /**
+     * Reads the chosen entries and puts them in both the library and, when
+     * asked, the open project.
+     */
+    fun importFromPack(selected: List<PackTexture>, intoProject: Boolean) {
+        val pack = openedPack ?: return
+        val assets = PackImport.read(pack, selected)
+        if (assets.isEmpty()) {
+            status = "None of the selected files could be decoded."
+            return
+        }
+        val added = rememberInLibrary(assets, source = pack.name)
+        if (intoProject) {
+            // Fresh ids: the same pack texture may legitimately be imported
+            // into several projects, and each document owns its own copy.
+            controller.addTextures(assets.map { it.copy(id = Ids.prefixed("tex")) })
             inspectorTab = InspectorTab.ASSETS
-            status = "Imported $imported texture(s)."
+        }
+        openedPack = null
+        dialog = ActiveDialog.NONE
+        toolboxTab = if (intoProject) toolboxTab else ToolboxTab.LIBRARY
+        status = buildString {
+            append("Imported ${assets.size} texture(s) from ${pack.name}.")
+            if (added < assets.size) append(" ${assets.size - added} were already in the library.")
         }
     }
 

@@ -135,6 +135,28 @@ output is flat and readable rather than a nest of relative offsets.
 
 ---
 
+## Everything at once
+
+`Export → Everything`, or `Ctrl+Shift+E`, produces one tree containing every
+other target:
+
+```
+<screen>_everything/
+  java-edition/      the Java resource pack and Screen subclass
+  bedrock-edition/   the Bedrock JSON-UI pack
+  code/              the same screen as HTML, CSS, Compose, Java and JSON
+  project/           <screen>.mcgui - reopen this to keep editing
+  README.md          what is in each folder
+```
+
+Both editions are included whichever one the screen was designed for, because
+porting a screen is the commonest reason to reach for this. The pack for the
+edition the screen was *not* designed for is a best-effort port, and the parity
+warnings below are attached to the export rather than suppressed.
+
+Warnings are de-duplicated across the sub-exports: the same issue reported once
+per format would read as four separate problems.
+
 ## Cross-edition warnings
 
 Both edition packs are always offered, whichever edition the project targets,

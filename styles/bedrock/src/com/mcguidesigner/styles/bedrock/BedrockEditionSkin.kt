@@ -46,6 +46,8 @@ object BedrockEditionSkin : EditionSkin {
     override val displayName = "Bedrock Edition"
     override val tagline = "Pocket UI - 2px borders, soft corners, thumb-sized targets"
     override val palette: SkinPalette = BedrockPalette.palette
+    override val darkChrome = BedrockPalette.DarkChrome
+    override val lightChrome = BedrockPalette.LightChrome
 
     /** Corner radius in GUI pixels, scaled to the current zoom. */
     private fun ElementRenderContext.radius(guiPixels: Int = BedrockPalette.palette.cornerRadius): Float =

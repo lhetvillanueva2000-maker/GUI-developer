@@ -63,6 +63,24 @@ tasks.register<Exec>("generateIcons") {
     )
 }
 
+/**
+ * Re-renders the wallpaper that sits behind the editor - one image per edition
+ * per theme - from `build-scripts/backdrop`.
+ *
+ * Like the icon task this runs as a single-file source program, and its output
+ * is committed: the artwork is deterministic, so regenerating it produces
+ * identical bytes and a diff means the art really did change.
+ */
+tasks.register<Exec>("generateBackdrops") {
+    group = "documentation"
+    description = "Re-renders the editor wallpaper for both editions and both themes."
+    commandLine(
+        File(System.getProperty("java.home"), "bin/java").absolutePath,
+        rootProject.file("build-scripts/backdrop/BackdropRenderer.java").absolutePath,
+        rootDir.absolutePath,
+    )
+}
+
 tasks.register("validateProjects") {
     group = "verification"
     description = "Validates every bundled template; fails the build on any error."

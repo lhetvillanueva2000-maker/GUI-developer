@@ -2,6 +2,7 @@ package com.mcguidesigner.core.editor
 
 import com.mcguidesigner.core.catalog.ElementCatalog
 import com.mcguidesigner.core.catalog.ElementDefinition
+import com.mcguidesigner.core.library.Prefab
 import com.mcguidesigner.core.model.AlignMode
 import com.mcguidesigner.core.model.Anchor
 import com.mcguidesigner.core.model.CanvasSpec
@@ -757,6 +758,25 @@ class EditorController(initial: GuiProject) {
         return asset.id
     }
 
+    /**
+     * Imports several textures as a single undoable step.
+     *
+     * Importing a resource pack can add dozens at once, and forcing the user to
+     * press Ctrl+Z forty times to undo one mistaken import is not undo, it is a
+     * punishment.  Assets whose id is already present are skipped.
+     */
+    fun addTextures(assets: List<TextureAsset>): Int {
+        if (assets.isEmpty()) return 0
+        val existing = _state.value.project.textures.map { it.id }.toSet()
+        val fresh = assets.filterNot { it.id in existing }
+        if (fresh.isEmpty()) return 0
+        edit(if (fresh.size == 1) "Import texture '${fresh.first().name}'" else "Import ${fresh.size} textures") { s ->
+            s.copy(project = s.project.copy(textures = s.project.textures + fresh))
+        }
+        history.breakCoalescing()
+        return fresh.size
+    }
+
     fun updateTexture(id: String, transform: (TextureAsset) -> TextureAsset) = edit("Edit texture") { s ->
         s.copy(
             project = s.project.copy(
@@ -905,6 +925,89 @@ class EditorController(initial: GuiProject) {
         }
         history.breakCoalescing()
         return true
+    }
+
+    // -- Prefabs -----------------------------------------------------------
+
+    /**
+     * Captures the current selection as a reusable prefab.
+     *
+     * Only top-level selected nodes are captured: a child that is selected
+     * alongside its parent is already part of that parent's subtree, and
+     * capturing it twice would duplicate it on every insert.
+     */
+    fun prefabFromSelection(
+        name: String,
+        description: String = "",
+        tags: List<String> = emptyList(),
+        createdAtMillis: Long = 0L,
+    ): Prefab? {
+        val s = _state.value
+        val roots = topLevelSelection(s).mapNotNull { s.project.element(it) }
+        if (roots.isEmpty()) return null
+        return Prefab.fromElements(
+            id = Ids.prefixed("prefab"),
+            name = name.ifBlank { roots.first().name },
+            edition = s.edition,
+            roots = roots,
+            absoluteBounds = s.absoluteBounds,
+            projectTextures = s.project.textures,
+            description = description,
+            tags = tags,
+            createdAtMillis = createdAtMillis,
+        )
+    }
+
+    /**
+     * Drops [prefab] onto the canvas at [at], as one undoable step.
+     *
+     * Any texture the prefab needs that this project does not have is imported
+     * alongside it, so a prefab built in another project arrives fully skinned
+     * rather than with blank buttons.  Textures already present under the same
+     * id are left alone - the project's own copy wins.
+     */
+    fun insertPrefab(
+        prefab: Prefab,
+        at: IntPoint = IntPoint(0, 0),
+        parentId: String? = null,
+        centreOnPoint: Boolean = false,
+    ): Set<String> {
+        if (prefab.isEmpty) return emptySet()
+        val s = _state.value
+
+        val parentOrigin = parentId?.let { s.absoluteBounds[it] } ?: IntRect.Zero
+        val size = prefab.size
+        val originX = at.x - parentOrigin.x - if (centreOnPoint) size.width / 2 else 0
+        val originY = at.y - parentOrigin.y - if (centreOnPoint) size.height / 2 else 0
+
+        val taken = s.project.elements.walkAll().map { it.name }.toSet().toMutableSet()
+        val newIds = mutableSetOf<String>()
+        var elements = s.project.elements
+        for (root in prefab.elements) {
+            val clone = regenerateIds(root, taken).let {
+                it.copy(bounds = it.bounds.translated(originX, originY))
+            }
+            clone.walk().forEach { taken += it.name }
+            newIds += clone.id
+            elements = elements.insert(clone, parentId)
+        }
+
+        val known = s.project.textures.map { it.id }.toSet()
+        val missing = prefab.textures.filterNot { it.id in known }
+        val next = elements
+
+        edit("Insert '${prefab.name}'") { st ->
+            st.copy(
+                project = st.project
+                    .withElements(next)
+                    .copy(textures = st.project.textures + missing),
+                selection = newIds,
+                primarySelection = newIds.firstOrNull(),
+                expandedInTree = parentId?.let { st.expandedInTree + it } ?: st.expandedInTree,
+            )
+        }
+        history.breakCoalescing()
+        return newIds
     }
 
     companion object {

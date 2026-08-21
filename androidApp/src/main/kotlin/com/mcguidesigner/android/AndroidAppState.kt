@@ -6,10 +6,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.mcguidesigner.android.io.AndroidFileIO
+import com.mcguidesigner.android.io.AndroidPackImport
+import com.mcguidesigner.android.io.AndroidPreferences
+import com.mcguidesigner.android.io.LibraryStore
 import com.mcguidesigner.android.io.SessionStore
 import com.mcguidesigner.core.editor.EditorController
+import com.mcguidesigner.core.library.LibraryTexture
+import com.mcguidesigner.core.library.Prefab
+import com.mcguidesigner.core.library.PrefabLibrary
+import com.mcguidesigner.core.library.TextureLibrary
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.GuiProject
+import com.mcguidesigner.core.model.IntPoint
+import com.mcguidesigner.core.model.TextureAsset
+import com.mcguidesigner.core.packs.PackTexture
 import com.mcguidesigner.core.serialization.LoadResult
 import com.mcguidesigner.core.serialization.ProjectSerializer
 import com.mcguidesigner.core.templates.BuiltInTemplates
@@ -18,6 +28,7 @@ import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.render.createTextureAsset
+import com.mcguidesigner.styles.theme.ThemeMode
 
 /** Bottom-navigation destinations. Mobile navigation, not desktop docks. */
 enum class MobileSection(val title: String, val glyph: String) {
@@ -28,7 +39,23 @@ enum class MobileSection(val title: String, val glyph: String) {
 }
 
 /** Which modal bottom sheet is showing, if any. */
-enum class MobileSheet { NONE, COMPONENTS, PROPERTIES, TEMPLATES, ASSETS, ISSUES, EXPORT, PROJECT, CANVAS }
+enum class MobileSheet {
+    NONE,
+    COMPONENTS,
+    PROPERTIES,
+    TEMPLATES,
+    ASSETS,
+    ISSUES,
+    EXPORT,
+    PROJECT,
+    CANVAS,
+    PREFABS,
+    LIBRARY,
+    GALLERY,
+    PACK_IMPORT,
+    APPEARANCE,
+    ARRANGE,
+}
 
 /**
  * Shell state for the Android app.
@@ -56,6 +83,34 @@ class AndroidAppState(initial: GuiProject) {
 
     /** Set while an export is pending a "create document" result from SAF. */
     var pendingExportTarget: ExportTarget? = null
+
+    // -- Appearance --------------------------------------------------------
+
+    var themeMode by mutableStateOf(ThemeMode.SYSTEM)
+        private set
+    var backdropEnabled by mutableStateOf(true)
+        private set
+    var backdropMotion by mutableStateOf(true)
+        private set
+
+    fun applySettings(settings: AndroidPreferences.Settings) {
+        themeMode = settings.themeMode
+        backdropEnabled = settings.backdropEnabled
+        backdropMotion = settings.backdropMotion
+    }
+
+    private fun settings() = AndroidPreferences.Settings(themeMode, backdropEnabled, backdropMotion)
+
+    fun setTheme(context: Context, mode: ThemeMode) {
+        themeMode = mode
+        AndroidPreferences.save(context, settings())
+    }
+
+    fun setBackdrop(context: Context, enabled: Boolean, motion: Boolean = backdropMotion) {
+        backdropEnabled = enabled
+        backdropMotion = motion
+        AndroidPreferences.save(context, settings())
+    }
 
     // -- Guarding unsaved work ---------------------------------------------
 
@@ -196,25 +251,166 @@ class AndroidAppState(initial: GuiProject) {
     // -- Textures ----------------------------------------------------------
 
     fun importTextures(context: Context, uris: List<Uri>) {
-        var imported = 0
+        val assets = mutableListOf<TextureAsset>()
         uris.forEach { uri ->
             AndroidFileIO.readBytes(context, uri).fold(
                 onSuccess = { bytes ->
-                    val asset = createTextureAsset(
+                    assets += createTextureAsset(
                         id = Ids.prefixed("tex"),
                         name = AndroidFileIO.displayName(context, uri),
                         bytes = bytes,
                         sourcePath = uri.toString(),
                     )
-                    controller.addTexture(asset)
-                    imported++
                 },
                 onFailure = { status = "Could not import an image: ${it.message}" },
             )
         }
-        if (imported > 0) {
-            status = "Imported $imported texture(s)."
-            sheet = MobileSheet.ASSETS
+        if (assets.isEmpty()) return
+
+        val imported = controller.addTextures(assets)
+        // Anything imported by hand also joins the library, so the next project
+        // does not have to go looking for the same file again.
+        rememberInLibrary(context, assets, source = "Imported")
+        status = "Imported $imported texture(s). They are in your library too."
+        sheet = MobileSheet.ASSETS
+    }
+
+    // -- Prefabs -----------------------------------------------------------
+
+    var prefabs by mutableStateOf(PrefabLibrary.Empty)
+        private set
+
+    /** Pre-filled name for the save-prefab sheet. */
+    var prefabDraftName by mutableStateOf("")
+
+    fun loadLibraries(context: Context) {
+        prefabs = LibraryStore.loadPrefabs(context)
+        textureLibrary = LibraryStore.loadTextures(context)
+    }
+
+    /** Opens the prefab sheet with a sensible name already filled in. */
+    fun beginSavePrefab() {
+        val selected = controller.current.selectedElements
+        if (selected.isEmpty()) {
+            status = "Select something first - a prefab is a group of elements."
+            return
+        }
+        prefabDraftName = if (selected.size == 1) selected.first().name else "${selected.first().name} group"
+        sheet = MobileSheet.PREFABS
+    }
+
+    fun savePrefab(context: Context, name: String) {
+        val prefab = controller.prefabFromSelection(
+            name = name,
+            createdAtMillis = System.currentTimeMillis(),
+        )
+        if (prefab == null) {
+            status = "Nothing to save - the selection is empty."
+            return
+        }
+        prefabs = prefabs.with(prefab)
+        LibraryStore.savePrefabs(context, prefabs)
+        status = "Saved '${prefab.name}' (${prefab.elementCount} element(s))."
+    }
+
+    /** Drops a prefab into the middle of the canvas. */
+    fun insertPrefab(prefab: Prefab) {
+        val canvas = controller.project.canvas
+        val inserted = controller.insertPrefab(
+            prefab = prefab,
+            at = IntPoint(canvas.width / 2, canvas.height / 2),
+            centreOnPoint = true,
+        )
+        sheet = MobileSheet.NONE
+        section = MobileSection.DESIGN
+        status = if (inserted.isEmpty()) {
+            "'${prefab.name}' is empty."
+        } else if (prefab.edition != controller.current.edition) {
+            "Inserted '${prefab.name}'. It was built for ${prefab.edition.displayName} - check Issues."
+        } else {
+            "Inserted '${prefab.name}'."
+        }
+    }
+
+    fun deletePrefab(context: Context, id: String) {
+        prefabs = prefabs.without(id)
+        LibraryStore.savePrefabs(context, prefabs)
+        status = "Deleted prefab."
+    }
+
+    // -- Texture library ---------------------------------------------------
+
+    var textureLibrary by mutableStateOf(TextureLibrary.Empty)
+        private set
+
+    /** Adds assets to the cross-project library, skipping ones already stored. */
+    fun rememberInLibrary(context: Context, assets: List<TextureAsset>, source: String): Int {
+        if (assets.isEmpty()) return 0
+        val before = textureLibrary.size
+        textureLibrary = textureLibrary.withAll(
+            assets.map {
+                LibraryTexture(asset = it, source = source, addedAtMillis = System.currentTimeMillis())
+            },
+        )
+        LibraryStore.saveTextures(context, textureLibrary)
+        return textureLibrary.size - before
+    }
+
+    /** Copies a library texture into the open project. */
+    fun useLibraryTexture(entry: LibraryTexture) {
+        controller.addTexture(entry.asset.copy(id = Ids.prefixed("tex")))
+        status = "Added '${entry.asset.name}' to this project."
+    }
+
+    fun forgetLibraryTexture(context: Context, id: String) {
+        textureLibrary = textureLibrary.without(id)
+        LibraryStore.saveTextures(context, textureLibrary)
+    }
+
+    // -- Resource packs ----------------------------------------------------
+
+    /** The archive currently open in the pack-import sheet. */
+    var openedPack by mutableStateOf<AndroidPackImport.OpenedPack?>(null)
+        private set
+
+    fun openPack(context: Context, uri: Uri) {
+        AndroidPackImport.open(context, uri).fold(
+            onSuccess = { pack ->
+                if (pack.scan.isEmpty) {
+                    status = "${pack.name} contains no images the designer can read."
+                    return
+                }
+                openedPack = pack
+                sheet = MobileSheet.PACK_IMPORT
+            },
+            onFailure = { status = "Could not read the pack: ${it.message}" },
+        )
+    }
+
+    fun closePack() {
+        openedPack = null
+        sheet = MobileSheet.NONE
+    }
+
+    /** Reads the chosen entries into the library and, when asked, the project. */
+    fun importFromPack(context: Context, selected: List<PackTexture>, intoProject: Boolean) {
+        val pack = openedPack ?: return
+        val assets = AndroidPackImport.read(context, pack, selected)
+        if (assets.isEmpty()) {
+            status = "None of the selected files could be decoded."
+            return
+        }
+        val added = rememberInLibrary(context, assets, source = pack.name)
+        if (intoProject) {
+            // Fresh ids: the same pack texture may be imported into several
+            // projects, and each document owns its own copy.
+            controller.addTextures(assets.map { it.copy(id = Ids.prefixed("tex")) })
+        }
+        openedPack = null
+        sheet = if (intoProject) MobileSheet.ASSETS else MobileSheet.LIBRARY
+        status = buildString {
+            append("Imported ${assets.size} texture(s) from ${pack.name}.")
+            if (added < assets.size) append(" ${assets.size - added} were already in the library.")
         }
     }
 

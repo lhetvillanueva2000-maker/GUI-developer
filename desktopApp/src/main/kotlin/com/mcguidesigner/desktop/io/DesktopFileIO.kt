@@ -67,6 +67,31 @@ object DesktopFileIO {
 
     private val IMAGE_EXTENSIONS = setOf("png", "jpg", "jpeg", "gif", "webp", "bmp")
 
+    // -- Resource packs ----------------------------------------------------
+
+    /**
+     * Picks a resource pack archive.
+     *
+     * Both editions ship their packs as plain zips - Java packs are sometimes
+     * renamed to `.mcpack` on the Bedrock side - so the filter accepts all
+     * three rather than insisting on `.zip`.
+     */
+    fun openPackDialog(owner: Frame?): File? {
+        val dialog = FileDialog(owner, "Import a resource pack", FileDialog.LOAD).apply {
+            directory = lastDirectory.absolutePath
+            file = "*.zip;*.mcpack;*.jar"
+            setFilenameFilter { _, name ->
+                name.lowercase().substringAfterLast('.') in PACK_EXTENSIONS
+            }
+            isVisible = true
+        }
+        val directory = dialog.directory ?: return null
+        val name = dialog.file ?: return null
+        return File(directory, name).also { lastDirectory = it.parentFile ?: lastDirectory }
+    }
+
+    private val PACK_EXTENSIONS = setOf("zip", "mcpack", "jar", "mcaddon")
+
     // -- Exports -----------------------------------------------------------
 
     fun chooseDirectoryDialog(owner: Frame?, title: String): File? {

@@ -1,6 +1,7 @@
 package com.mcguidesigner.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -62,6 +63,14 @@ fun DesignCanvasArea(
     state: EditorState,
     textures: TextureCache,
     modifier: Modifier = Modifier,
+    /**
+     * Whether the workspace around the canvas is painted.
+     *
+     * Left unpainted when the shell is showing wallpaper behind the editor:
+     * the ring of workspace around the canvas sheet is the only place that
+     * artwork is ever visible, since every dock above it is opaque.
+     */
+    opaqueWorkspace: Boolean = true,
 ) {
     val palette = LocalSkinPalette.current
     var viewport by remember { mutableStateOf(Size.Zero) }
@@ -80,7 +89,9 @@ fun DesignCanvasArea(
     val liveState = rememberUpdatedState(state)
     val liveTransform = rememberUpdatedState(transform)
 
-    Column(modifier.background(palette.chromeBackground)) {
+    Column(
+        if (opaqueWorkspace) modifier.background(palette.chromeBackground) else modifier,
+    ) {
         if (state.showRulers) {
             Row(Modifier.fillMaxWidth().height(RULER_THICKNESS.dp)) {
                 Spacer(Modifier.size(RULER_THICKNESS.dp).background(palette.chromePanel))
@@ -119,6 +130,7 @@ fun DesignCanvasArea(
                     modifier = Modifier.fillMaxSize(),
                     handleSize = 9f,
                     snapFeedback = snapFeedback,
+                    workspaceColor = if (opaqueWorkspace) palette.chromeBackground else Color.Transparent,
                 )
             }
         }

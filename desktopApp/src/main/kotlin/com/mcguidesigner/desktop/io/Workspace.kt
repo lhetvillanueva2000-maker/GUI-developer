@@ -4,6 +4,7 @@ import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.serialization.LoadResult
 import com.mcguidesigner.core.serialization.ProjectSerializer
+import com.mcguidesigner.styles.theme.ThemeMode
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -34,9 +35,18 @@ data class DesktopPreferences(
     val exportTarget: String? = null,
     val showWelcomeOnStart: Boolean = true,
     val autosaveEnabled: Boolean = true,
+    /** [ThemeMode] name; anything unrecognised falls back to following the OS. */
+    val themeMode: String = ThemeMode.SYSTEM.name,
+    /** Wallpaper behind the editor. Purely decorative, so trivially disabled. */
+    val backdropEnabled: Boolean = true,
+    /** Whether the wallpaper drifts. Separate from [backdropEnabled] because
+     *  wanting the artwork and not wanting motion is a common, reasonable pair. */
+    val backdropMotion: Boolean = true,
 ) {
     val edition: Edition
         get() = Edition.entries.firstOrNull { it.name == lastEdition } ?: Edition.JAVA
+
+    val theme: ThemeMode get() = ThemeMode.fromName(themeMode)
 
     /** Recent entries that still exist on disk, newest first. */
     fun existingRecents(): List<File> = recentFiles.map(::File).filter { it.isFile }

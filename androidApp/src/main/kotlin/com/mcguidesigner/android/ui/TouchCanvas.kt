@@ -1,6 +1,7 @@
 package com.mcguidesigner.android.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -61,6 +62,13 @@ fun TouchDesignSurface(
     state: EditorState,
     textures: TextureCache,
     modifier: Modifier = Modifier,
+    /**
+     * Whether the workspace around the canvas is painted.
+     *
+     * Left unpainted while the shell is showing wallpaper: the ring of
+     * workspace around the canvas sheet is the only place it can be seen.
+     */
+    opaqueWorkspace: Boolean = true,
 ) {
     val palette = LocalSkinPalette.current
     val density = LocalDensity.current
@@ -83,7 +91,7 @@ fun TouchDesignSurface(
 
     Box(
         modifier
-            .background(palette.chromeBackground)
+            .then(if (opaqueWorkspace) Modifier.background(palette.chromeBackground) else Modifier)
             .onSizeChanged { viewport = Size(it.width.toFloat(), it.height.toFloat()) }
             .pointerInput(controller) {
                 touchGestureLoop(
@@ -103,6 +111,7 @@ fun TouchDesignSurface(
             modifier = Modifier.fillMaxSize(),
             handleSize = handleSize,
             snapFeedback = snapFeedback,
+            workspaceColor = if (opaqueWorkspace) palette.chromeBackground else Color.Transparent,
         )
     }
 }

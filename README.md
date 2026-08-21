@@ -24,6 +24,7 @@ Everything is published on the
 | --- | --- |
 | **Windows** | `MinecraftGuiDesigner-<version>.exe` — installer, no Java needed |
 | **Android** | `androidApp-release.apk` — enable "install from unknown sources" when prompted |
+| **Google Play** | `androidApp-release.aab` — an app bundle for uploading to Play, not installable on a phone |
 | **Linux** | `minecraft-gui-designer_<version>-1_amd64.deb` |
 | **Any OS with a JVM** | `MinecraftGuiDesigner-windows-x64-<version>.jar` — `java -jar <file>` |
 | **Everything at once** | `minecraft-gui-designer-<version>.zip` — all of the above plus source, templates and docs |
@@ -61,6 +62,24 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
   a standalone HTML + CSS page (with real `:hover` / `:active` states and
   embedded textures), a plain stylesheet, a Compose `@Composable`, a Minecraft
   Java `Screen` subclass, Bedrock JSON UI, or the raw project JSON.
+- **Pick an edition, get that edition.** Java and Bedrock are two tabs across
+  the top of both apps. Whichever is lit, everything below it belongs to that
+  edition — the component palette, the templates, the skin, the validation rules
+  and the export formats all follow. Switching keeps the document and reports
+  anything the new edition cannot express instead of dropping it.
+- **Save a group once, reuse it forever.** Select a header and its buttons, a
+  row of slots, a whole settings block, and save it as a *prefab*. It drops into
+  any later project as one piece, carrying the textures it uses with it.
+- **A texture library that outlives the project.** Everything you import joins a
+  searchable library that every future project can pull from — and you can fill
+  it in one go by importing a real Minecraft resource pack (`.zip` / `.mcpack`,
+  Java or Bedrock). The importer puts the GUI art first and leaves the four
+  thousand block textures unticked.
+- **Export everything in one pass.** One action writes both edition packs, all
+  six code targets and the project document into a single organised tree.
+- **Light or dark, and a wallpaper behind it.** The theme follows your system by
+  default and can be pinned either way. The canvas never changes with it — a
+  vanilla button is the same grey in a light editor as in a dark one.
 - **Continuous validation.** Broken sizes, missing textures, out-of-canvas
   elements, unsupported edition-specific properties and undersized touch targets
   are flagged as you work, with a one-click jump to the offending element.
@@ -80,13 +99,16 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 
 | | Desktop | Android |
 | --- | --- | --- |
-| Navigation | Menu bar + three docks | Bottom nav / rail + modal sheets |
+| Edition switch | Tabs across the top | Tabs across the top |
+| Navigation | Menu bar + five toolbox docks | Bottom nav / rail + modal sheets |
 | Placement | Arm from palette, click to drop | Tap a component tile, it lands centred |
 | Move | Drag any element | Drag an **already selected** element |
 | Pan | Middle/right drag, wheel | One-finger drag on empty space |
 | Zoom | Ctrl+wheel | Pinch |
 | Multi-select | Shift+click, marquee | Long press |
 | Properties | Always-visible inspector dock | Bottom sheet with chip pickers |
+| Align & arrange | Toolbar row + Arrange menu | Arrange sheet |
+| Prefabs & library | Docks beside the palette | Bottom sheets |
 | Export | Folder or `.zip` | `.zip` via the Storage Access Framework |
 
 ---
@@ -105,6 +127,10 @@ Dropdown · Slider · Java-style rectangular button *(Java only)*
 **Decoration** — Header bar · Decorative separator · Image / texture slot
 **Touch controls** — Touchpad button *(Bedrock only)* · Mobile action button
 *(Bedrock only)*
+
+Press `F1` (or **Components** in the header) to browse all of them at once, each
+with a live preview, its default size, whether it resizes, how many states it
+supports and which editions it exists in.
 
 Every interactive component supports **normal / hover / pressed / focused /
 disabled** states, stored as overrides so only what you actually changed is
@@ -165,8 +191,8 @@ cd gui-developer
 # Portable jar that runs anywhere with a JVM
 ./gradlew :desktopApp:packageUberJarForCurrentOS
 
-# Android APK
-./gradlew :androidApp:assembleRelease
+# Android APK (sideload) and .aab (Google Play upload)
+./gradlew :androidApp:assembleRelease :androidApp:bundleRelease
 ```
 
 ### Package a full release ZIP
@@ -200,6 +226,7 @@ Binaries are not committed to the repository — they are release artifacts.
 ./gradlew testAll            # every unit test: core, exporters and desktop shell
 ./gradlew validateProjects   # regenerate + validate every bundled template
 ./gradlew generateIcons      # re-render the app icon for every platform
+./gradlew generateBackdrops  # re-render the editor wallpaper
 ./gradlew assembleAll        # everything this host can produce
 ```
 
@@ -217,6 +244,7 @@ exporters/      Java resource pack, Bedrock JSON UI, code generators
 desktopApp/     Compose Desktop shell: menus, docks, mouse, AWT dialogs
 androidApp/     Compose Android shell: sheets, nav, touch, SAF
 assets/icon/    App icon, generated from build-scripts/icon
+assets/backdrop/ Editor wallpaper, generated from build-scripts/backdrop
 templates/      Bundled .mcgui templates + sample export output (generated)
 docs/           Architecture, project format, exporting, editor guide
 build-scripts/  Packaging scripts and the icon renderer

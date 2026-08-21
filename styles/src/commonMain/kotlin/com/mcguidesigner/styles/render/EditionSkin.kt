@@ -11,7 +11,9 @@ import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.InteractionState
 import com.mcguidesigner.core.model.PropValue
 import com.mcguidesigner.core.model.TargetForm
+import com.mcguidesigner.styles.theme.ChromeColors
 import com.mcguidesigner.styles.theme.SkinPalette
+import com.mcguidesigner.styles.theme.withChrome
 
 /**
  * Everything a skin needs to paint one element.
@@ -61,10 +63,25 @@ class ElementRenderContext(
 interface EditionSkin {
     val edition: Edition
     val displayName: String
+
+    /** The dark-chrome palette; [chromeFor] is what callers should ask for. */
     val palette: SkinPalette
 
     /** Short description shown in the edition switcher. */
     val tagline: String
+
+    /** Editor-chrome colours for each theme, owned by this edition's skin. */
+    val darkChrome: ChromeColors
+    val lightChrome: ChromeColors
+
+    /**
+     * This edition's palette with the chrome for [dark] applied.
+     *
+     * Widget colours are identical either way: only the application around the
+     * canvas changes with the theme.
+     */
+    fun paletteFor(dark: Boolean): SkinPalette =
+        palette.withChrome(if (dark) darkChrome else lightChrome)
 
     /** Paints one element. Children are painted by the caller, on top. */
     fun DrawScope.drawElement(context: ElementRenderContext)

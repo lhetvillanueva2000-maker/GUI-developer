@@ -2,6 +2,7 @@ package com.mcguidesigner.styles.bedrock
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.mcguidesigner.styles.theme.ChromeColors
 import com.mcguidesigner.styles.theme.SkinPalette
 
 /**
@@ -66,6 +67,38 @@ object BedrockPalette {
     val GridLine = Color(0x14FFFFFF)
     val GridLineMajor = Color(0x2EFFFFFF)
 
+    /**
+     * Bedrock's identity in a light editor: a warmer, slightly greenish paper
+     * rather than Java's neutral stone, so the two editions stay
+     * distinguishable at a glance in light mode as well as dark.
+     *
+     * Widget colours above are untouched - the canvas keeps showing what the
+     * game draws regardless of how the app around it is themed.
+     */
+    val LightChrome = ChromeColors(
+        background = Color(0xFFEFF1EC),
+        panel = Color(0xFFF9FAF6),
+        panelAlt = Color(0xFFE5E9DF),
+        border = Color(0xFFC9D0C2),
+        text = Color(0xFF15181A),
+        textMuted = Color(0xFF59635B),
+        gridLine = Color(0x14000000),
+        gridLineMajor = Color(0x2E000000),
+        backdropScrim = Color(0xC2F4F6F0),
+    )
+
+    val DarkChrome = ChromeColors(
+        background = ChromeBackground,
+        panel = ChromePanel,
+        panelAlt = ChromePanelAlt,
+        border = ChromeBorder,
+        text = ChromeText,
+        textMuted = ChromeTextMuted,
+        gridLine = GridLine,
+        gridLineMajor = GridLineMajor,
+        backdropScrim = Color(0xAA101014),
+    )
+
     val palette = SkinPalette(
         surface = SheetBackground,
         surfaceRaised = SheetRaised,
@@ -99,6 +132,7 @@ object BedrockPalette {
         guideLine = GuideLine,
         gridLine = GridLine,
         gridLineMajor = GridLineMajor,
+        backdropScrim = DarkChrome.backdropScrim,
         borderWidth = 2,
         cornerRadius = 3,
         chromeCorner = 12.dp,

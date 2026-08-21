@@ -159,10 +159,14 @@ jobs:
       - name: Validate templates and run the tests
         run: ./gradlew "-Pmcgui.version=$VERSION" validateProjects testAll
 
-      - name: Build the APK and the Linux package
+      # `bundleRelease` produces the .aab Google Play requires; `assembleRelease`
+      # produces the .apk people can sideload. They are different artifacts for
+      # different audiences, so both are built.
+      - name: Build the APK, the AAB and the Linux package
         run: >
           ./gradlew "-Pmcgui.version=$VERSION"
           :androidApp:assembleRelease
+          :androidApp:bundleRelease
           :desktopApp:packageReleaseDeb
 
       - name: Collect the artifacts
@@ -170,10 +174,15 @@ jobs:
         run: |
           mkdir -p out
           find androidApp/build/outputs/apk/release -type f -name '*.apk' -exec cp {} out/ \;
+          find androidApp/build/outputs/bundle -type f -name '*.aab' -exec cp {} out/ \;
           find desktopApp/build/compose/binaries -type f -name '*.deb' -exec cp {} out/ \;
           ls -la out
           if ! ls out/*.apk >/dev/null 2>&1; then
             echo "::error::the Android build did not produce an .apk"
+            exit 1
+          fi
+          if ! ls out/*.aab >/dev/null 2>&1; then
+            echo "::error::the Android build did not produce an .aab"
             exit 1
           fi
 
@@ -224,7 +233,7 @@ jobs:
         run: |
           mkdir -p standalone
           find artifacts -type f \
-            \( -name '*.exe' -o -name '*.msi' -o -name '*.deb' -o -name '*.apk' -o -name '*.jar' \) \
+            \( -name '*.exe' -o -name '*.msi' -o -name '*.deb' -o -name '*.apk' -o -name '*.aab' -o -name '*.jar' \) \
             -exec cp {} standalone/ \;
           ls -la standalone
 
@@ -245,6 +254,7 @@ jobs:
           | --- | --- |
           | **Windows** | `MinecraftGuiDesigner-*.exe` — installer, no Java needed |
           | **Android** | `androidApp-release.apk` — allow "install from unknown sources" when prompted |
+          | **Android (Play Store)** | `androidApp-release.aab` — an app bundle for uploading to Google Play, **not** installable on a phone directly |
           | **Linux** | `minecraft-gui-designer_*_amd64.deb` |
           | **Any OS with a JVM** | `MinecraftGuiDesigner-windows-x64-*.jar` — run with `java -jar` |
 
@@ -258,7 +268,7 @@ jobs:
           | Folder | Contents |
           | --- | --- |
           | `desktop/` | Windows installer (`.exe`, `.msi`), Linux `.deb`, and a portable Windows `.jar` |
-          | `android/` | The Android APK |
+          | `android/` | The Android APK and the Play Store `.aab` |
           | `templates/` | Bundled `.mcgui` templates plus a full set of sample exports |
           | `docs/` | Architecture, project format and export documentation |
           | `build-scripts/` | The scripts that produced this archive |

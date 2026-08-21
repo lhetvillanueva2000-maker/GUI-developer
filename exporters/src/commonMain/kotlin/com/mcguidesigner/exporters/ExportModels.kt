@@ -28,6 +28,22 @@ enum class ExportTarget(val id: String, val displayName: String, val edition: Ed
     BEDROCK_UI_PACK("bedrock-pack", "Bedrock JSON-UI resource pack", Edition.BEDROCK),
     PROJECT_JSON("project-json", "Project document (.mcgui)", null),
     CODE("code", "Generated code", null),
+
+    /**
+     * Every other target at once, in one folder tree.
+     *
+     * Exporting a finished screen usually means exporting it four or five
+     * times over - the pack, the code, the document to keep - and doing that
+     * through one dialog per format is the sort of chore that makes people
+     * stop exporting at all.
+     */
+    EVERYTHING("everything", "Everything (both packs, all code, the project)", null),
+}
+
+/** Re-addresses one export file without touching its payload. */
+fun ExportFile.movedTo(path: String): ExportFile = when (this) {
+    is ExportFile.Text -> copy(path = path)
+    is ExportFile.Binary -> copy(path = path)
 }
 
 /**

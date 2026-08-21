@@ -49,7 +49,7 @@ echo "==> Building the portable desktop jar"
 
 if [ -d "$ANDROID_HOME" ] || [ -f local.properties ]; then
   echo "==> Building the Android release APK"
-  ./gradlew "${GRADLE_ARGS[@]}" :androidApp:assembleRelease
+  ./gradlew "${GRADLE_ARGS[@]}" :androidApp:assembleRelease :androidApp:bundleRelease
 else
   echo "==> Skipping the APK: no Android SDK found (set ANDROID_HOME to build it)"
 fi
@@ -69,6 +69,9 @@ find desktopApp/build/compose/jars -maxdepth 1 -type f -name '*.jar' \
   -exec cp {} "$STAGE/desktop/" \; 2>/dev/null || true
 
 find androidApp/build/outputs/apk -type f -name '*.apk' \
+  -exec cp {} "$STAGE/android/" \; 2>/dev/null || true
+# The .aab is for uploading to Google Play; it is not installable on a device.
+find androidApp/build/outputs/bundle -type f -name '*.aab' \
   -exec cp {} "$STAGE/android/" \; 2>/dev/null || true
 
 cp -r templates/. "$STAGE/templates/"
@@ -103,7 +106,7 @@ fi
   echo
   echo "Contents:"
   echo "  desktop/    Desktop installers and the portable jar built on this host"
-  echo "  android/    Android APK"
+  echo "  android/    Android APK (sideload) and .aab (Google Play upload)"
   echo "  templates/  Bundled .mcgui templates and one full set of sample exports"
   echo "  docs/       Architecture, project format and export documentation"
   echo "  source.zip  Complete source tree, including the Gradle build"

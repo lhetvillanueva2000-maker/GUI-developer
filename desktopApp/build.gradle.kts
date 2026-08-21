@@ -32,11 +32,20 @@ val copyAppIcon by tasks.registering(Copy::class) {
     into(layout.buildDirectory.dir("generated/appIcon"))
 }
 
-sourceSets.named("main") {
-    resources.srcDir(layout.buildDirectory.dir("generated/appIcon"))
+// The editor wallpaper, one image per edition per theme. Same reasoning as the
+// icon: `assets/backdrop` stays the single source of truth and the files are
+// copied onto the classpath so every way of launching the app finds them.
+val copyBackdrops by tasks.registering(Copy::class) {
+    from(rootProject.file("assets/backdrop")) { include("backdrop-*.png") }
+    into(layout.buildDirectory.dir("generated/backdrops"))
 }
 
-tasks.named("processResources") { dependsOn(copyAppIcon) }
+sourceSets.named("main") {
+    resources.srcDir(layout.buildDirectory.dir("generated/appIcon"))
+    resources.srcDir(layout.buildDirectory.dir("generated/backdrops"))
+}
+
+tasks.named("processResources") { dependsOn(copyAppIcon, copyBackdrops) }
 
 compose.desktop {
     application {

@@ -112,6 +112,20 @@ android {
             "META-INF/*.kotlin_module",
         )
     }
+
+    sourceSets.getByName("main") {
+        // The editor wallpaper ships in the APK's assets, read straight from
+        // `assets/backdrop` in the repository root rather than copied into the
+        // build directory first.
+        //
+        // Pointing at the real folder rather than staging it through a Copy
+        // task is deliberate: a generated asset directory has to be wired into
+        // every task that reads assets - merge, lint, package - and missing one
+        // fails the build with an implicit-dependency error. There is nothing
+        // to generate here anyway; the desktop build reads the very same files,
+        // which is what stops the two apps drifting into different artwork.
+        assets.srcDir(rootProject.file("assets/backdrop"))
+    }
 }
 
 dependencies {

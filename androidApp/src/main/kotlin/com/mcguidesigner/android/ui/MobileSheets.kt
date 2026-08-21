@@ -61,6 +61,7 @@ import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.model.Anchor
 import com.mcguidesigner.core.model.BoolValue
+import com.mcguidesigner.core.model.AlignMode
 import com.mcguidesigner.core.model.CanvasBackdrop
 import com.mcguidesigner.core.model.ColorValue
 import com.mcguidesigner.core.model.Edition
@@ -100,6 +101,7 @@ fun MobileSheets(
     state: EditorState,
     textures: TextureCache,
     onImportImages: () -> Unit,
+    onImportPack: () -> Unit,
     onExport: (ExportTarget) -> Unit,
 ) {
     if (app.sheet == MobileSheet.NONE) return
@@ -107,7 +109,11 @@ fun MobileSheets(
     val palette = LocalSkinPalette.current
 
     ModalBottomSheet(
-        onDismissRequest = { app.sheet = MobileSheet.NONE },
+        // Dismissing the pack sheet also drops the opened archive: leaving it
+        // set would reopen the same pack the next time any sheet is shown.
+        onDismissRequest = {
+            if (app.sheet == MobileSheet.PACK_IMPORT) app.closePack() else app.sheet = MobileSheet.NONE
+        },
         sheetState = sheetState,
         containerColor = palette.chromePanel,
         contentColor = palette.chromeText,
@@ -122,6 +128,12 @@ fun MobileSheets(
                 MobileSheet.EXPORT -> ExportSheet(app, state, onExport)
                 MobileSheet.PROJECT -> ProjectSheet(controller, state)
                 MobileSheet.CANVAS -> CanvasSheet(controller, state)
+                MobileSheet.PREFABS -> PrefabsSheet(app, state)
+                MobileSheet.LIBRARY -> LibrarySheet(app, onImportImages, onImportPack)
+                MobileSheet.GALLERY -> GallerySheet(app, state)
+                MobileSheet.PACK_IMPORT -> PackImportSheet(app)
+                MobileSheet.APPEARANCE -> AppearanceSheet(app)
+                MobileSheet.ARRANGE -> ArrangeSheet(controller, state)
                 MobileSheet.NONE -> Unit
             }
         }
@@ -769,6 +781,146 @@ private fun CanvasSheet(controller: EditorController, state: EditorState) {
             }
         }
         Box(Modifier.height(40.dp))
+    }
+}
+
+/**
+ * Alignment, distribution, z-order and the grid, in one thumb-sized sheet.
+ *
+ * On desktop these live in a toolbar row and a menu; a phone has room for
+ * neither, and nudging elements into line by dragging on a touchscreen is
+ * exactly the job alignment tools exist to remove.
+ */
+@Composable
+private fun ArrangeSheet(controller: EditorController, state: EditorState) {
+    val palette = LocalSkinPalette.current
+    val canvas = state.project.canvas
+    val enabled = state.hasSelection
+
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
+        SheetTitle(
+            "Arrange",
+            if (enabled) "${state.selection.size} selected" else "Select something to align it",
+        )
+
+        SheetSection("Align")
+        // With one element selected these align it inside its container; with
+        // several, to each other. That is the behaviour every design tool has,
+        // and the controller already implements the distinction.
+        ArrangeGrid(
+            entries = listOf(
+                AlignMode.LEFT to "Left",
+                AlignMode.HORIZONTAL_CENTER to "Centre",
+                AlignMode.RIGHT to "Right",
+                AlignMode.TOP to "Top",
+                AlignMode.VERTICAL_CENTER to "Middle",
+                AlignMode.BOTTOM to "Bottom",
+            ),
+            enabled = enabled,
+        ) { controller.align(it) }
+
+        SheetSection("Distribute")
+        Text(
+            "Needs three or more elements: spaces them evenly between the outermost two.",
+            style = MaterialTheme.typography.labelSmall,
+            color = palette.chromeTextMuted,
+        )
+        ArrangeGrid(
+            entries = listOf(
+                AlignMode.DISTRIBUTE_HORIZONTAL to "Across",
+                AlignMode.DISTRIBUTE_VERTICAL to "Down",
+            ),
+            enabled = state.selection.size >= 3,
+        ) { controller.align(it) }
+
+        SheetSection("Order")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            ArrangeButton("To front", enabled, Modifier.weight(1f)) { controller.bringToFront() }
+            ArrangeButton("Forward", enabled, Modifier.weight(1f)) { controller.bringForward() }
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        ) {
+            ArrangeButton("Backward", enabled, Modifier.weight(1f)) { controller.sendBackward() }
+            ArrangeButton("To back", enabled, Modifier.weight(1f)) { controller.sendToBack() }
+        }
+
+        SheetSection("Nudge")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            val step = canvas.gridSize.coerceAtLeast(1)
+            ArrangeButton("←", enabled, Modifier.weight(1f)) { controller.moveSelection(-step, 0, null) }
+            ArrangeButton("↑", enabled, Modifier.weight(1f)) { controller.moveSelection(0, -step, null) }
+            ArrangeButton("↓", enabled, Modifier.weight(1f)) { controller.moveSelection(0, step, null) }
+            ArrangeButton("→", enabled, Modifier.weight(1f)) { controller.moveSelection(step, 0, null) }
+        }
+        Text(
+            "One grid cell at a time (${canvas.gridSize.coerceAtLeast(1)} px).",
+            style = MaterialTheme.typography.labelSmall,
+            color = palette.chromeTextMuted,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+
+        SheetSection("Grid")
+        MobileChoiceChips(
+            label = "Grid size",
+            options = listOf("0", "1", "2", "4", "8", "16"),
+            selected = canvas.gridSize.toString(),
+            display = { if (it == "0") "Off" else "$it px" },
+        ) { value ->
+            controller.updateCanvas { spec -> spec.copy(gridSize = value.toIntOrNull() ?: spec.gridSize) }
+        }
+        SwitchRow("Show grid", state.showGrid) { controller.toggleGrid() }
+        SwitchRow("Snap to grid", state.snapToGrid) { controller.toggleSnapToGrid() }
+        SwitchRow("Smart guides", state.snapToElements) { controller.toggleSnapToElements() }
+
+        Box(Modifier.height(40.dp))
+    }
+}
+
+@Composable
+private fun ArrangeGrid(
+    entries: List<Pair<AlignMode, String>>,
+    enabled: Boolean,
+    onSelect: (AlignMode) -> Unit,
+) {
+    // Three per row: any more and the targets stop being thumb-sized.
+    entries.chunked(3).forEach { row ->
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        ) {
+            row.forEach { (mode, label) ->
+                ArrangeButton(label, enabled, Modifier.weight(1f)) { onSelect(mode) }
+            }
+            // Keeps a short final row the same column width as a full one.
+            repeat(3 - row.size) { Box(Modifier.weight(1f)) }
+        }
+    }
+}
+
+@Composable
+private fun ArrangeButton(
+    label: String,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val palette = LocalSkinPalette.current
+    Box(
+        modifier
+            .height(52.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (enabled) palette.chromePanelAlt else palette.chromePanelAlt.copy(alpha = 0.4f))
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (enabled) palette.chromeText else palette.chromeTextMuted,
+            maxLines = 1,
+        )
     }
 }
 

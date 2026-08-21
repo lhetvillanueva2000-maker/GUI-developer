@@ -54,6 +54,14 @@ data class SkinPalette(
     val guideLine: Color,
     val gridLine: Color,
     val gridLineMajor: Color,
+    /**
+     * Wash drawn over the backdrop artwork behind the editor.
+     *
+     * The artwork is decoration; the docks and canvas sitting on it are the
+     * work.  This is the token that keeps the second readable over the first,
+     * and it is the one chrome colour that has to carry alpha.
+     */
+    val backdropScrim: Color = Color(0xAA000000),
 
     // --- Metrics ---
     /** Border thickness in GUI pixels. Java is 1px crisp, Bedrock is chunkier. */

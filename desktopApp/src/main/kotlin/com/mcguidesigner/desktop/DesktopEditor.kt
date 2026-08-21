@@ -1,5 +1,13 @@
 package com.mcguidesigner.desktop
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -31,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.editor.EditorState
@@ -40,10 +50,14 @@ import com.mcguidesigner.core.model.AlignMode
 import com.mcguidesigner.core.model.InteractionState
 import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.desktop.dialogs.AboutDialog
+import com.mcguidesigner.desktop.dialogs.AppearanceDialog
+import com.mcguidesigner.desktop.dialogs.ComponentGalleryDialog
 import com.mcguidesigner.desktop.dialogs.ExportDialog
 import com.mcguidesigner.desktop.dialogs.NewProjectDialog
+import com.mcguidesigner.desktop.dialogs.PackImportDialog
 import com.mcguidesigner.desktop.dialogs.ProjectSettingsDialog
 import com.mcguidesigner.desktop.dialogs.RecoveryDialog
+import com.mcguidesigner.desktop.dialogs.SavePrefabDialog
 import com.mcguidesigner.desktop.dialogs.ShortcutsDialog
 import com.mcguidesigner.desktop.dialogs.TemplateGalleryDialog
 import com.mcguidesigner.desktop.dialogs.UnsavedChangesDialog
@@ -53,14 +67,19 @@ import com.mcguidesigner.desktop.panels.CodePanel
 import com.mcguidesigner.desktop.panels.InspectorPanel
 import com.mcguidesigner.desktop.panels.IssuesPanel
 import com.mcguidesigner.desktop.panels.LayersPanel
+import com.mcguidesigner.desktop.panels.LibraryPanel
 import com.mcguidesigner.desktop.panels.PalettePanel
+import com.mcguidesigner.desktop.panels.PrefabsPanel
 import com.mcguidesigner.desktop.panels.PreviewPanel
 import com.mcguidesigner.desktop.panels.TemplatesPanel
 import com.mcguidesigner.desktop.widgets.IconToggle
 import com.mcguidesigner.desktop.widgets.ToolbarButton
 import com.mcguidesigner.desktop.widgets.ToolbarSeparator
 import com.mcguidesigner.styles.render.rememberTextureCache
+import com.mcguidesigner.styles.theme.DesignerBackdrop
+import com.mcguidesigner.styles.theme.EditionTabs
 import com.mcguidesigner.styles.theme.LocalSkinPalette
+import com.mcguidesigner.styles.theme.ThemeMode
 
 /**
  * The desktop shell: a fixed multi-dock layout built for a mouse and a large
@@ -80,37 +99,75 @@ fun DesktopEditor(
     val palette = LocalSkinPalette.current
     val textures = rememberTextureCache(state.project)
 
-    Column(modifier.background(palette.chromeBackground)) {
-        EditorToolbar(app, controller, state)
-        Divider(color = palette.chromeBorder)
+    // The wallpaper sits behind everything; every dock and the status bar are
+    // opaque on top of it, so it only ever shows around the canvas.
+    DesignerBackdrop(
+        edition = state.edition,
+        modifier = modifier.background(
+            if (app.backdropEnabled) Color.Transparent else palette.chromeBackground,
+        ),
+    ) {
+        Column(Modifier.fillMaxSize()) {
+            EditionHeader(app, controller, state)
+            EditorToolbar(app, controller, state)
+            Divider(color = palette.chromeBorder)
 
-        Row(Modifier.weight(1f).fillMaxWidth()) {
-            if (app.showLeftDock) {
-                LeftDock(app, controller, state, textures, Modifier.width(320.dp).fillMaxHeight())
-                Divider(Modifier.fillMaxHeight().width(1.dp), color = palette.chromeBorder)
-            }
+            Row(Modifier.weight(1f).fillMaxWidth()) {
+                AnimatedVisibility(
+                    visible = app.showLeftDock,
+                    enter = expandHorizontally() + fadeIn(),
+                    exit = shrinkHorizontally() + fadeOut(),
+                ) {
+                    Row {
+                        LeftDock(app, controller, state, textures, Modifier.width(320.dp).fillMaxHeight())
+                        Divider(Modifier.fillMaxHeight().width(1.dp), color = palette.chromeBorder)
+                    }
+                }
 
-            Box(Modifier.weight(1f).fillMaxHeight()) {
-                when (state.viewMode) {
-                    ViewMode.DESIGN -> DesignCanvasArea(controller, state, textures, Modifier.fillMaxSize())
-                    ViewMode.PREVIEW -> PreviewPanel(controller, state, textures, Modifier.fillMaxSize())
-                    ViewMode.CODE -> CodePanel(app, state, Modifier.fillMaxSize())
+                Box(Modifier.weight(1f).fillMaxHeight()) {
+                    // Crossfade rather than a hard switch: design, preview and
+                    // code are three views of one document, not three screens.
+                    Crossfade(targetState = state.viewMode, label = "viewMode") { mode ->
+                        when (mode) {
+                            ViewMode.DESIGN -> DesignCanvasArea(
+                                controller = controller,
+                                state = state,
+                                textures = textures,
+                                modifier = Modifier.fillMaxSize(),
+                                opaqueWorkspace = !app.backdropEnabled,
+                            )
+                            ViewMode.PREVIEW -> PreviewPanel(controller, state, textures, Modifier.fillMaxSize())
+                            ViewMode.CODE -> CodePanel(app, state, Modifier.fillMaxSize())
+                        }
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = app.showRightDock,
+                    enter = expandHorizontally(expandFrom = Alignment.Start) + fadeIn(),
+                    exit = shrinkHorizontally(shrinkTowards = Alignment.Start) + fadeOut(),
+                ) {
+                    Row {
+                        Divider(Modifier.fillMaxHeight().width(1.dp), color = palette.chromeBorder)
+                        RightDock(app, controller, state, Modifier.width(340.dp).fillMaxHeight())
+                    }
                 }
             }
 
-            if (app.showRightDock) {
-                Divider(Modifier.fillMaxHeight().width(1.dp), color = palette.chromeBorder)
-                RightDock(app, controller, state, Modifier.width(340.dp).fillMaxHeight())
+            AnimatedVisibility(
+                visible = app.showBottomDock,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Column {
+                    Divider(color = palette.chromeBorder)
+                    IssuesPanel(controller, state, Modifier.fillMaxWidth().height(180.dp))
+                }
             }
-        }
 
-        if (app.showBottomDock) {
             Divider(color = palette.chromeBorder)
-            IssuesPanel(controller, state, Modifier.fillMaxWidth().height(180.dp))
+            StatusBar(app, state)
         }
-
-        Divider(color = palette.chromeBorder)
-        StatusBar(app, state)
     }
 
     when (app.dialog) {
@@ -123,7 +180,71 @@ fun DesktopEditor(
         ActiveDialog.WELCOME -> WelcomeDialog(app)
         ActiveDialog.UNSAVED_CHANGES -> UnsavedChangesDialog(app)
         ActiveDialog.RECOVERY -> RecoveryDialog(app)
+        ActiveDialog.SAVE_PREFAB -> SavePrefabDialog(app, state)
+        ActiveDialog.COMPONENT_GALLERY -> ComponentGalleryDialog(app, state)
+        ActiveDialog.PACK_IMPORT -> PackImportDialog(app)
+        ActiveDialog.APPEARANCE -> AppearanceDialog(app)
         ActiveDialog.NONE -> Unit
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Edition header
+// ---------------------------------------------------------------------------
+
+/**
+ * The edition switcher, given the whole top strip of the app.
+ *
+ * Which edition you are in decides the component set, the skin, the validation
+ * rules and the export pipeline, so it is the first thing on screen and always
+ * visible - not a menu item you have to remember to check.  Switching keeps the
+ * document and re-runs validation, so anything the new edition cannot express
+ * is reported rather than silently dropped.
+ */
+@Composable
+private fun EditionHeader(app: AppState, controller: EditorController, state: EditorState) {
+    val palette = LocalSkinPalette.current
+
+    Surface(color = palette.chromePanel, contentColor = palette.chromeText) {
+        Row(
+            Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            EditionTabs(
+                selected = state.edition,
+                onSelect = { edition ->
+                    controller.switchEdition(edition)
+                    app.status = "Now designing for ${edition.displayName}. " +
+                        "The palette, the skin and the export format all followed."
+                },
+                modifier = Modifier.width(420.dp),
+            )
+
+            Text(
+                text = state.documentTitle,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+
+            ToolbarButton("Components", hint = "Browse every component  (F1)") {
+                app.dialog = ActiveDialog.COMPONENT_GALLERY
+            }
+            ToolbarButton("Import pack", hint = "Import textures from a Minecraft resource pack") {
+                app.browsePack()
+            }
+            ToolbarButton(
+                label = when (app.themeMode) {
+                    ThemeMode.LIGHT -> "☀"
+                    ThemeMode.DARK -> "☾"
+                    ThemeMode.SYSTEM -> "◑"
+                },
+                hint = "Theme: ${app.themeMode.displayName}  ·  click to change, right-click for options",
+            ) { app.cycleTheme() }
+            ToolbarButton("⚙", hint = "Appearance settings") { app.dialog = ActiveDialog.APPEARANCE }
+        }
     }
 }
 
@@ -139,9 +260,6 @@ private fun EditorToolbar(app: AppState, controller: EditorController, state: Ed
             Modifier.fillMaxWidth().height(46.dp).padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            EditionBadge(state)
-            ToolbarSeparator()
-
             EditorTool.entries.filter { it != EditorTool.PLACE }.forEach { tool ->
                 IconToggle(
                     label = tool.displayName,
@@ -163,6 +281,7 @@ private fun EditorToolbar(app: AppState, controller: EditorController, state: Ed
             ToolbarSeparator()
 
             IconToggle("Grid", "Show grid  (Ctrl+G)", state.showGrid) { controller.toggleGrid() }
+            GridSizeControl(controller, state)
             IconToggle("Snap", "Snap to grid", state.snapToGrid) { controller.toggleSnapToGrid() }
             IconToggle("Guides", "Smart alignment guides", state.snapToElements) { controller.toggleSnapToElements() }
             IconToggle("Rulers", "Show rulers  (Ctrl+R)", state.showRulers) { controller.toggleRulers() }
@@ -193,21 +312,38 @@ private fun EditorToolbar(app: AppState, controller: EditorController, state: Ed
     }
 }
 
+/**
+ * Grid pitch, in GUI pixels, right next to the toggle that shows it.
+ *
+ * The useful values are the ones Minecraft's own art is built on: 16 for a
+ * block texture, 8 for the Java container grid, 4 for Bedrock's finer layout,
+ * 2 and 1 for detail work.  0 turns the grid off entirely without touching the
+ * snap setting.
+ */
 @Composable
-private fun EditionBadge(state: EditorState) {
+private fun GridSizeControl(controller: EditorController, state: EditorState) {
     val palette = LocalSkinPalette.current
-    Surface(
-        color = palette.accentMuted,
-        contentColor = palette.chromeText,
-        shape = MaterialTheme.shapes.small,
-    ) {
-        Text(
-            text = state.edition.displayName.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-        )
+    val steps = listOf(0, 1, 2, 4, 8, 16)
+    val current = state.project.canvas.gridSize
+
+    fun step(direction: Int) {
+        // A project may carry a pitch that is not on this ladder (a template's
+        // 18, say). Treating that as "past the end" means the first step down
+        // lands on the largest listed value rather than skipping over it.
+        val index = steps.indexOfFirst { it >= current }.let { if (it < 0) steps.size else it }
+        val next = steps[(index + direction).coerceIn(0, steps.lastIndex)]
+        if (next != current) controller.updateCanvas { it.copy(gridSize = next) }
     }
+
+    ToolbarButton("−", enabled = current > steps.first(), hint = "Finer grid") { step(-1) }
+    Text(
+        text = if (current <= 0) "off" else "${current}px",
+        style = MaterialTheme.typography.labelSmall,
+        fontFamily = FontFamily.Monospace,
+        color = palette.chromeTextMuted,
+        modifier = Modifier.width(34.dp).padding(horizontal = 2.dp),
+    )
+    ToolbarButton("+", enabled = current < steps.last(), hint = "Coarser grid") { step(1) }
 }
 
 @Composable
@@ -255,24 +391,44 @@ private fun LeftDock(
 ) {
     val palette = LocalSkinPalette.current
     Column(modifier.background(palette.chromePanel)) {
-        TabRow(
+        // Scrollable rather than fixed: five tabs in a 320dp dock leaves an
+        // even split too narrow for "Templates", and a wrapped tab label is
+        // the sort of thing that makes a tool look unfinished.
+        ScrollableTabRow(
             selectedTabIndex = app.toolboxTab.ordinal,
             containerColor = palette.chromePanel,
             contentColor = palette.chromeText,
+            edgePadding = 4.dp,
         ) {
             ToolboxTab.entries.forEach { tab ->
                 Tab(
                     selected = app.toolboxTab == tab,
                     onClick = { app.toolboxTab = tab },
-                    text = { Text(tab.title, style = MaterialTheme.typography.labelMedium) },
+                    text = {
+                        val suffix = when (tab) {
+                            ToolboxTab.PREFABS -> app.prefabs.prefabs.size.takeIf { it > 0 }?.let { " ($it)" } ?: ""
+                            ToolboxTab.LIBRARY -> app.textureLibrary.size.takeIf { it > 0 }?.let { " ($it)" } ?: ""
+                            else -> ""
+                        }
+                        Text(
+                            tab.title + suffix,
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
+                    },
                 )
             }
         }
         Box(Modifier.weight(1f)) {
-            when (app.toolboxTab) {
-                ToolboxTab.PALETTE -> PalettePanel(controller, state, textures)
-                ToolboxTab.LAYERS -> LayersPanel(controller, state)
-                ToolboxTab.TEMPLATES -> TemplatesPanel(app, state, textures)
+            Crossfade(targetState = app.toolboxTab, label = "toolboxTab") { tab ->
+                when (tab) {
+                    ToolboxTab.PALETTE -> PalettePanel(controller, state, textures)
+                    ToolboxTab.PREFABS -> PrefabsPanel(app, state)
+                    ToolboxTab.LIBRARY -> LibraryPanel(app, state)
+                    ToolboxTab.LAYERS -> LayersPanel(controller, state)
+                    ToolboxTab.TEMPLATES -> TemplatesPanel(app, state, textures)
+                }
             }
         }
     }
@@ -303,10 +459,12 @@ private fun RightDock(app: AppState, controller: EditorController, state: Editor
             }
         }
         Box(Modifier.weight(1f)) {
-            when (app.inspectorTab) {
-                InspectorTab.PROPERTIES -> InspectorPanel(controller, state)
-                InspectorTab.ASSETS -> AssetsPanel(app, controller, state)
-                InspectorTab.ISSUES -> IssuesPanel(controller, state, Modifier.fillMaxSize())
+            Crossfade(targetState = app.inspectorTab, label = "inspectorTab") { tab ->
+                when (tab) {
+                    InspectorTab.PROPERTIES -> InspectorPanel(controller, state)
+                    InspectorTab.ASSETS -> AssetsPanel(app, controller, state)
+                    InspectorTab.ISSUES -> IssuesPanel(controller, state, Modifier.fillMaxSize())
+                }
             }
         }
     }

@@ -46,6 +46,8 @@ object JavaEditionSkin : EditionSkin {
     override val displayName = "Java Edition"
     override val tagline = "Vanilla widgets.png - crisp 1px bevels, 20px controls"
     override val palette: SkinPalette = JavaPalette.palette
+    override val darkChrome = JavaPalette.DarkChrome
+    override val lightChrome = JavaPalette.LightChrome
 
     override fun DrawScope.drawBackdrop(rect: Rect, project: GuiProject, scale: Float) {
         when (project.canvas.backdrop) {
