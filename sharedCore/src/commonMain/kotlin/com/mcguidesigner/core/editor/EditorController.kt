@@ -441,17 +441,25 @@ class EditorController(initial: GuiProject) {
         )
     }
 
-    /** Offset that lands [position] on the next grid line towards [direction]. */
+    /**
+     * Offset that lands [position] on the next grid line towards [direction].
+     *
+     * `floorDiv` rather than `/` throughout: integer division truncates
+     * towards zero, so at x = -5 with an 8px grid the "previous line" would
+     * come out as 0 - above the element rather than below it - and a nudge
+     * left would move it right. Elements are allowed to sit at negative
+     * coordinates (anything hanging off the canvas edge does), so this is a
+     * real position and not a defensive check.
+     */
     private fun gridDelta(position: Int, direction: Int, grid: Int): Int = when {
         direction == 0 -> 0
         direction > 0 -> {
-            val next = (position / grid + 1) * grid
+            val next = (position.floorDiv(grid) + 1) * grid
             (next - position).coerceAtLeast(1)
         }
         else -> {
-            // Integer division truncates towards zero, so a negative position
-            // already sitting on a line would otherwise not move at all.
-            val previous = if (position % grid == 0) position - grid else (position / grid) * grid
+            // Already on a line: step to the one before it rather than staying.
+            val previous = if (position.mod(grid) == 0) position - grid else position.floorDiv(grid) * grid
             (previous - position).coerceAtMost(-1)
         }
     }

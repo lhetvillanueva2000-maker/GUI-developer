@@ -109,6 +109,24 @@ class EditorSettingsTest {
     }
 
     @Test
+    fun `grid-snapping nudges work at negative coordinates too`() {
+        val (controller, id) = controllerWithOneElement()
+        controller.updateCanvas { it.copy(gridSize = 8) }
+        controller.setSettings(EditorSettings(nudgeSnapsToGrid = true))
+        // Hanging off the left edge, which elements are allowed to do.
+        controller.setBounds(id, boundsOf(controller, id).copy(x = -5))
+
+        controller.nudgeSelection(-1, 0)
+        assertEquals(-8, boundsOf(controller, id).x, "left must go left, not right")
+
+        controller.nudgeSelection(1, 0)
+        assertEquals(0, boundsOf(controller, id).x)
+
+        controller.nudgeSelection(-1, 0)
+        assertEquals(-8, boundsOf(controller, id).x, "stepping off zero must cross into negatives")
+    }
+
+    @Test
     fun `grid snapping falls back to a plain step when the grid is off`() {
         val (controller, id) = controllerWithOneElement()
         controller.updateCanvas { it.copy(gridSize = 0) }

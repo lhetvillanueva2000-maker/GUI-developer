@@ -154,8 +154,19 @@ class CustomContentExportTest {
         val html = CodeGenerator.generate(projectWithCustomContent(), CodeTarget.HTML_CSS).source
 
         assertTrue("@keyframes" in html, "an animated image needs keyframes")
-        assertTrue("steps(4)" in html, "four frames means a four-step animation:\n$html")
         assertTrue("background-size: 100% 400%" in html, "the strip is four frames tall")
+
+        // The two things that decide whether frames land squarely or smear,
+        // both consequences of background-position percentages being relative
+        // to (container - image) rather than absolute offsets.
+        assertTrue(
+            "steps(4, jump-none)" in html,
+            "plain steps(N) lands between frames; jump-none lands on them:\n$html",
+        )
+        assertTrue(
+            "to { background-position: 0 100%; }" in html,
+            "100% is the last frame for any strip length; N*100% overshoots:\n$html",
+        )
     }
 
     // -- Native sidecars -----------------------------------------------------

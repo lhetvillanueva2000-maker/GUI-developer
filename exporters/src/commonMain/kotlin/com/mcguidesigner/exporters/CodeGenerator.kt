@@ -476,6 +476,16 @@ object CodeGenerator {
      * Plays a frame strip with `steps()`, the same trick CSS sprite animations
      * have always used: the background jumps one frame height at a time rather
      * than sliding smoothly.
+     *
+     * Two details decide whether the frames land squarely or smear, and both
+     * follow from `background-position` percentages being a fraction of
+     * (container height - image height) rather than an absolute offset. For an
+     * N-frame strip that difference is `H - N*H`, so `100%` is exactly the last
+     * frame - which is why the keyframe ends at 100% and not at N*100%.
+     *
+     * And the step function has to be `jump-none`: plain `steps(N)` hands out
+     * progress values of k/N, which land between frames, while `jump-none`
+     * hands out k/(N-1) - exactly frame k, for every k.
      */
     private fun appendAnimatedImageRules(sb: StringBuilder, element: GuiElement, texture: TextureAsset) {
         val frames = texture.frameCount.coerceAtLeast(1)
@@ -493,7 +503,7 @@ object CodeGenerator {
             val count = if (element.props.bool("loop", true)) "infinite" else "1"
             sb.appendLine(
                 "  animation: ${elementClass(element)}-frames ${trim(seconds)}s " +
-                    "steps($frames) $direction $count;",
+                    "steps($frames, jump-none) $direction $count;",
             )
         }
     }
@@ -502,9 +512,10 @@ object CodeGenerator {
         if (texture.frameCount <= 1) return
         sb.appendLine("@keyframes ${elementClass(element)}-frames {")
         sb.appendLine("  from { background-position: 0 0; }")
-        // 100% of the *extra* height, which for an N-frame strip scaled to
-        // N*100% is what lands the last frame exactly in the box.
-        sb.appendLine("  to { background-position: 0 ${texture.frameCount * 100}%; }")
+        // 100% is the bottom of the strip aligned with the bottom of the box,
+        // which for an N-frame strip is exactly the last frame - see the note
+        // on appendAnimatedImageRules.
+        sb.appendLine("  to { background-position: 0 100%; }")
         sb.appendLine("}")
     }
 
