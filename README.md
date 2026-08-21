@@ -23,8 +23,7 @@ Everything is published on the
 | You want | Grab |
 | --- | --- |
 | **Windows** | `MinecraftGuiDesigner-<version>.exe` — installer, no Java needed |
-| **macOS (Apple Silicon)** | `MinecraftGuiDesigner-<version>-macos-aarch64.dmg` — any Mac from 2020 on |
-| **macOS (Intel)** | `MinecraftGuiDesigner-<version>-macos-x64.dmg` |
+| **macOS (Apple Silicon)** | `MinecraftGuiDesigner-<version>-macos-aarch64.dmg` — any Mac from late 2020 on |
 | **Android** | `androidApp-release.apk` — enable "install from unknown sources" when prompted |
 | **Google Play** | `androidApp-release.aab` — an app bundle for uploading to Play, not installable on a phone |
 | **Linux** | `minecraft-gui-designer_<version>-1_amd64.deb` |
@@ -47,6 +46,11 @@ xattr -dr com.apple.quarantine "/Applications/MinecraftGuiDesigner.app"
 ```
 
 Every launch after the first is normal.
+
+The `.dmg` is Apple Silicon only — which is every Mac sold since late 2020. On
+an older **Intel** Mac, run the portable `MinecraftGuiDesigner-<version>.jar`
+with `java -jar` instead (Java 17 or newer). An Apple Silicon binary cannot run
+on Intel, and Rosetta only translates the other way.
 
 > Release binaries are attached to releases, never committed to the repository —
 > GitHub rejects files over 100 MB in git, and a binary in history bloats every
@@ -261,8 +265,8 @@ installer, the APK, the templates, the docs and a source archive, plus a
 
 Because a Windows `.exe` can only be produced on Windows and a macOS `.dmg`
 only on macOS, [`.github/workflows/release.yml`](.github/workflows/release.yml)
-builds each platform on its own runner - Windows, macOS on both Apple Silicon
-and Intel, and Linux (which also builds Android) - and merges them with
+builds each platform on its own runner - Windows, macOS and Linux (which also
+builds Android) - and merges them with
 [`build-scripts/bundle-release.sh`](build-scripts/bundle-release.sh) into a
 single ZIP, attached to the GitHub Release. Push a `v*` tag to trigger it:
 

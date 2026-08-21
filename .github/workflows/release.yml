@@ -114,24 +114,24 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # macOS: the .dmg. jpackage can only produce it on macOS, and the bundled
-  # runtime plus the Skia natives are architecture-specific, so Apple Silicon
-  # and Intel each need their own build on their own runner.
+  # runtime plus the Skia natives are architecture-specific, so the installer
+  # is per-architecture.
+  #
+  # Apple Silicon only, deliberately. GitHub retired the `macos-13` Intel image,
+  # and a job asking for a runner that no longer exists does not fail - it
+  # queues, for hours, holding the entire release behind it. Apple Silicon
+  # covers every Mac sold since late 2020; Intel Macs run the portable .jar,
+  # which the release notes point them at.
   # ---------------------------------------------------------------------------
   macos-desktop:
     needs: version
-    strategy:
-      # One Mac failing should not cost the other its installer.
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-14
-            arch: aarch64
-          - runner: macos-13
-            arch: x64
-    runs-on: ${{ matrix.runner }}
+    runs-on: macos-14
+    # A macOS runner that hangs must not cost the release the four platforms
+    # that already built; `bundle` treats this job as optional.
+    timeout-minutes: 45
     env:
       VERSION: ${{ needs.version.outputs.version }}
-      ARCH: ${{ matrix.arch }}
+      ARCH: aarch64
     defaults:
       run:
         shell: bash
@@ -181,7 +181,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: macos-desktop-${{ matrix.arch }}
+          name: macos-desktop
           path: out/*
           if-no-files-found: error
 
@@ -337,7 +337,6 @@ jobs:
           | --- | --- |
           | **Windows** | `MinecraftGuiDesigner-*.exe` — installer, no Java needed |
           | **macOS (Apple Silicon)** | `MinecraftGuiDesigner-*-macos-aarch64.dmg` — M1/M2/M3/M4 Macs |
-          | **macOS (Intel)** | `MinecraftGuiDesigner-*-macos-x64.dmg` |
           | **Android** | `androidApp-release.apk` — allow "install from unknown sources" when prompted |
           | **Android (Play Store)** | `androidApp-release.aab` — an app bundle for uploading to Google Play, **not** installable on a phone directly |
           | **Linux** | `minecraft-gui-designer_*_amd64.deb` |
@@ -357,8 +356,13 @@ jobs:
           xattr -dr com.apple.quarantine "/Applications/MinecraftGuiDesigner.app"
           ```
 
-          Every launch after the first is normal. Pick the `aarch64` build for
-          any Mac from 2020 onwards and `x64` for older Intel Macs.
+          Every launch after the first is normal.
+
+          The `.dmg` is Apple Silicon only — every Mac sold since late 2020. On
+          an older **Intel** Mac, use the portable
+          `MinecraftGuiDesigner-*.jar` with `java -jar` (Java 17 or newer);
+          an Apple Silicon build cannot run on Intel, and Rosetta translates
+          the other way.
 
           ### Everything in one archive
 
