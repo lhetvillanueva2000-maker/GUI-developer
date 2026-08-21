@@ -30,6 +30,7 @@ import com.mcguidesigner.core.util.Ids
 import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
+import com.mcguidesigner.styles.render.createAnimatedTextureFromFrames
 import com.mcguidesigner.styles.render.createTextureAsset
 import com.mcguidesigner.styles.theme.ThemeMode
 
@@ -355,6 +356,64 @@ class AndroidAppState(initial: GuiProject) {
         rememberInLibrary(context, assets, source = "Imported")
         status = "Imported $imported texture(s). They are in your library too."
         sheet = MobileSheet.ASSETS
+    }
+
+    /**
+     * Builds one animated texture from several picked images.
+     *
+     * The route in for anything that is not a GIF - frames exported from a
+     * video, a sequence rendered elsewhere. Files are taken in name order,
+     * which is how frame sequences are always numbered.
+     */
+    fun importAnimationFrames(context: Context, uris: List<Uri>) {
+        if (uris.size < 2) {
+            status = "Pick at least two images - one frame is a still, so import it as one."
+            return
+        }
+
+        val named = uris
+            .mapNotNull { uri ->
+                AndroidFileIO.readBytes(context, uri).getOrNull()
+                    ?.let { AndroidFileIO.displayName(context, uri) to it }
+            }
+            .sortedBy { it.first.lowercase() }
+
+        val asset = named.takeIf { it.size >= 2 }?.let { frames ->
+            createAnimatedTextureFromFrames(
+                id = Ids.prefixed("tex"),
+                // The shared stem of "walk_01.png".."walk_12.png" names the
+                // animation far better than the first file does.
+                name = commonFrameName(frames.map { it.first }),
+                frameFiles = frames.map { it.second },
+            )
+        }
+
+        if (asset == null) {
+            status = "Could not read those images as an animation."
+            return
+        }
+
+        controller.addTextures(listOf(asset))
+        rememberInLibrary(context, listOf(asset), source = "Animation")
+        status = "Built a ${asset.frameCount}-frame animation. Add an Animated image " +
+            "element and pick '${asset.name}' as its frame strip."
+        sheet = MobileSheet.ASSETS
+    }
+
+    /**
+     * The shared prefix of a numbered frame sequence.
+     *
+     * `walk_01.png`, `walk_02.png` -> `walk`. Falls back to the first name
+     * when the files share nothing, which is the best guess available.
+     */
+    private fun commonFrameName(names: List<String>): String {
+        val stems = names.map { it.substringBeforeLast('.') }
+        val first = stems.first()
+        var shared = first.length
+        stems.drop(1).forEach { other ->
+            shared = minOf(shared, other.commonPrefixWith(first).length)
+        }
+        return first.take(shared).trimEnd('_', '-', ' ', '.').ifBlank { first }
     }
 
     // -- Prefabs -----------------------------------------------------------

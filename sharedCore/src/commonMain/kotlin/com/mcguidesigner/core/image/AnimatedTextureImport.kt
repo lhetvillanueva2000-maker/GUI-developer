@@ -43,7 +43,7 @@ object AnimatedTextureImport {
      */
     fun fromBytes(bytes: ByteArray, id: String, name: String, sourcePath: String? = null): TextureAsset? {
         val decoded = GifDecoder.decode(bytes) ?: return null
-        return fromFrames(
+        return buildStrip(
             frames = decoded.frames,
             sourceWidth = decoded.width,
             sourceHeight = decoded.height,
@@ -53,8 +53,74 @@ object AnimatedTextureImport {
         )
     }
 
+    /** One decoded frame, as raw ARGB pixels. */
+    data class FramePixels(
+        val pixels: IntArray,
+        val width: Int,
+        val height: Int,
+        val delayMillis: Int = FALLBACK_FRAME_DELAY_MILLIS,
+    ) {
+        // IntArray uses identity equals, so the generated ones would be wrong.
+        override fun equals(other: Any?): Boolean =
+            this === other || (
+                other is FramePixels &&
+                    width == other.width && height == other.height &&
+                    delayMillis == other.delayMillis && pixels.contentEquals(other.pixels)
+                )
+
+        override fun hashCode(): Int {
+            var result = pixels.contentHashCode()
+            result = 31 * result + width
+            result = 31 * result + height
+            return 31 * result + delayMillis
+        }
+    }
+
+    /** Delay assumed for a source that carries no timing of its own. */
+    const val FALLBACK_FRAME_DELAY_MILLIS = 100
+
+    /**
+     * Builds a frame strip out of separate images.
+     *
+     * The path for anything that is not a GIF: a folder of PNGs exported from
+     * a video, a sprite sheet cut up by hand, frames rendered by another tool.
+     * Every edition animates a strip and nothing else, so once the frames are
+     * pixels the source they came from stops mattering.
+     *
+     * Frames are sized to the first one, since that is the only size the caller
+     * has expressed any intent about. Returns null for an empty list.
+     */
+    fun fromFrameImages(
+        frames: List<FramePixels>,
+        id: String,
+        name: String,
+        frameDelayMillis: Int = FALLBACK_FRAME_DELAY_MILLIS,
+        sourcePath: String? = null,
+    ): TextureAsset? {
+        val first = frames.firstOrNull() ?: return null
+        if (first.width <= 0 || first.height <= 0) return null
+
+        val normalised = frames.map { frame ->
+            val pixels = if (frame.width == first.width && frame.height == first.height) {
+                frame.pixels
+            } else {
+                resample(frame.pixels, frame.width, frame.height, first.width, first.height)
+            }
+            GifDecoder.Frame(pixels, frameDelayMillis)
+        }
+
+        return buildStrip(
+            frames = normalised,
+            sourceWidth = first.width,
+            sourceHeight = first.height,
+            id = id,
+            name = name,
+            sourcePath = sourcePath,
+        )
+    }
+
     @OptIn(ExperimentalEncodingApi::class)
-    private fun fromFrames(
+    private fun buildStrip(
         frames: List<GifDecoder.Frame>,
         sourceWidth: Int,
         sourceHeight: Int,

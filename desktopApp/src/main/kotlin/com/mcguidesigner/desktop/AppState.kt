@@ -28,6 +28,7 @@ import com.mcguidesigner.desktop.io.Workspace
 import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
+import com.mcguidesigner.styles.render.createAnimatedTextureFromFrames
 import com.mcguidesigner.styles.render.createTextureAsset
 import com.mcguidesigner.styles.theme.ThemeMode
 import java.awt.Frame
@@ -470,6 +471,61 @@ class AppState(initial: GuiProject) {
     }
 
     // -- Textures ----------------------------------------------------------
+
+    /**
+     * Builds one animated texture from several image files.
+     *
+     * The route in for anything that is not a GIF - frames exported from a
+     * video, a sequence rendered elsewhere. Files are taken in name order,
+     * which is how frame sequences are always numbered.
+     */
+    fun importAnimationFrames() {
+        val files = DesktopFileIO.importImageDialog(frameProvider())
+            .sortedBy { it.name.lowercase() }
+        if (files.isEmpty()) return
+        if (files.size < 2) {
+            status = "Pick at least two images - one frame is a still, so import it as one."
+            return
+        }
+
+        val asset = runCatching {
+            createAnimatedTextureFromFrames(
+                id = Ids.prefixed("tex"),
+                // The shared stem of "walk_01.png".."walk_12.png" names the
+                // animation far better than the first file does.
+                name = commonFrameName(files.map { it.name }),
+                frameFiles = files.map { it.readBytes() },
+                sourcePath = files.first().parentFile?.absolutePath,
+            )
+        }.getOrNull()
+
+        if (asset == null) {
+            status = "Could not read those images as an animation."
+            return
+        }
+
+        controller.addTextures(listOf(asset))
+        rememberInLibrary(listOf(asset), source = "Animation")
+        inspectorTab = InspectorTab.ASSETS
+        status = "Built a ${asset.frameCount}-frame animation from ${files.size} images. " +
+            "Add an Animated image element and pick '${asset.name}' as its frame strip."
+    }
+
+    /**
+     * The shared prefix of a numbered frame sequence.
+     *
+     * `walk_01.png`, `walk_02.png` -> `walk`. Falls back to the first name
+     * when the files share nothing, which is the best guess available.
+     */
+    private fun commonFrameName(names: List<String>): String {
+        val stems = names.map { it.substringBeforeLast('.') }
+        val first = stems.first()
+        var shared = first.length
+        stems.drop(1).forEach { other ->
+            shared = minOf(shared, other.commonPrefixWith(first).length)
+        }
+        return first.take(shared).trimEnd('_', '-', ' ', '.').ifBlank { first }
+    }
 
     fun importTextures() {
         val files = DesktopFileIO.importImageDialog(frameProvider())

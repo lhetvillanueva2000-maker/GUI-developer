@@ -87,7 +87,11 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
   frame strip both editions animate natively, complete with the `.mcmeta` timing
   sidecar. It plays in the editor at the cadence it was authored with, plays in
   the game, and plays in the exported HTML. Uneven frame delays are preserved
-  frame by frame rather than flattened.
+  frame by frame rather than flattened. For anything that is not a GIF —
+  frames exported from a video, a sequence rendered elsewhere — **Build an
+  animation from images** stacks the files you pick into the same strip.
+  (Video files themselves are not decoded: that needs a codec the app does not
+  ship. Export the frames first with any video tool and import those.)
 - **Anything the catalog does not have.** A **Custom element** takes a type name
   of your choosing and any `key=value` properties you like, and every exporter
   passes them straight through.

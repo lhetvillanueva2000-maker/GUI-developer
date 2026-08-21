@@ -285,6 +285,70 @@ class ImagePipelineTest {
         assertNull(AnimatedTextureImport.fromBytes(png, "x", "x"))
     }
 
+    // -- Frame sequences ----------------------------------------------------
+
+    private fun frame(width: Int, height: Int, argb: Int) = AnimatedTextureImport.FramePixels(
+        pixels = IntArray(width * height) { argb },
+        width = width,
+        height = height,
+    )
+
+    @OptIn(ExperimentalEncodingApi::class)
+    @Test
+    fun `separate images stack into one frame strip`() {
+        val texture = assertNotNull(
+            AnimatedTextureImport.fromFrameImages(
+                frames = listOf(
+                    frame(8, 6, 0xFFFF0000.toInt()),
+                    frame(8, 6, 0xFF00FF00.toInt()),
+                    frame(8, 6, 0xFF0000FF.toInt()),
+                ),
+                id = "seq",
+                name = "walk",
+                frameDelayMillis = 150,
+            ),
+        )
+
+        assertEquals(3, texture.frameCount)
+        assertEquals(8, texture.width)
+        assertEquals(18, texture.height, "three 6px frames stacked")
+        assertEquals(3, texture.frameTimeTicks, "150ms is three 50ms ticks")
+
+        val strip = ImageIO.read(ByteArrayInputStream(Base64.decode(texture.dataBase64)))
+        assertEquals(0xFFFF0000.toInt(), strip.getRGB(0, 0))
+        assertEquals(0xFF00FF00.toInt(), strip.getRGB(0, 6))
+        assertEquals(0xFF0000FF.toInt(), strip.getRGB(0, 12))
+    }
+
+    @Test
+    fun `mismatched frame sizes are scaled to the first frame`() {
+        val texture = assertNotNull(
+            AnimatedTextureImport.fromFrameImages(
+                frames = listOf(
+                    frame(10, 10, 0xFFFFFFFF.toInt()),
+                    frame(40, 40, 0xFF000000.toInt()),
+                ),
+                id = "seq",
+                name = "mixed",
+            ),
+        )
+
+        assertEquals(10, texture.width, "the first frame sets the size")
+        assertEquals(20, texture.height)
+        assertEquals(2, texture.frameCount)
+    }
+
+    @Test
+    fun `an empty or single-frame sequence is not an animation`() {
+        assertNull(AnimatedTextureImport.fromFrameImages(emptyList(), "x", "x"))
+
+        val single = assertNotNull(
+            AnimatedTextureImport.fromFrameImages(listOf(frame(4, 4, -1)), "x", "one"),
+        )
+        assertEquals(1, single.frameCount)
+        assertTrue(!single.isAnimated, "one frame is a still")
+    }
+
     @Test
     fun `mcmeta describes square frames without redundant dimensions`() {
         val gif = writeGif(List(3) { solidFrame(8, 8, 0x00FF00) }, delayCentiseconds = 10)

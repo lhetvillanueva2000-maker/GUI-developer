@@ -349,6 +349,7 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
             Item("Save a Copy...") { app.saveAs() }
             Separator()
             Item("Import Textures, Images or GIFs...") { app.importTextures() }
+            Item("Build an Animation from Images...") { app.importAnimationFrames() }
             Item("Import Resource Pack...") { app.browsePack() }
             Separator()
             Item("Exit") { app.pendingExit = true }

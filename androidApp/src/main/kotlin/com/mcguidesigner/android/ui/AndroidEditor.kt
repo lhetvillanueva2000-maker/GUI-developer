@@ -105,6 +105,13 @@ fun AndroidEditor(
         ActivityResultContracts.OpenMultipleDocuments(),
     ) { uris -> if (uris.isNotEmpty()) app.importTextures(context, uris) }
 
+    // A second picker rather than a mode on the first: picking five button
+    // skins and picking five frames of an animation are different intents, and
+    // guessing between them would get it wrong half the time.
+    val frameLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments(),
+    ) { uris -> if (uris.isNotEmpty()) app.importAnimationFrames(context, uris) }
+
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(AndroidFileIO.ZIP_MIME),
     ) { uri -> uri?.let { app.performExport(context, it) } }
@@ -173,6 +180,7 @@ fun AndroidEditor(
                         onSave = { if (!app.saveDocument(context)) createLauncher.launch(app.suggestedFileName()) },
                         onSaveAs = { createLauncher.launch(app.suggestedFileName()) },
                         onImportImages = { imageLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
+                        onImportFrames = { frameLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
                         onImportPack = { packLauncher.launch(AndroidPackImport.PACK_MIME_TYPES) },
                     )
                     EditionStrip(app, controller, state)
@@ -390,6 +398,7 @@ private fun MobileTopBar(
     onSave: () -> Unit,
     onSaveAs: () -> Unit,
     onImportImages: () -> Unit,
+    onImportFrames: () -> Unit,
     onImportPack: () -> Unit,
 ) {
     val palette = LocalSkinPalette.current
@@ -443,6 +452,10 @@ private fun MobileTopBar(
                 DropdownMenuItem(
                     text = { Text("Import images or GIFs...") },
                     onClick = { menuOpen = false; onImportImages() },
+                )
+                DropdownMenuItem(
+                    text = { Text("Build an animation from images...") },
+                    onClick = { menuOpen = false; onImportFrames() },
                 )
                 DropdownMenuItem(
                     text = { Text("Import resource pack...") },

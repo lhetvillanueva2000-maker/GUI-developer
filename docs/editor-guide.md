@@ -286,6 +286,17 @@ across the whole animation so a trimmed one still plays end to end, and scaled
 down past 512px on the longer side. A GIF authored with uneven frame delays
 keeps them frame by frame rather than being flattened to one rate.
 
+**Anything that is not a GIF** goes through **Build an animation from images**
+(File menu on desktop, overflow menu on Android). Pick two or more images and
+they are stacked into the same frame strip, in file-name order - which is how
+frame sequences are always numbered. The first image sets the size and the rest
+are scaled to match, and the animation is named after the shared part of the
+file names, so `walk_01.png` … `walk_12.png` becomes `walk`.
+
+That is also the route for video: the app does not decode video files, because
+doing so needs a codec it would have to ship. Export the frames with any video
+tool - `ffmpeg -i clip.mp4 frame_%03d.png` will do it - and import those.
+
 ### Shapes and custom elements
 
 **＋ Add anything** in the desktop bottom bar, or the **Custom** tab in the
