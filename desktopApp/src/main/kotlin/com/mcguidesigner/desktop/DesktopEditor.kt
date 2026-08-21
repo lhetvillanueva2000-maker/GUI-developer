@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mcguidesigner.core.catalog.CustomPresets
 import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.editor.EditorTool
@@ -51,7 +52,10 @@ import com.mcguidesigner.core.model.InteractionState
 import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.desktop.dialogs.AboutDialog
 import com.mcguidesigner.desktop.dialogs.AppearanceDialog
+import com.mcguidesigner.desktop.dialogs.AddCustomDialog
 import com.mcguidesigner.desktop.dialogs.ComponentGalleryDialog
+import com.mcguidesigner.desktop.dialogs.ConfirmDeleteDialog
+import com.mcguidesigner.desktop.dialogs.EditorSettingsDialog
 import com.mcguidesigner.desktop.dialogs.ExportDialog
 import com.mcguidesigner.desktop.dialogs.NewProjectDialog
 import com.mcguidesigner.desktop.dialogs.PackImportDialog
@@ -73,6 +77,7 @@ import com.mcguidesigner.desktop.panels.PrefabsPanel
 import com.mcguidesigner.desktop.panels.PreviewPanel
 import com.mcguidesigner.desktop.panels.TemplatesPanel
 import com.mcguidesigner.desktop.widgets.IconToggle
+import com.mcguidesigner.desktop.widgets.NudgePad
 import com.mcguidesigner.desktop.widgets.ToolbarButton
 import com.mcguidesigner.desktop.widgets.ToolbarSeparator
 import com.mcguidesigner.styles.render.rememberTextureCache
@@ -140,6 +145,29 @@ fun DesktopEditor(
                             ViewMode.CODE -> CodePanel(app, state, Modifier.fillMaxSize())
                         }
                     }
+
+                    // The move pad floats over the canvas, only while there is
+                    // something to move. Fading it rather than snapping it in
+                    // stops it flickering as the selection changes.
+                    //
+                    // Boxed first so the alignment comes from this Box rather
+                    // than the Row above it, which would otherwise win.
+                    Box(Modifier.align(state.settings.nudgePadCorner.alignment())) {
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = state.viewMode == ViewMode.DESIGN &&
+                                state.hasSelection &&
+                                state.settings.showNudgePad,
+                            enter = fadeIn(),
+                            exit = fadeOut(),
+                        ) {
+                            NudgePad(
+                                controller = controller,
+                                settings = state.settings,
+                                modifier = Modifier.padding(16.dp),
+                                onOpenSettings = { app.dialog = ActiveDialog.EDITOR_SETTINGS },
+                            )
+                        }
+                    }
                 }
 
                 AnimatedVisibility(
@@ -166,6 +194,8 @@ fun DesktopEditor(
             }
 
             Divider(color = palette.chromeBorder)
+            BottomBar(app, state)
+            Divider(color = palette.chromeBorder)
             StatusBar(app, state)
         }
     }
@@ -184,8 +214,19 @@ fun DesktopEditor(
         ActiveDialog.COMPONENT_GALLERY -> ComponentGalleryDialog(app, state)
         ActiveDialog.PACK_IMPORT -> PackImportDialog(app)
         ActiveDialog.APPEARANCE -> AppearanceDialog(app)
+        ActiveDialog.EDITOR_SETTINGS -> EditorSettingsDialog(app)
+        ActiveDialog.ADD_CUSTOM -> AddCustomDialog(app)
+        ActiveDialog.CONFIRM_DELETE -> ConfirmDeleteDialog(app)
         ActiveDialog.NONE -> Unit
     }
+}
+
+/** Where the move pad sits, as a Compose alignment. */
+private fun com.mcguidesigner.core.editor.NudgePadCorner.alignment(): Alignment = when {
+    isBottom && isRight -> Alignment.BottomEnd
+    isBottom -> Alignment.BottomStart
+    isRight -> Alignment.TopEnd
+    else -> Alignment.TopStart
 }
 
 // ---------------------------------------------------------------------------
@@ -473,6 +514,57 @@ private fun RightDock(app: AppState, controller: EditorController, state: Editor
 // ---------------------------------------------------------------------------
 // Status bar
 // ---------------------------------------------------------------------------
+
+/**
+ * The bar along the bottom of the window: adding things on the left, the
+ * document's own numbers on the right.
+ *
+ * "Add anything" lives here rather than in the palette dock because the dock
+ * can be hidden and because a shape is not a Minecraft component - it is a
+ * drawing primitive, and putting it in the vanilla widget list would misfile
+ * it.
+ */
+@Composable
+private fun BottomBar(app: AppState, state: EditorState) {
+    val palette = LocalSkinPalette.current
+    Surface(color = palette.chromePanel, contentColor = palette.chromeText) {
+        Row(
+            Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            ToolbarButton(
+                label = "＋  Add anything",
+                hint = "Shapes, animated images, GIFs and free-form custom elements",
+            ) { app.dialog = ActiveDialog.ADD_CUSTOM }
+
+            ToolbarSeparator()
+
+            // The four shapes people reach for most, one click away; the rest
+            // are behind the button above.
+            CustomPresets.shapes.take(6).forEach { preset ->
+                ToolbarButton(preset.glyph, hint = "Add a ${preset.label.lowercase()}") {
+                    app.addCustomPreset(preset)
+                }
+            }
+
+            ToolbarSeparator()
+
+            ToolbarButton("🎞", hint = "Add an animated image or GIF") {
+                CustomPresets.media.firstOrNull()?.let(app::addCustomPreset)
+            }
+            ToolbarButton("✦", hint = "Add a custom element of your own") {
+                CustomPresets.anything.firstOrNull()?.let(app::addCustomPreset)
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            ToolbarButton("⋯", hint = "Editor settings - move steps, autosave and more") {
+                app.dialog = ActiveDialog.EDITOR_SETTINGS
+            }
+        }
+    }
+}
 
 @Composable
 private fun StatusBar(app: AppState, state: EditorState) {

@@ -35,6 +35,8 @@ object IssueCode {
     const val UNUSED_TEXTURE = "unused-texture"
     const val EDITION_PARITY = "edition-parity"
     const val JAVA_BUTTON_HEIGHT = "java-button-height"
+    const val ANIMATION_NOT_ANIMATED = "animation-not-animated"
+    const val ANIMATION_TIMING_FLATTENED = "animation-timing-flattened"
 }
 
 data class ValidationIssue(
@@ -382,13 +384,37 @@ object ProjectValidator {
                     val assetId = (value as? TextureValue)?.assetId
                     if (!assetId.isNullOrBlank()) {
                         referencedTextures += assetId
-                        if (project.texture(assetId) == null) {
+                        val texture = project.texture(assetId)
+                        if (texture == null) {
                             issues += ValidationIssue(
                                 Severity.ERROR, IssueCode.MISSING_TEXTURE,
                                 "'${element.name}' references texture '$assetId', which is not in this project.",
                                 element.id, element.name, key,
                                 fixHint = "Re-import the image, or clear the texture property.",
                             )
+                        } else if (element.type == ElementCatalog.IMAGE_ANIMATED && key == "texture") {
+                            // An animated element pointed at a still is not
+                            // broken, but it will sit on one frame forever, and
+                            // that looks exactly like a bug you cannot find.
+                            if (!texture.isAnimated) {
+                                issues += ValidationIssue(
+                                    Severity.WARNING, IssueCode.ANIMATION_NOT_ANIMATED,
+                                    "'${element.name}' is an animated image, but '${texture.name}' has only one frame.",
+                                    element.id, element.name, key,
+                                    fixHint = "Import a GIF, or a PNG whose height is a whole multiple " +
+                                        "of its width with one frame per row.",
+                                )
+                            } else if (texture.hasVariableFrameTiming) {
+                                // Minecraft has one frametime per texture. The
+                                // exporter writes per-frame times where it can,
+                                // but nothing else in the pipeline does.
+                                issues += ValidationIssue(
+                                    Severity.INFO, IssueCode.ANIMATION_TIMING_FLATTENED,
+                                    "'${texture.name}' came from a source with uneven frame delays; " +
+                                        "the resource pack keeps them, other exports use one average rate.",
+                                    element.id, element.name, key,
+                                )
+                            }
                         }
                     }
                 }

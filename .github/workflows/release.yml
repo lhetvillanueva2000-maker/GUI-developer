@@ -113,6 +113,79 @@ jobs:
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
+  # macOS: the .dmg. jpackage can only produce it on macOS, and the bundled
+  # runtime plus the Skia natives are architecture-specific, so Apple Silicon
+  # and Intel each need their own build on their own runner.
+  # ---------------------------------------------------------------------------
+  macos-desktop:
+    needs: version
+    strategy:
+      # One Mac failing should not cost the other its installer.
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            arch: aarch64
+          - runner: macos-13
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      ARCH: ${{ matrix.arch }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # The .icns can only be built with macOS tooling, so it is generated here
+      # rather than committed. The Gradle build picks it up if it exists.
+      - name: Build the macOS app icon
+        run: |
+          chmod +x build-scripts/make-icns.sh
+          ./build-scripts/make-icns.sh
+
+      - name: Build the macOS .dmg
+        run: ./gradlew -PskipAndroid=true "-Pmcgui.version=$VERSION" :desktopApp:packageReleaseDmg
+
+      # The .pkg is a nice-to-have alongside the .dmg; never fail the release
+      # over it.
+      - name: Build the macOS .pkg
+        continue-on-error: true
+        run: ./gradlew -PskipAndroid=true "-Pmcgui.version=$VERSION" :desktopApp:packageReleasePkg
+
+      - name: Collect the installers
+        run: |
+          mkdir -p out
+          # jpackage names both architectures' output identically, so the arch
+          # goes into the file name here - otherwise the second job to upload
+          # would overwrite the first and half the Macs would get the wrong
+          # binary.
+          while IFS= read -r -d '' file; do
+            base="$(basename "$file")"
+            cp "$file" "out/${base%.*}-macos-$ARCH.${base##*.}"
+          done < <(find desktopApp/build/compose/binaries -type f \( -name '*.dmg' -o -name '*.pkg' \) -print0)
+          ls -la out
+          # A macOS build without the .dmg is not worth publishing.
+          if ! ls out/*.dmg >/dev/null 2>&1; then
+            echo "::error::jpackage did not produce a .dmg"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-desktop-${{ matrix.arch }}
+          path: out/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
   # Linux: the .deb, and the Android APK.
   # ---------------------------------------------------------------------------
   linux-and-android:
@@ -196,7 +269,16 @@ jobs:
   # Merge everything into the single deliverable ZIP and publish the release.
   # ---------------------------------------------------------------------------
   bundle:
-    needs: [version, windows-desktop, linux-and-android]
+    needs: [version, windows-desktop, linux-and-android, macos-desktop]
+    # macOS is allowed to fail without sinking the release: Apple's runners are
+    # the flakiest of the three and a missing .dmg is a gap, not a reason to
+    # withhold the Windows, Linux and Android builds. Windows and Linux are
+    # still hard requirements.
+    if: >-
+      always()
+      && needs.version.result == 'success'
+      && needs.windows-desktop.result == 'success'
+      && needs.linux-and-android.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -233,7 +315,8 @@ jobs:
         run: |
           mkdir -p standalone
           find artifacts -type f \
-            \( -name '*.exe' -o -name '*.msi' -o -name '*.deb' -o -name '*.apk' -o -name '*.aab' -o -name '*.jar' \) \
+            \( -name '*.exe' -o -name '*.msi' -o -name '*.deb' -o -name '*.apk' \
+               -o -name '*.aab' -o -name '*.jar' -o -name '*.dmg' -o -name '*.pkg' \) \
             -exec cp {} standalone/ \;
           ls -la standalone
 
@@ -253,6 +336,8 @@ jobs:
           | Platform | Download |
           | --- | --- |
           | **Windows** | `MinecraftGuiDesigner-*.exe` — installer, no Java needed |
+          | **macOS (Apple Silicon)** | `MinecraftGuiDesigner-*-macos-aarch64.dmg` — M1/M2/M3/M4 Macs |
+          | **macOS (Intel)** | `MinecraftGuiDesigner-*-macos-x64.dmg` |
           | **Android** | `androidApp-release.apk` — allow "install from unknown sources" when prompted |
           | **Android (Play Store)** | `androidApp-release.aab` — an app bundle for uploading to Google Play, **not** installable on a phone directly |
           | **Linux** | `minecraft-gui-designer_*_amd64.deb` |
@@ -260,6 +345,20 @@ jobs:
 
           Each desktop package embeds its own Java runtime, so nothing has to be
           installed first — that is also why they are ~90 MB each.
+
+          ### First launch on macOS
+
+          The `.dmg` is not signed with an Apple Developer certificate, so
+          Gatekeeper blocks the first launch with *"cannot be opened because the
+          developer cannot be verified"*. Open it once with **right-click →
+          Open** and choose **Open** in the dialog, or clear the quarantine flag:
+
+          ```
+          xattr -dr com.apple.quarantine "/Applications/MinecraftGuiDesigner.app"
+          ```
+
+          Every launch after the first is normal. Pick the `aarch64` build for
+          any Mac from 2020 onwards and `x64` for older Intel Macs.
 
           ### Everything in one archive
 

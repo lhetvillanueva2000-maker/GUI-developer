@@ -23,6 +23,8 @@ Everything is published on the
 | You want | Grab |
 | --- | --- |
 | **Windows** | `MinecraftGuiDesigner-<version>.exe` — installer, no Java needed |
+| **macOS (Apple Silicon)** | `MinecraftGuiDesigner-<version>-macos-aarch64.dmg` — any Mac from 2020 on |
+| **macOS (Intel)** | `MinecraftGuiDesigner-<version>-macos-x64.dmg` |
 | **Android** | `androidApp-release.apk` — enable "install from unknown sources" when prompted |
 | **Google Play** | `androidApp-release.aab` — an app bundle for uploading to Play, not installable on a phone |
 | **Linux** | `minecraft-gui-designer_<version>-1_amd64.deb` |
@@ -35,6 +37,16 @@ desktop package embeds its own Java runtime, which is why they are large and
 why nothing has to be installed first.
 
 `MANIFEST.txt` inside the ZIP lists every file with its SHA-256.
+
+**First launch on macOS.** The `.dmg` is not signed with an Apple Developer
+certificate, so Gatekeeper blocks the first launch. Open it once with
+**right-click → Open** and choose **Open**, or clear the quarantine flag:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/MinecraftGuiDesigner.app"
+```
+
+Every launch after the first is normal.
 
 > Release binaries are attached to releases, never committed to the repository —
 > GitHub rejects files over 100 MB in git, and a binary in history bloats every
@@ -58,10 +70,31 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
   background, icon or item preview, with nine-slice insets so custom art
   stretches properly. Images live inside the project file, so a `.mcgui` is a
   single self-contained document.
-- **Turn a design into code.** A dedicated Code tab renders the current screen as
-  a standalone HTML + CSS page (with real `:hover` / `:active` states and
-  embedded textures), a plain stylesheet, a Compose `@Composable`, a Minecraft
-  Java `Screen` subclass, Bedrock JSON UI, or the raw project JSON.
+- **Export to the format the game actually reads.** One **Export** button lists
+  every format the design can become, with Minecraft's own at the top and marked
+  as such: Bedrock **JSON UI** (drop it in a resource pack and the game draws the
+  screen — no mod, no code) and the Java **`.mcmeta` + atlas definitions** that
+  tell Java Edition how to scale and animate the screen's images. Below those sit
+  the ones for use outside the game — a standalone HTML + CSS page with real
+  `:hover` / `:active` states, a plain stylesheet, an SVG that keeps every shape
+  as a real vector, a Compose `@Composable`, a Java `Screen` subclass, and the
+  raw project document.
+- **Draw your own shapes.** Seventeen of them — rectangles, circles, triangles,
+  stars, polygons of any side count, arrows, chevrons, speech bubbles — each with
+  fill or gradient, an outline, rotation and a label. They resize, restyle and
+  export like any other element, and the SVG export keeps them as real polygons.
+- **Animated images and GIFs.** Import a GIF and it is converted to the vertical
+  frame strip both editions animate natively, complete with the `.mcmeta` timing
+  sidecar. It plays in the editor at the cadence it was authored with, plays in
+  the game, and plays in the exported HTML. Uneven frame delays are preserved
+  frame by frame rather than flattened.
+- **Anything the catalog does not have.** A **Custom element** takes a type name
+  of your choosing and any `key=value` properties you like, and every exporter
+  passes them straight through.
+- **Move things exactly.** Four arrows appear over the canvas whenever something
+  is selected, on desktop and on the phone alike. The step is yours to set — and
+  the arrow keys use the same one, so the buttons and the keyboard can never
+  disagree. Optionally it walks the grid a line at a time instead.
 - **Pick an edition, get that edition.** Java and Bedrock are two tabs across
   the top of both apps. Whichever is lit, everything below it belongs to that
   edition — the component palette, the templates, the skin, the validation rules
@@ -75,8 +108,8 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
   it in one go by importing a real Minecraft resource pack (`.zip` / `.mcpack`,
   Java or Bedrock). The importer puts the GUI art first and leaves the four
   thousand block textures unticked.
-- **Export everything in one pass.** One action writes both edition packs, all
-  six code targets and the project document into a single organised tree.
+- **Export everything in one pass.** One action writes both edition packs, every
+  code target and the project document into a single organised tree.
 - **Light or dark, and a wallpaper behind it.** The theme follows your system by
   default and can be pinned either way. The canvas never changes with it — a
   vanilla button is the same grey in a light editor as in a dark one.
@@ -86,9 +119,11 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 - **It does not lose your work.** Nothing replaces the open document without
   asking first — New, Open, templates, quitting and the Android back gesture all
   offer Save / Discard / Cancel. The desktop app autosaves a recovery snapshot
-  every ten seconds while there are unsaved edits and offers it back if it was
+  on a timer while there are unsaved edits and offers it back if it was
   killed; the Android app writes the working document to internal storage
-  whenever it is backgrounded, so a process kill is not a lost afternoon.
+  whenever it is backgrounded, so a process kill is not a lost afternoon. How
+  often it snapshots is one of the **Editor settings**, alongside the move step,
+  the duplicate offset and whether to confirm a delete.
 - **It remembers where you were.** Window size and position, which docks were
   open, the last export target and the recent-projects list are all restored on
   the next launch.
@@ -108,6 +143,9 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 | Multi-select | Shift+click, marquee | Long press |
 | Properties | Always-visible inspector dock | Bottom sheet with chip pickers |
 | Align & arrange | Toolbar row + Arrange menu | Arrange sheet |
+| Nudge | Move pad on the canvas, or the arrow keys | Move pad on the canvas |
+| Shapes & custom | Bottom bar + Insert menu | "Custom" in the bottom nav |
+| Settings | View ▸ Editor Settings, or ⋯ in the bottom bar | ⋮ ▸ Editor settings |
 | Prefabs & library | Docks beside the palette | Bottom sheets |
 | Export | Folder or `.zip` | `.zip` via the Storage Access Framework |
 
@@ -124,9 +162,14 @@ container
 Dropdown · Slider · Java-style rectangular button *(Java only)*
 **Text & input** — Label · Text box · Search field
 **Feedback** — Progress bar · Tooltip box
-**Decoration** — Header bar · Decorative separator · Image / texture slot
+**Decoration** — Header bar · Decorative separator · Image / texture slot ·
+Animated image / GIF
 **Touch controls** — Touchpad button *(Bedrock only)* · Mobile action button
 *(Bedrock only)*
+**Shapes** — Rectangle · Rounded rectangle · Ellipse / circle · Triangle · Right
+triangle · Diamond · Pentagon · Hexagon · Octagon · Star · Cross · Chevron ·
+Arrow · Speech bubble · Parallelogram · Trapezoid · Regular polygon
+**Custom** — Custom element · Custom container
 
 Press `F1` (or **Components** in the header) to browse all of them at once, each
 with a live preview, its default size, whether it resizes, how many states it
@@ -135,6 +178,12 @@ supports and which editions it exists in.
 Every interactive component supports **normal / hover / pressed / focused /
 disabled** states, stored as overrides so only what you actually changed is
 saved. Bedrock drops hover and focus — touch has no pointer.
+
+The **Shapes** and **Custom** rows are reached from the bottom bar's
+**＋ Add anything** button (desktop) or the **Custom** tab in the bottom
+navigation (Android), rather than from the component palette: a hexagon is a
+drawing primitive, not a Minecraft widget, and filing it beside "Chest
+background panel" would misrepresent both.
 
 ---
 
@@ -206,9 +255,10 @@ Produces `dist/minecraft-gui-designer-<version>.zip` containing the desktop
 installer, the APK, the templates, the docs and a source archive, plus a
 `MANIFEST.txt` listing every file.
 
-Because a Windows `.exe` can only be produced on Windows,
-[`.github/workflows/release.yml`](.github/workflows/release.yml) builds the two
-halves on their own runners and merges them with
+Because a Windows `.exe` can only be produced on Windows and a macOS `.dmg`
+only on macOS, [`.github/workflows/release.yml`](.github/workflows/release.yml)
+builds each platform on its own runner - Windows, macOS on both Apple Silicon
+and Intel, and Linux (which also builds Android) - and merges them with
 [`build-scripts/bundle-release.sh`](build-scripts/bundle-release.sh) into a
 single ZIP, attached to the GitHub Release. Push a `v*` tag to trigger it:
 

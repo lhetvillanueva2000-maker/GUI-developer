@@ -14,6 +14,7 @@ import com.mcguidesigner.core.model.ListValue
 import com.mcguidesigner.core.model.StringValue
 import com.mcguidesigner.core.model.TextureValue
 import com.mcguidesigner.core.model.string
+import com.mcguidesigner.core.model.stringList
 import com.mcguidesigner.core.model.walkAll
 import com.mcguidesigner.core.util.Ids
 import com.mcguidesigner.core.validation.ProjectValidator
@@ -59,6 +60,11 @@ object BedrockEditionExporter {
 
         project.textures.forEach { texture ->
             files += ExportFile.Binary("$root/textures/ui/${texture.exportFileName()}", texture.dataBase64)
+            // Bedrock reads the same `animation` block Java does for textures
+            // under `textures/`, so an imported GIF animates here too.
+            NativeAssets.mcmetaFor(texture)?.let { mcmeta ->
+                files += ExportFile.Text("$root/textures/ui/${texture.mcmetaFileName()}", mcmeta)
+            }
         }
 
         files += ExportFile.Text("$root/README.md", readme(project, namespace, screenId))
@@ -188,6 +194,13 @@ object BedrockEditionExporter {
         ElementCatalog.INPUT_DROPDOWN -> "dropdown"
         ElementCatalog.CONTAINER_SCROLL -> "scroll_view"
         ElementCatalog.IMAGE_PLACEHOLDER, ElementCatalog.PROGRESS_BAR, ElementCatalog.DECOR_SEPARATOR -> "image"
+        // JSON UI animates an `image` from its texture's own .mcmeta, which is
+        // why an animated element is an image here and not something exotic.
+        ElementCatalog.IMAGE_ANIMATED -> "image"
+        // A shape has no JSON-UI primitive. `image` is the closest thing that
+        // can carry a colour and a texture, and it degrades to a coloured
+        // rectangle rather than vanishing.
+        ElementCatalog.SHAPE_CUSTOM -> "image"
         ElementCatalog.SLOT_INVENTORY -> "custom"
         else -> "panel"
     }
@@ -353,6 +366,51 @@ object BedrockEditionExporter {
                 } else if (fit == "tile") {
                     put("tiled", true)
                 }
+            }
+
+            ElementCatalog.IMAGE_ANIMATED -> {
+                textureRef(props["texture"], project)?.let { put("texture", it) }
+                put("keep_ratio", (props["keepAspect"] as? BoolValue)?.value ?: true)
+                put("alpha", (props["opacity"] as? FloatValue)?.value?.toDouble() ?: 1.0)
+                // Bedrock plays the animation from the texture's own .mcmeta
+                // sidecar, which `NativeAssets` writes alongside the PNG. The
+                // timing is repeated here so the JSON is self-describing to
+                // anyone reading the pack.
+                val texture = project.texture((props["texture"] as? TextureValue)?.assetId)
+                if (texture != null && texture.isAnimated) {
+                    put("\$designer_frames", texture.frameCount)
+                    put("\$designer_frametime_ticks", texture.frameTimeTicks)
+                }
+            }
+
+            ElementCatalog.SHAPE_CUSTOM -> {
+                // No JSON-UI primitive draws a polygon, so the export carries
+                // the shape's own description alongside a coloured box. The
+                // `$designer_` keys are inert to the game and are what lets a
+                // re-import rebuild the real shape.
+                put("\$designer_shape", props.string("shape", "rectangle"))
+                put("\$designer_sides", (props["sides"] as? IntValue)?.value ?: 6)
+                put("\$designer_rotation", (props["rotation"] as? IntValue)?.value ?: 0)
+                put("alpha", (props["opacity"] as? FloatValue)?.value?.toDouble() ?: 1.0)
+                (props["fillColor"] as? ColorValue)?.let {
+                    put("color", json.parseToJsonElement(ExportUtil.bedrockColor(it.argb)))
+                }
+            }
+
+            ElementCatalog.CUSTOM_ELEMENT -> {
+                put("\$designer_custom_type", props.string("customType", "custom_widget"))
+                put("\$designer_export_as", props.string("exportAs", "panel"))
+                props.stringList("attributes")
+                    .mapNotNull { entry ->
+                        // `key=value` per line, as the inspector describes it;
+                        // anything without a `=` has no key to write it under.
+                        val key = entry.substringBefore('=', "").trim()
+                        val value = entry.substringAfter('=', "").trim()
+                        if (key.isEmpty()) null else key to value
+                    }
+                    .forEach { (key, value) -> put(key, value) }
+                textureRef(props["texture"], project)?.let { put("texture", it) }
+                put("alpha", (props["opacity"] as? FloatValue)?.value?.toDouble() ?: 1.0)
             }
 
             ElementCatalog.INPUT_TEXTBOX, ElementCatalog.INPUT_SEARCH -> {

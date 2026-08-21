@@ -10,9 +10,11 @@
 # artifacts into, so it looks like:
 #
 #   artifacts/
-#     windows-desktop/   MinecraftGuiDesigner-1.0.0.exe, ...msi
-#     linux-and-android/ androidApp-release.apk / .aab, ...amd64.deb
-#     portable-jar/      MinecraftGuiDesigner-<os>-<arch>-1.0.0.jar
+#     windows-desktop/       MinecraftGuiDesigner-1.0.0.exe, ...msi
+#     macos-desktop-aarch64/ MinecraftGuiDesigner-1.0.0-macos-aarch64.dmg
+#     macos-desktop-x64/     MinecraftGuiDesigner-1.0.0-macos-x64.dmg
+#     linux-and-android/     androidApp-release.apk / .aab, ...amd64.deb
+#     portable-jar/          MinecraftGuiDesigner-<os>-<arch>-1.0.0.jar
 #
 # Anything missing is reported and skipped rather than failing the build, so a
 # partial run still produces a usable archive.
@@ -50,6 +52,8 @@ collect() {
 echo "==> Desktop"
 collect "Windows installer" '*.exe' "$STAGE/desktop"
 collect "Windows package" '*.msi' "$STAGE/desktop"
+collect "macOS disk image" '*.dmg' "$STAGE/desktop"
+collect "macOS package" '*.pkg' "$STAGE/desktop"
 collect "Linux package" '*.deb' "$STAGE/desktop"
 collect "portable jar" '*.jar' "$STAGE/desktop"
 
@@ -74,7 +78,7 @@ echo "    + source.zip ($(du -h "$STAGE/source.zip" | cut -f1))"
   echo "Commit: $(git rev-parse HEAD)"
   echo
   echo "Contents:"
-  echo "  desktop/       Windows installer (.exe/.msi), Linux .deb, portable .jar"
+  echo "  desktop/       Windows (.exe/.msi), macOS (.dmg/.pkg), Linux .deb, portable .jar"
   echo "  android/       Android APK (sideload) and .aab (Google Play upload)"
   echo "  templates/     Bundled .mcgui templates plus one full set of sample exports"
   echo "  docs/          Architecture, project format and export documentation"

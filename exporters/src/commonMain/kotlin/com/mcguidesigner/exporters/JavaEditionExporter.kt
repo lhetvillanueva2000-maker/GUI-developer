@@ -54,11 +54,27 @@ object JavaEditionExporter {
         files += ExportFile.Text("$root/assets/$namespace/gui/$screenId.json", layoutJson(project))
         files += ExportFile.Text("$root/assets/$namespace/lang/en_us.json", langJson(project, namespace, screenId))
 
+        // The atlas source list is what makes these textures addressable as
+        // `<namespace>:gui/<name>` sprites rather than raw files.
+        files += ExportFile.Text(
+            "$root/assets/$namespace/atlases/gui.json",
+            NativeAssets.guiAtlasJson(namespace),
+        )
+
         project.textures.forEach { texture ->
             files += ExportFile.Binary(
                 "$root/assets/$namespace/textures/gui/${texture.exportFileName()}",
                 texture.dataBase64,
             )
+            // Nine-slice and animation live in a sidecar the game reads next
+            // to the image; without it a stretched button skin smears its
+            // corners and an imported GIF renders as one tall still.
+            NativeAssets.mcmetaFor(texture)?.let { mcmeta ->
+                files += ExportFile.Text(
+                    "$root/assets/$namespace/textures/gui/${texture.mcmetaFileName()}",
+                    mcmeta,
+                )
+            }
         }
 
         val className = screenClassName(project.name)

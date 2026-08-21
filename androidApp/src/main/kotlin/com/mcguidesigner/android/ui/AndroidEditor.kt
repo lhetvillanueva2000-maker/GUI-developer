@@ -62,6 +62,7 @@ import com.mcguidesigner.android.MobileSheet
 import com.mcguidesigner.android.io.AndroidFileIO
 import com.mcguidesigner.android.io.AndroidPackImport
 import com.mcguidesigner.core.editor.EditorController
+import com.mcguidesigner.core.editor.NudgePadCorner
 import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.Edition
@@ -116,6 +117,18 @@ fun AndroidEditor(
         app.status?.let {
             snackbar.showSnackbar(it)
             app.status = null
+        }
+    }
+
+    // A timed snapshot on top of the one taken in onStop. Android can kill a
+    // backgrounded process without warning, and a crash never reaches onStop
+    // at all, so the interval is what actually protects a long session.
+    LaunchedEffect(state.settings.autosaveSeconds) {
+        val seconds = state.settings.autosaveSeconds
+        if (seconds <= 0) return@LaunchedEffect
+        while (true) {
+            kotlinx.coroutines.delay(seconds * 1000L)
+            if (controller.current.dirty) app.persistSession(context)
         }
     }
 
@@ -211,6 +224,24 @@ fun AndroidEditor(
                                 .align(Alignment.BottomCenter)
                                 .padding(bottom = 12.dp),
                         )
+
+                        // The move pad sits above the action bar, in whichever
+                        // corner the settings put it - a left-handed grip and a
+                        // right-handed one want different sides.
+                        if (state.hasSelection && state.settings.showNudgePad) {
+                            MobileNudgePad(
+                                controller = controller,
+                                settings = state.settings,
+                                onOpenSettings = { app.sheet = MobileSheet.EDITOR_SETTINGS },
+                                modifier = Modifier
+                                    .align(state.settings.nudgePadCorner.toAlignment())
+                                    .padding(horizontal = 10.dp)
+                                    .padding(
+                                        top = 10.dp,
+                                        bottom = if (state.settings.nudgePadCorner.isBottom) 84.dp else 10.dp,
+                                    ),
+                            )
+                        }
                     }
                 }
             }
@@ -396,14 +427,21 @@ private fun MobileTopBar(
 
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(text = { Text("Save") }, onClick = { menuOpen = false; onSave() })
-                DropdownMenuItem(text = { Text("Save as...") }, onClick = { menuOpen = false; onSaveAs() })
+                // "Save as" became "Export": writing the document to a new file
+                // is one of the things the export sheet does, alongside every
+                // pack and code format - including the ones Minecraft reads.
+                DropdownMenuItem(
+                    text = { Text("Export...") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.EXPORT },
+                )
+                DropdownMenuItem(text = { Text("Save a copy...") }, onClick = { menuOpen = false; onSaveAs() })
                 DropdownMenuItem(text = { Text("Open...") }, onClick = { menuOpen = false; onOpen() })
                 DropdownMenuItem(
                     text = { Text("New from template...") },
                     onClick = { menuOpen = false; app.sheet = MobileSheet.TEMPLATES },
                 )
                 DropdownMenuItem(
-                    text = { Text("Import images...") },
+                    text = { Text("Import images or GIFs...") },
                     onClick = { menuOpen = false; onImportImages() },
                 )
                 DropdownMenuItem(
@@ -440,6 +478,14 @@ private fun MobileTopBar(
                     onClick = { menuOpen = false; app.sheet = MobileSheet.CANVAS },
                 )
                 DropdownMenuItem(
+                    text = { Text("Add shapes & custom elements") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.ADD_CUSTOM },
+                )
+                DropdownMenuItem(
+                    text = { Text("Editor settings") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.EDITOR_SETTINGS },
+                )
+                DropdownMenuItem(
                     text = { Text("Appearance (${app.themeMode.displayName})") },
                     onClick = { menuOpen = false; app.sheet = MobileSheet.APPEARANCE },
                 )
@@ -451,15 +497,19 @@ private fun MobileTopBar(
                     text = { Text("Issues (${state.validation.issues.size})") },
                     onClick = { menuOpen = false; app.sheet = MobileSheet.ISSUES },
                 )
-                DropdownMenuItem(
-                    text = { Text("Export...") },
-                    onClick = { menuOpen = false; app.sheet = MobileSheet.EXPORT },
-                )
                 // No "switch edition" item: the tabs under this bar own that,
                 // and offering it in two places invites the two to disagree.
             }
         },
     )
+}
+
+/** Where the move pad sits, as a Compose alignment. */
+private fun NudgePadCorner.toAlignment(): Alignment = when {
+    isBottom && isRight -> Alignment.BottomEnd
+    isBottom -> Alignment.BottomStart
+    isRight -> Alignment.TopEnd
+    else -> Alignment.TopStart
 }
 
 @Composable
@@ -498,6 +548,15 @@ private fun MobileNavBar(app: AndroidAppState) {
             icon = { Text("＋", style = MaterialTheme.typography.titleMedium) },
             label = { Text("Add", style = MaterialTheme.typography.labelSmall) },
         )
+        // Separate from "Add" on purpose: that one lists Minecraft's own
+        // widgets, this one lists shapes, GIFs and anything the catalog does
+        // not have. Mixing them would bury both.
+        NavigationBarItem(
+            selected = app.sheet == MobileSheet.ADD_CUSTOM,
+            onClick = { app.sheet = MobileSheet.ADD_CUSTOM },
+            icon = { Text("◆", style = MaterialTheme.typography.titleMedium) },
+            label = { Text("Custom", style = MaterialTheme.typography.labelSmall) },
+        )
     }
 }
 
@@ -521,6 +580,12 @@ private fun MobileNavRail(app: AndroidAppState) {
             onClick = { app.sheet = MobileSheet.COMPONENTS },
             icon = { Text("＋", style = MaterialTheme.typography.titleMedium) },
             label = { Text("Add", style = MaterialTheme.typography.labelSmall) },
+        )
+        NavigationRailItem(
+            selected = app.sheet == MobileSheet.ADD_CUSTOM,
+            onClick = { app.sheet = MobileSheet.ADD_CUSTOM },
+            icon = { Text("◆", style = MaterialTheme.typography.titleMedium) },
+            label = { Text("Custom", style = MaterialTheme.typography.labelSmall) },
         )
     }
 }
@@ -581,7 +646,7 @@ private fun SelectionActionBar(
                     controller.setLocked(element.id, !element.locked)
                 }
             }
-            ActionChip("✕", tint = com.mcguidesigner.styles.theme.ErrorRed) { controller.deleteSelection() }
+            ActionChip("✕", tint = com.mcguidesigner.styles.theme.ErrorRed) { app.requestDeleteSelection() }
         }
     }
 }

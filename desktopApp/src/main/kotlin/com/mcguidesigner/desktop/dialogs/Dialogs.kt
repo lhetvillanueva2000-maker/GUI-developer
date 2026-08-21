@@ -44,6 +44,7 @@ import com.mcguidesigner.desktop.ActiveDialog
 import com.mcguidesigner.desktop.AppState
 import com.mcguidesigner.desktop.panels.TemplateCard
 import com.mcguidesigner.exporters.CodeGenerator
+import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.render.rememberTextureCache
@@ -156,7 +157,10 @@ fun ExportDialog(app: AppState, state: EditorState) {
         onDismissRequest = { app.dialog = ActiveDialog.NONE },
         title = { Text("Export") },
         text = {
-            Column(Modifier.width(560.dp)) {
+            Column(Modifier.width(580.dp).heightIn(max = 620.dp).verticalScroll(rememberScrollState())) {
+                Text("What are you exporting to?", style = MaterialTheme.typography.labelMedium)
+                Box(Modifier.height(6.dp))
+
                 available.distinct().forEach { candidate ->
                     val selected = candidate == target
                     Row(
@@ -183,22 +187,12 @@ fun ExportDialog(app: AppState, state: EditorState) {
                 }
 
                 if (target == ExportTarget.CODE) {
-                    Box(Modifier.height(10.dp))
-                    Text("Language", style = MaterialTheme.typography.labelMedium)
-                    Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        CodeGenerator.targetsFor(state.edition).forEach { code ->
-                            val selected = app.codeTarget == code
-                            Box(
-                                Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(if (selected) palette.accentMuted else palette.chromePanelAlt)
-                                    .clickable { app.codeTarget = code }
-                                    .padding(horizontal = 8.dp, vertical = 5.dp),
-                            ) {
-                                Text(code.language.uppercase(), style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                    }
+                    Box(Modifier.height(14.dp))
+                    CodeTargetPicker(
+                        edition = state.edition,
+                        selected = app.codeTarget,
+                        onSelect = { app.codeTarget = it },
+                    )
                 }
 
                 Box(Modifier.height(12.dp))
@@ -270,6 +264,96 @@ fun ExportDialog(app: AppState, state: EditorState) {
             TextButton(onClick = { app.dialog = ActiveDialog.NONE }) { Text("Cancel") }
         },
     )
+}
+
+/**
+ * The list of languages a design can be rendered into.
+ *
+ * Split in two, because the distinction decides what someone actually does
+ * with the file: the first group is read by Minecraft itself, so it goes into
+ * a resource pack and works; the second is source and artwork for use
+ * somewhere else.  Knowing which is which is otherwise a thing you have to
+ * already know.
+ */
+@Composable
+fun CodeTargetPicker(
+    edition: Edition,
+    selected: CodeTarget,
+    onSelect: (CodeTarget) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val palette = LocalSkinPalette.current
+    val all = remember(edition) { CodeGenerator.targetsFor(edition) }
+    val native = all.filter { it.readByMinecraft }
+    val rest = all.filterNot { it.readByMinecraft }
+
+    @Composable
+    fun section(title: String, blurb: String, targets: List<CodeTarget>) {
+        if (targets.isEmpty()) return
+        Text(title, style = MaterialTheme.typography.labelMedium)
+        Text(blurb, style = MaterialTheme.typography.labelSmall, color = palette.chromeTextMuted)
+        Box(Modifier.height(6.dp))
+        targets.forEach { code ->
+            val isSelected = code == selected
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(if (isSelected) palette.accentMuted else palette.chromePanelAlt)
+                    .clickable { onSelect(code) }
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(code.displayName, style = MaterialTheme.typography.labelLarge)
+                        if (code.readByMinecraft) {
+                            Box(Modifier.width(8.dp))
+                            Box(
+                                Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(palette.accent.copy(alpha = 0.22f))
+                                    .padding(horizontal = 6.dp, vertical = 1.dp),
+                            ) {
+                                Text(
+                                    "the game reads this",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = palette.accent,
+                                )
+                            }
+                        }
+                    }
+                    if (code.description.isNotBlank()) {
+                        Text(
+                            code.description,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = palette.chromeTextMuted,
+                        )
+                    }
+                }
+                Text(
+                    ".${code.fileExtension}",
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                    color = palette.chromeTextMuted,
+                )
+            }
+        }
+        Box(Modifier.height(12.dp))
+    }
+
+    Column(modifier) {
+        section(
+            "Minecraft's own formats",
+            "Read by ${edition.displayName} directly - no mod, no build step.",
+            native,
+        )
+        section(
+            "Code & artwork",
+            "For use outside the game: mod source, web mock-ups, vector art.",
+            rest,
+        )
+    }
 }
 
 @Composable
@@ -345,8 +429,9 @@ fun ShortcutsDialog(app: AppState) {
     val shortcuts = listOf(
         "Ctrl+N" to "New project",
         "Ctrl+O" to "Open project",
-        "Ctrl+S / Ctrl+Shift+S" to "Save / Save as",
-        "Ctrl+E" to "Export",
+        "Ctrl+S" to "Save",
+        "Ctrl+Shift+S / Ctrl+E" to "Export (every format, including the ones Minecraft reads)",
+        "Ctrl+Shift+E" to "Export everything at once",
         "Ctrl+Z / Ctrl+Y" to "Undo / Redo",
         "Ctrl+C / Ctrl+V / Ctrl+X" to "Copy / Paste / Cut elements",
         "Ctrl+D" to "Duplicate selection",
@@ -354,7 +439,7 @@ fun ShortcutsDialog(app: AppState) {
         "Delete" to "Delete selection",
         "Escape" to "Deselect / cancel placement",
         "V / H / M" to "Select / Pan / Marquee tool",
-        "Arrow keys" to "Nudge by 1px (Shift: by 8px)",
+        "Arrow keys" to "Move the selection by the step in Editor Settings (Shift: the big step)",
         "Ctrl+] / Ctrl+[" to "Bring forward / send backward",
         "Ctrl+Shift+] / Ctrl+Shift+[" to "Bring to front / send to back",
         "Ctrl+G" to "Toggle grid",

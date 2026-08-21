@@ -143,6 +143,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.window)
     implementation(libs.kotlinx.coroutines.android)
+    // Editor settings are persisted as JSON so the shared EditorSettings type
+    // - the same one the desktop writes - can be stored whole. See
+    // io/AndroidPreferences.kt.
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.kotlin.test)
 }

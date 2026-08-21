@@ -1,5 +1,6 @@
 package com.mcguidesigner.desktop.io
 
+import com.mcguidesigner.core.editor.EditorSettings
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.serialization.LoadResult
@@ -42,6 +43,15 @@ data class DesktopPreferences(
     /** Whether the wallpaper drifts. Separate from [backdropEnabled] because
      *  wanting the artwork and not wanting motion is a common, reasonable pair. */
     val backdropMotion: Boolean = true,
+    /**
+     * Editor behaviour from the Editor Settings dialog.
+     *
+     * Nested as its own object rather than flattened into this class because
+     * the Android app persists the identical type - one definition, two
+     * stores, no chance of the two platforms disagreeing about what a nudge
+     * step is.
+     */
+    val editorSettings: EditorSettings = EditorSettings(),
 ) {
     val edition: Edition
         get() = Edition.entries.firstOrNull { it.name == lastEdition } ?: Edition.JAVA

@@ -9,6 +9,8 @@ import com.mcguidesigner.core.model.GuiElement
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.IntRect
 import com.mcguidesigner.core.model.IntValue
+import com.mcguidesigner.core.model.ShapeKind
+import com.mcguidesigner.core.model.int
 import com.mcguidesigner.core.model.TextureAsset
 import com.mcguidesigner.core.model.TextureValue
 import com.mcguidesigner.core.model.bool
@@ -33,7 +35,44 @@ enum class CodeTarget(
     val fileExtension: String,
     val edition: Edition? = null,
     val description: String = "",
+    /**
+     * True when Minecraft itself parses this format.
+     *
+     * The distinction is the one that matters when choosing an export: a
+     * `Screen` subclass is source you compile into a mod, whereas JSON UI is
+     * read by the shipping game with nothing else involved.  The export
+     * dialog groups on this so the difference is not something you have to
+     * already know.
+     */
+    val readByMinecraft: Boolean = false,
+    /**
+     * Short label for a tab strip.
+     *
+     * Not derived from [language]: three of these targets are JSON, and a row
+     * of tabs all reading "JSON" tells you nothing about which is which.
+     */
+    val tabLabel: String = language.uppercase(),
 ) {
+    BEDROCK_JSON(
+        "bedrock", "Bedrock JSON UI", "json", "json", Edition.BEDROCK,
+        description = "The ui/<screen>.json the game itself reads. Drop it in a resource pack " +
+            "and Bedrock draws this screen - no mod, no code.",
+        readByMinecraft = true,
+        tabLabel = "JSON UI",
+    ),
+    JAVA_GUI_DEFINITIONS(
+        "java-native", "Java GUI definitions (.mcmeta + atlas)", "json", "jsonc", Edition.JAVA,
+        description = "The vanilla sidecars that tell Java Edition how to scale and animate this " +
+            "screen's images: gui.scaling, animation, and the GUI atlas source list.",
+        readByMinecraft = true,
+        tabLabel = "MCMETA",
+    ),
+    JAVA_SCREEN(
+        "java", "Java (Minecraft Screen source)", "java", "java", Edition.JAVA,
+        description = "Screen subclass for a Java Edition mod. Java draws its GUIs in code, so " +
+            "this is the closest thing it has to a layout format.",
+        tabLabel = "JAVA",
+    ),
     HTML_CSS(
         "html", "HTML + CSS (standalone page)", "html", "html",
         description = "Self-contained page with embedded textures. Opens in any browser.",
@@ -42,21 +81,19 @@ enum class CodeTarget(
         "css", "CSS stylesheet only", "css", "css",
         description = "Class-per-element stylesheet you can drop into an existing page.",
     ),
+    SVG(
+        "svg", "SVG vector drawing", "xml", "svg",
+        description = "The layout as vector art, shapes included. Opens in any editor or browser.",
+    ),
     COMPOSE(
         "compose", "Kotlin (Compose Multiplatform)", "kotlin", "kt",
         description = "A @Composable that reproduces the layout with Box/offset positioning.",
-    ),
-    JAVA_SCREEN(
-        "java", "Java (Minecraft Screen)", "java", "java", Edition.JAVA,
-        description = "Screen subclass for a Java Edition mod.",
-    ),
-    BEDROCK_JSON(
-        "bedrock", "Bedrock JSON UI", "json", "json", Edition.BEDROCK,
-        description = "The ui/<screen>.json the Bedrock resource pack ships.",
+        tabLabel = "COMPOSE",
     ),
     PROJECT_JSON(
         "project", "Project document (.mcgui)", "json", "mcgui",
         description = "The full editable project, exactly as saved to disk.",
+        tabLabel = "MCGUI",
     ),
     ;
 
@@ -106,11 +143,29 @@ object CodeGenerator {
                 GeneratedCode(target, "${project.meta.screenId.ifBlank { base }}.json", BedrockEditionExporter.screenJson(project, namespace))
             }
 
+            CodeTarget.JAVA_GUI_DEFINITIONS -> GeneratedCode(
+                // .jsonc, not .json: the document is several files laid out
+                // with `//` comments saying where each one goes, which plain
+                // JSON has no room for.
+                target, "$base-gui-definitions.jsonc", NativeAssets.javaDefinitionsDocument(project),
+            )
+
+            CodeTarget.SVG -> GeneratedCode(target, "$base.svg", svg(project))
+
             CodeTarget.PROJECT_JSON -> GeneratedCode(target, "$base.mcgui", ProjectSerializer.encode(project))
         }
     }
 
     fun targetsFor(edition: Edition): List<CodeTarget> = CodeTarget.entries.filter { it.appliesTo(edition) }
+
+    /**
+     * Targets Minecraft parses directly, for [edition].
+     *
+     * "What do I give the game?" is the first question anyone exporting a
+     * screen has, so the dialog answers it separately from the rest.
+     */
+    fun nativeTargetsFor(edition: Edition): List<CodeTarget> =
+        targetsFor(edition).filter { it.readByMinecraft }
 
     // -- HTML --------------------------------------------------------------
 
@@ -317,9 +372,21 @@ object CodeGenerator {
         val texture = project.texture((element.props["texture"] as? TextureValue)?.assetId)
         if (texture != null && element.type != ElementCatalog.IMAGE_PLACEHOLDER) {
             sb.appendLine("  background-image: url(\"${dataUri(texture)}\");")
-            sb.appendLine("  background-size: 100% 100%;")
+            if (element.type == ElementCatalog.IMAGE_ANIMATED && texture.isAnimated) {
+                appendAnimatedImageRules(sb, element, texture)
+            } else {
+                sb.appendLine("  background-size: 100% 100%;")
+            }
+        }
+        if (element.type == ElementCatalog.SHAPE_CUSTOM) {
+            appendShapeRules(sb, element)
         }
         sb.appendLine("}")
+
+        // The keyframes have to sit outside the rule block.
+        if (element.type == ElementCatalog.IMAGE_ANIMATED && texture?.isAnimated == true) {
+            appendAnimationKeyframes(sb, element, texture)
+        }
 
         // Interactive states become real CSS pseudo-classes so the exported
         // page behaves like the preview does.
@@ -353,6 +420,98 @@ object CodeGenerator {
         }
         sb.appendLine()
     }
+
+    /**
+     * A custom shape as CSS.
+     *
+     * Ellipses and rounded rectangles have real CSS properties; everything else
+     * becomes a `clip-path: polygon(...)`, built from the same 0..1 outline the
+     * canvas draws, so the page and the editor cannot disagree about what a
+     * shape looks like.
+     */
+    private fun appendShapeRules(sb: StringBuilder, element: GuiElement) {
+        val kind = ShapeKind.fromId(element.props.string("shape", ShapeKind.RECTANGLE.id))
+        val fillMode = element.props.string("fillMode", "solid")
+
+        when (fillMode) {
+            "none" -> sb.appendLine("  background-color: transparent;")
+            "gradient" -> sb.appendLine(
+                "  background-image: linear-gradient(${element.props.int("gradientAngle", 90)}deg, " +
+                    "${ExportUtil.cssRgba(element.props.color("fillColor", 0xFF56B84B))}, " +
+                    "${ExportUtil.cssRgba(element.props.color("gradientColor", 0xFF1E6F3A))});",
+            )
+            else -> sb.appendLine(
+                "  background-color: ${ExportUtil.cssRgba(element.props.color("fillColor", 0xFF56B84B))};",
+            )
+        }
+
+        val strokeWidth = element.props.int("strokeWidth", 1)
+        when (kind) {
+            ShapeKind.ELLIPSE -> sb.appendLine("  border-radius: 50%;")
+            ShapeKind.ROUNDED_RECTANGLE ->
+                sb.appendLine("  border-radius: ${element.props.int("cornerRadius", 6)}px;")
+
+            else -> {
+                val points = kind
+                    .outline(element.props.int("sides", 6), element.props.float("innerRadius", 0.5f))
+                    .joinToString(", ") { (fx, fy) -> "${percent(fx)} ${percent(fy)}" }
+                if (points.isNotBlank()) sb.appendLine("  clip-path: polygon($points);")
+            }
+        }
+
+        // A clip-path cuts the border off with everything else outside the
+        // outline, so only the two shapes CSS can really outline get one.
+        if (strokeWidth > 0 && !kind.isPolygonal) {
+            sb.appendLine(
+                "  border: ${strokeWidth}px solid " +
+                    "${ExportUtil.cssRgba(element.props.color("strokeColor", 0xFF000000))};",
+            )
+            sb.appendLine("  box-sizing: border-box;")
+        }
+
+        element.props.int("rotation", 0).let { if (it != 0) sb.appendLine("  transform: rotate(${it}deg);") }
+    }
+
+    /**
+     * Plays a frame strip with `steps()`, the same trick CSS sprite animations
+     * have always used: the background jumps one frame height at a time rather
+     * than sliding smoothly.
+     */
+    private fun appendAnimatedImageRules(sb: StringBuilder, element: GuiElement, texture: TextureAsset) {
+        val frames = texture.frameCount.coerceAtLeast(1)
+        sb.appendLine("  background-size: 100% ${frames * 100}%;")
+        sb.appendLine("  background-repeat: no-repeat;")
+        sb.appendLine("  image-rendering: pixelated;")
+        if (frames > 1) {
+            val seconds = frames * element.props.int("frameTime", texture.frameTimeTicks)
+                .coerceAtLeast(1) * TICK_SECONDS
+            val direction = when (element.props.string("playback", "forward")) {
+                "reverse" -> "reverse"
+                "ping_pong" -> "alternate"
+                else -> "normal"
+            }
+            val count = if (element.props.bool("loop", true)) "infinite" else "1"
+            sb.appendLine(
+                "  animation: ${elementClass(element)}-frames ${trim(seconds)}s " +
+                    "steps($frames) $direction $count;",
+            )
+        }
+    }
+
+    private fun appendAnimationKeyframes(sb: StringBuilder, element: GuiElement, texture: TextureAsset) {
+        if (texture.frameCount <= 1) return
+        sb.appendLine("@keyframes ${elementClass(element)}-frames {")
+        sb.appendLine("  from { background-position: 0 0; }")
+        // 100% of the *extra* height, which for an N-frame strip scaled to
+        // N*100% is what lands the last frame exactly in the box.
+        sb.appendLine("  to { background-position: 0 ${texture.frameCount * 100}%; }")
+        sb.appendLine("}")
+    }
+
+    /** One Minecraft tick in seconds. */
+    private const val TICK_SECONDS = 0.05f
+
+    private fun percent(fraction: Float): String = "${trim(fraction * 100f)}%"
 
     private fun zIndexOf(element: GuiElement, project: GuiProject): Int =
         project.elements.walkAll().indexOfFirst { it.id == element.id } + 1
@@ -453,6 +612,124 @@ object CodeGenerator {
 
     private fun colorLiteral(argb: Long): String =
         "Color(0x" + argb.toString(16).uppercase().padStart(8, '0') + ")"
+
+    // -- SVG ---------------------------------------------------------------
+
+    /**
+     * The layout as vector art.
+     *
+     * The one export where a custom shape survives as a shape: HTML approximates
+     * a hexagon with a `clip-path` and a resource pack can only rasterise it,
+     * but SVG has real polygons, so a design built out of them comes out
+     * editable in Illustrator, Inkscape or Figma.  Everything else is drawn as
+     * its box with its own fill, which is enough to keep the composition
+     * readable.
+     */
+    private fun svg(project: GuiProject): String {
+        val bounds = project.absoluteBounds()
+        val flat = project.elements.walkAll().toList()
+
+        return buildString {
+            appendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+            appendLine(
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" " +
+                    "width=\"${project.canvas.width}\" height=\"${project.canvas.height}\" " +
+                    "viewBox=\"0 0 ${project.canvas.width} ${project.canvas.height}\" " +
+                    "shape-rendering=\"crispEdges\">",
+            )
+            appendLine("  <title>${ExportUtil.escape(project.name)}</title>")
+            appendLine(
+                "  <desc>Generated by Minecraft GUI Designer. " +
+                    "${project.edition.displayName}, ${project.canvas.width}x${project.canvas.height} GUI pixels.</desc>",
+            )
+
+            for (element in flat) {
+                if (!element.visible) continue
+                val rect = bounds[element.id] ?: continue
+                appendLine("  <g id=\"${ExportUtil.cssClass(element.name)}\">")
+                appendSvgElement(this, element, rect)
+                appendLine("  </g>")
+            }
+            append("</svg>")
+        }
+    }
+
+    private fun appendSvgElement(sb: StringBuilder, element: GuiElement, rect: IntRect) {
+        val opacity = element.props.float("opacity", 1f).coerceIn(0f, 1f)
+        val label = displayText(element)
+
+        if (element.type == ElementCatalog.SHAPE_CUSTOM) {
+            val kind = ShapeKind.fromId(element.props.string("shape", ShapeKind.RECTANGLE.id))
+            val fillMode = element.props.string("fillMode", "solid")
+            val fill = if (fillMode == "none") "none" else ExportUtil.hex(element.props.color("fillColor", 0xFF56B84B))
+            val stroke = ExportUtil.hex(element.props.color("strokeColor", 0xFF000000))
+            val strokeWidth = element.props.int("strokeWidth", 1)
+            val rotation = element.props.int("rotation", 0)
+            val transform = if (rotation == 0) {
+                ""
+            } else {
+                " transform=\"rotate($rotation ${rect.centerX} ${rect.centerY})\""
+            }
+            val paint = "fill=\"$fill\" stroke=\"$stroke\" stroke-width=\"$strokeWidth\" " +
+                "opacity=\"${trim(opacity)}\"$transform"
+
+            when (kind) {
+                ShapeKind.ELLIPSE -> sb.appendLine(
+                    "    <ellipse cx=\"${rect.centerX}\" cy=\"${rect.centerY}\" " +
+                        "rx=\"${rect.width / 2}\" ry=\"${rect.height / 2}\" $paint/>",
+                )
+
+                ShapeKind.ROUNDED_RECTANGLE -> {
+                    val radius = element.props.int("cornerRadius", 6)
+                        .coerceAtMost(minOf(rect.width, rect.height) / 2)
+                    sb.appendLine(
+                        "    <rect x=\"${rect.x}\" y=\"${rect.y}\" width=\"${rect.width}\" " +
+                            "height=\"${rect.height}\" rx=\"$radius\" ry=\"$radius\" $paint/>",
+                    )
+                }
+
+                else -> {
+                    val points = kind
+                        .outline(element.props.int("sides", 6), element.props.float("innerRadius", 0.5f))
+                        .joinToString(" ") { (fx, fy) ->
+                            "${trim(rect.x + fx * rect.width)},${trim(rect.y + fy * rect.height)}"
+                        }
+                    sb.appendLine("    <polygon points=\"$points\" $paint/>")
+                }
+            }
+        } else {
+            val fill = ExportUtil.hex(
+                element.props.color(
+                    "background",
+                    element.props.color("fillColor", DEFAULT_SVG_FILL),
+                ),
+            )
+            sb.appendLine(
+                "    <rect x=\"${rect.x}\" y=\"${rect.y}\" width=\"${rect.width}\" height=\"${rect.height}\" " +
+                    "fill=\"$fill\" opacity=\"${trim(opacity)}\"/>",
+            )
+        }
+
+        val text = label.ifBlank { element.props.string("label", "") }
+        if (text.isNotBlank()) {
+            sb.appendLine(
+                "    <text x=\"${rect.centerX}\" y=\"${rect.centerY + 3}\" text-anchor=\"middle\" " +
+                    "font-family=\"monospace\" font-size=\"8\" " +
+                    "fill=\"${ExportUtil.hex(element.props.color("textColor", 0xFFE0E0E0))}\">" +
+                    ExportUtil.escape(text.replace('\n', ' ')) +
+                    "</text>",
+            )
+        }
+    }
+
+    /** Drops a trailing `.0`, which SVG accepts but which reads as noise. */
+    private fun trim(value: Float): String {
+        val rounded = ((value * 100) + if (value < 0) -0.5f else 0.5f).toInt() / 100.0
+        return if (rounded == rounded.toInt().toDouble()) rounded.toInt().toString() else rounded.toString()
+    }
+
+    /** Neutral grey for elements with no colour of their own. */
+    private const val DEFAULT_SVG_FILL = 0xFF8B8B8BL
 
     // -- Shared ------------------------------------------------------------
 

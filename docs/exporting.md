@@ -22,13 +22,34 @@ necessarily two halves: the assets a pack can ship as-is, and a generated
 custom_chest_java_pack/
 ├── pack.mcmeta
 ├── assets/mcgui/
+│   ├── atlases/gui.json               ← adds textures/gui to the GUI atlas
 │   ├── gui/custom_chest.json          ← portable layout description
 │   ├── lang/en_us.json                ← a key per label in the screen
-│   └── textures/gui/*.png             ← every texture you imported
+│   └── textures/gui/
+│       ├── *.png                      ← every texture you imported
+│       └── *.png.mcmeta               ← how the game should draw them
 ├── src/main/java/com/example/mcgui/client/gui/
 │   └── CustomChestScreen.java         ← ready-to-compile Screen subclass
 └── README.md
 ```
+
+### The `.mcmeta` sidecars
+
+A pack containing only PNGs tells the game *what* the pixels are, never *how to
+draw them*. That lives in a sidecar next to each image, and the exporter writes
+one whenever the texture actually needs it:
+
+| Block | Written when | What it does |
+| --- | --- | --- |
+| `gui.scaling` | The texture has nine-slice insets | Keeps a button's corners square at any size instead of smearing them. Vanilla since the 1.20.2 GUI sprite system. |
+| `animation` | The texture is a frame strip | Plays the frames. `frametime` in ticks, plus explicit `width`/`height` when the frames are not square, and per-frame `time` entries when the source had uneven delays. |
+
+A plain stretched still gets no sidecar at all - writing one that says nothing
+would be noise in the pack.
+
+`atlases/gui.json` is what makes these addressable as `mcgui:gui/<name>`
+sprites rather than raw file paths. Atlas files from every namespace are
+merged, so contributing the pack's own folder is all it takes.
 
 ### Using the pack half
 
@@ -124,14 +145,31 @@ The **Code** tab turns the current design into something you can paste
 elsewhere. Every generator works from absolute canvas-space bounds, so the
 output is flat and readable rather than a nest of relative offsets.
 
+The list is split in two, because the difference decides what you do with the
+file. The first group is read by Minecraft itself - it goes into a resource
+pack and works. The second is source and artwork for use somewhere else.
+
+**Minecraft's own formats**
+
 | Target | Output |
 | --- | --- |
-| **HTML + CSS** | A self-contained page with embedded textures as data URIs, `image-rendering: pixelated`, and real `:hover`/`:active`/`:focus` rules generated from the element's interaction states. Opens in any browser. |
+| **Bedrock JSON UI** | The `ui/<screen>.json` the game reads. Drop it in a resource pack and Bedrock draws the screen - no mod, no code. Bedrock projects only. |
+| **Java GUI definitions** | The vanilla `.mcmeta` sidecars and the atlas source list described above, as one annotated document with each file's path above it. Java projects only. |
+
+**Code & artwork**
+
+| Target | Output |
+| --- | --- |
+| **Java (Minecraft Screen source)** | The same source the Java pack ships. Java draws its GUIs in code, so this is the closest thing it has to a layout format. Java projects only. |
+| **HTML + CSS** | A self-contained page with embedded textures as data URIs, `image-rendering: pixelated`, real `:hover`/`:active`/`:focus` rules generated from the element's interaction states, `clip-path` polygons for custom shapes and `steps()` animations for frame strips. Opens in any browser. |
 | **CSS only** | The stylesheet on its own, one class per element, for dropping into an existing page. |
+| **SVG** | The layout as vector art. The one export where a custom shape stays a shape: polygons are polygons and circles are ellipses, so a design opens editable in Illustrator, Inkscape or Figma. |
 | **Kotlin (Compose)** | A `@Composable` reproducing the layout with `Box` + `offset` + `size`. |
-| **Java (Minecraft Screen)** | The same source the Java pack ships. Java projects only. |
-| **Bedrock JSON UI** | The same `ui/<screen>.json` the Bedrock pack ships. Bedrock projects only. |
 | **Project document** | The raw `.mcgui`, for tooling that wants the model itself. |
+
+Java Edition has no data-driven screen format, which is why its native entry
+covers the images rather than the layout: vanilla reads the sidecars, and the
+widget positions have to be code. Bedrock genuinely is data all the way down.
 
 ---
 
@@ -144,7 +182,7 @@ other target:
 <screen>_everything/
   java-edition/      the Java resource pack and Screen subclass
   bedrock-edition/   the Bedrock JSON-UI pack
-  code/              the same screen as HTML, CSS, Compose, Java and JSON
+  code/              the same screen in every target above, side by side
   project/           <screen>.mcgui - reopen this to keep editing
   README.md          what is in each folder
 ```

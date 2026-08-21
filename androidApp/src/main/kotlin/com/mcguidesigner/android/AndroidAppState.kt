@@ -8,6 +8,9 @@ import androidx.compose.runtime.setValue
 import com.mcguidesigner.android.io.AndroidFileIO
 import com.mcguidesigner.android.io.AndroidPackImport
 import com.mcguidesigner.android.io.AndroidPreferences
+import com.mcguidesigner.core.catalog.CustomPresets
+import com.mcguidesigner.core.catalog.ElementCatalog
+import com.mcguidesigner.core.editor.EditorSettings
 import com.mcguidesigner.android.io.LibraryStore
 import com.mcguidesigner.android.io.SessionStore
 import com.mcguidesigner.core.editor.EditorController
@@ -55,6 +58,9 @@ enum class MobileSheet {
     PACK_IMPORT,
     APPEARANCE,
     ARRANGE,
+    ADD_CUSTOM,
+    EDITOR_SETTINGS,
+    CONFIRM_DELETE,
 }
 
 /**
@@ -97,9 +103,15 @@ class AndroidAppState(initial: GuiProject) {
         themeMode = settings.themeMode
         backdropEnabled = settings.backdropEnabled
         backdropMotion = settings.backdropMotion
+        controller.setSettings(settings.editor)
     }
 
-    private fun settings() = AndroidPreferences.Settings(themeMode, backdropEnabled, backdropMotion)
+    private fun settings() = AndroidPreferences.Settings(
+        themeMode = themeMode,
+        backdropEnabled = backdropEnabled,
+        backdropMotion = backdropMotion,
+        editor = controller.current.settings,
+    )
 
     fun setTheme(context: Context, mode: ThemeMode) {
         themeMode = mode
@@ -110,6 +122,66 @@ class AndroidAppState(initial: GuiProject) {
         backdropEnabled = enabled
         backdropMotion = motion
         AndroidPreferences.save(context, settings())
+    }
+
+    // -- Editor settings ---------------------------------------------------
+
+    /** Applies [next] to the live editor and writes it to preferences. */
+    fun applyEditorSettings(context: Context, next: EditorSettings) {
+        controller.setSettings(next)
+        AndroidPreferences.save(context, settings())
+    }
+
+    // -- Adding custom content ---------------------------------------------
+
+    /**
+     * Drops a preset onto the middle of the canvas and selects it.
+     *
+     * Identical in behaviour to the desktop's version, down to the follow-up
+     * message - the two shells look nothing alike, but adding a shape should
+     * do the same thing on both.
+     */
+    fun addCustomPreset(preset: CustomPresets.Preset) {
+        val canvas = controller.project.canvas
+        val added = controller.addElement(
+            typeId = preset.typeId,
+            at = IntPoint(canvas.width / 2, canvas.height / 2),
+            centreOnPoint = true,
+            initialProps = preset.props,
+            nameHint = preset.label,
+            sizeOverride = preset.size,
+        )
+        sheet = MobileSheet.NONE
+        status = if (added == null) {
+            "Could not add ${preset.label}."
+        } else {
+            when (preset.typeId) {
+                ElementCatalog.IMAGE_ANIMATED ->
+                    "Added ${preset.label}. Import a GIF from the menu, then pick it as the frame strip."
+
+                ElementCatalog.IMAGE_PLACEHOLDER ->
+                    "Added ${preset.label}. Choose a texture for it in Properties."
+
+                else -> "Added ${preset.label}. Tap Edit to restyle it."
+            }
+        }
+    }
+
+    // -- Deleting ----------------------------------------------------------
+
+    /** Deletes the selection, asking first when the user has said to ask. */
+    fun requestDeleteSelection() {
+        if (!controller.current.hasSelection) return
+        if (controller.current.settings.confirmBeforeDelete) {
+            sheet = MobileSheet.CONFIRM_DELETE
+        } else {
+            controller.deleteSelection()
+        }
+    }
+
+    fun confirmDeleteSelection() {
+        controller.deleteSelection()
+        sheet = MobileSheet.NONE
     }
 
     // -- Guarding unsaved work ---------------------------------------------
@@ -155,6 +227,16 @@ class AndroidAppState(initial: GuiProject) {
         unsavedPrompt = null
     }
 
+    /**
+     * A controller for [project] that keeps the user's editor settings.
+     *
+     * Opening a document replaces the whole controller, and settings live in
+     * the editor state - so without this, choosing a 4px move step would last
+     * exactly until the next File > Open.
+     */
+    private fun freshController(project: GuiProject) =
+        EditorController(project).apply { setSettings(controller.current.settings) }
+
     // -- Session persistence -----------------------------------------------
 
     /**
@@ -175,7 +257,7 @@ class AndroidAppState(initial: GuiProject) {
 
     /** Adopts a document written by [persistSession] on a previous run. */
     fun restoreSession(session: SessionStore.Session) {
-        controller = EditorController(session.project)
+        controller = freshController(session.project)
         documentUri = session.documentUri
         documentName = session.documentName
         if (session.dirty) {
@@ -187,7 +269,7 @@ class AndroidAppState(initial: GuiProject) {
     // -- Documents ---------------------------------------------------------
 
     fun newProject(edition: Edition, name: String) {
-        controller = EditorController(EditorController.newProject(edition, name))
+        controller = freshController(EditorController.newProject(edition, name))
         documentUri = null
         documentName = null
         sheet = MobileSheet.NONE
@@ -197,7 +279,7 @@ class AndroidAppState(initial: GuiProject) {
 
     fun newFromTemplate(templateId: String) {
         val template = BuiltInTemplates[templateId] ?: return
-        controller = EditorController(template.instantiate())
+        controller = freshController(template.instantiate())
         documentUri = null
         documentName = null
         sheet = MobileSheet.NONE
@@ -210,7 +292,7 @@ class AndroidAppState(initial: GuiProject) {
             onSuccess = { text ->
                 when (val result = ProjectSerializer.decode(text)) {
                     is LoadResult.Success -> {
-                        controller = EditorController(result.project)
+                        controller = freshController(result.project)
                         documentUri = uri
                         documentName = AndroidFileIO.displayName(context, uri)
                         AndroidFileIO.persistPermission(context, uri, writable = true)
