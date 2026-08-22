@@ -63,6 +63,38 @@ fun ToolbarButton(
     }
 }
 
+/**
+ * A toolbar button whose face is drawn rather than lettered.
+ *
+ * Same metrics and same hover behaviour as [ToolbarButton]; the difference is
+ * only that the caller supplies the artwork, for the one or two controls that
+ * are a mark rather than a word.
+ */
+@Composable
+fun ToolbarIconButton(
+    hint: String?,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val palette = LocalSkinPalette.current
+    WithTooltip(hint) {
+        Box(
+            modifier
+                .padding(horizontal = 2.dp)
+                .height(30.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(palette.chromePanelAlt.copy(alpha = if (enabled) 1f else 0.4f))
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(horizontal = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            content()
+        }
+    }
+}
+
 @Composable
 fun IconToggle(
     label: String,

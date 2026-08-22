@@ -38,6 +38,9 @@ import com.mcguidesigner.core.model.AlignMode
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.templates.BuiltInTemplates
 import com.mcguidesigner.exporters.ExportTarget
+import com.mcguidesigner.core.support.Donation
+import com.mcguidesigner.styles.support.DonationQr
+import com.mcguidesigner.styles.support.LocalDonationQr
 import com.mcguidesigner.styles.theme.BackdropArtwork
 import com.mcguidesigner.styles.theme.DesignerTheme
 import com.mcguidesigner.styles.theme.LocalBackdropArtwork
@@ -154,6 +157,8 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
     ) {
         LaunchedEffect(window) { appState.frameProvider = { window } }
 
+        val donationQr = rememberDonationQr()
+
         DesignerMenuBar(appState)
 
         DesignerTheme(
@@ -164,6 +169,7 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
             CompositionLocalProvider(
                 LocalBackdropArtwork provides if (appState.backdropEnabled) DesktopBackdrops else BackdropArtwork.None,
                 LocalBackdropMotion provides appState.backdropMotion,
+                LocalDonationQr provides donationQr,
             ) {
                 DesktopEditor(appState, controller, editorState, Modifier.fillMaxSize())
             }
@@ -193,6 +199,21 @@ private object DesktopBackdrops : BackdropArtwork {
             }.getOrNull()
         }
     }
+}
+
+/**
+ * The donation QR, read off the classpath once per window.
+ *
+ * The build copies it there from `assets/donate`, the same file the Android
+ * build packages, so both apps show and hand out the identical code.
+ */
+@Composable
+private fun rememberDonationQr(): DonationQr? = remember {
+    DonationQr.from(
+        runCatching {
+            object {}.javaClass.getResourceAsStream("/${Donation.QR_ASSET_NAME}")?.use { it.readBytes() }
+        }.getOrNull(),
+    )
 }
 
 /** Settle time before window geometry changes are written to disk. */
@@ -514,6 +535,7 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
             Item("Welcome Screen") { app.dialog = ActiveDialog.WELCOME }
             Item("Keyboard Shortcuts") { app.dialog = ActiveDialog.SHORTCUTS }
             Separator()
+            Item("Support the Designer...") { app.showDonate = true }
             Item("About") { app.dialog = ActiveDialog.ABOUT }
         }
     }

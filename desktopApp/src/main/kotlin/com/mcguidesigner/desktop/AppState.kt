@@ -94,6 +94,33 @@ class AppState(initial: GuiProject) {
     var status by mutableStateOf("Ready")
     var pendingExit by mutableStateOf(false)
 
+    /**
+     * True while the support page covers the editor.
+     *
+     * Not an [ActiveDialog]: it is a full page rather than a prompt, and
+     * putting it in that enum would make every `when` over dialogs have to
+     * account for something that is not one.
+     */
+    var showDonate by mutableStateOf(false)
+
+    /**
+     * Writes the donation QR wherever the user points the save dialog.
+     *
+     * The bytes are the file that shipped, copied straight through: the code
+     * someone saves is byte-for-byte the code the app displays.
+     */
+    fun saveDonationQr(bytes: ByteArray) {
+        val target = DesktopFileIO.saveFileDialog(
+            owner = frameProvider(),
+            title = "Save the donation QR code",
+            suggestedName = com.mcguidesigner.core.support.Donation.QR_FILE_NAME,
+        ) ?: return
+        runCatching { target.writeBytes(bytes) }.fold(
+            onSuccess = { status = "QR code saved to ${target.name}." },
+            onFailure = { status = "Could not save the QR code: ${it.message}" },
+        )
+    }
+
     val recentFiles = mutableStateListOf<File>()
 
     // -- Appearance --------------------------------------------------------

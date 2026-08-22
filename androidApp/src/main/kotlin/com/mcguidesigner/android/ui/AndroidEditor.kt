@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,6 +45,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,7 +68,12 @@ import com.mcguidesigner.core.editor.NudgePadCorner
 import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.Edition
+import com.mcguidesigner.core.support.Donation
+import com.mcguidesigner.styles.layout.AdaptiveMetrics
+import com.mcguidesigner.styles.layout.LocalAdaptive
 import com.mcguidesigner.styles.render.rememberTextureCache
+import com.mcguidesigner.styles.support.DonateIcon
+import com.mcguidesigner.styles.support.DonateScreen
 import com.mcguidesigner.styles.theme.DesignerBackdrop
 import com.mcguidesigner.styles.theme.EditionTabs
 import com.mcguidesigner.styles.theme.LocalSkinPalette
@@ -120,6 +127,14 @@ fun AndroidEditor(
         ActivityResultContracts.OpenDocument(),
     ) { uri -> uri?.let { app.openPack(context, it) } }
 
+    // Saving the donation QR goes through the same picker as everything else,
+    // which is why the app still needs no storage permission to do it.
+    val qrLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(AndroidFileIO.PNG_MIME),
+    ) { uri ->
+        if (uri != null) app.saveQrCode(context, uri) else app.pendingQrBytes = null
+    }
+
     LaunchedEffect(app.status) {
         app.status?.let {
             snackbar.showSnackbar(it)
@@ -152,130 +167,176 @@ fun AndroidEditor(
     }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        // Wide windows (landscape phones, tablets) get a side rail; portrait
-        // keeps the bottom bar within thumb reach.
-        val useRail = maxWidth > 600.dp
+        // One place decides which of the three layouts this window gets, and
+        // every measurement below is read off it. Deriving "is this a tablet?"
+        // separately at each call site is how a rail and a bottom bar end up on
+        // screen at the same time.
+        val metrics = AdaptiveMetrics.of(maxWidth, maxHeight, touchMode = true)
+        val dockInspector = metrics.usesDockedInspector && app.section == MobileSection.DESIGN
 
-        // The wallpaper, as the bottom layer of this Box rather than a wrapper
-        // around the scaffold: the scaffold is transparent so the artwork shows
-        // through around the canvas, and every bar and sheet stays opaque.
-        if (app.backdropEnabled) {
-            DesignerBackdrop(state.edition, Modifier.fillMaxSize()) {}
-        } else {
-            Box(Modifier.fillMaxSize().background(palette.chromeBackground))
-        }
+        CompositionLocalProvider(LocalAdaptive provides metrics) {
+            // The wallpaper, as the bottom layer of this Box rather than a wrapper
+            // around the scaffold: the scaffold is transparent so the artwork shows
+            // through around the canvas, and every bar and sheet stays opaque.
+            if (app.backdropEnabled) {
+                DesignerBackdrop(state.edition, Modifier.fillMaxSize()) {}
+            } else {
+                Box(Modifier.fillMaxSize().background(palette.chromeBackground))
+            }
 
-        Scaffold(
-            containerColor = Color.Transparent,
-            contentWindowInsets = WindowInsets.safeDrawing,
-            topBar = {
-                Column {
-                    MobileTopBar(
-                        app = app,
-                        controller = controller,
-                        state = state,
-                        onOpen = {
-                            app.guardUnsaved("open another project") { openLauncher.launch(arrayOf("*/*")) }
-                        },
-                        onSave = { if (!app.saveDocument(context)) createLauncher.launch(app.suggestedFileName()) },
-                        onSaveAs = { createLauncher.launch(app.suggestedFileName()) },
-                        onImportImages = { imageLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
-                        onImportFrames = { frameLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
-                        onImportPack = { packLauncher.launch(AndroidPackImport.PACK_MIME_TYPES) },
-                    )
-                    EditionStrip(app, controller, state)
-                }
-            },
-            bottomBar = {
-                if (!useRail) {
-                    MobileNavBar(app)
-                }
-            },
-            snackbarHost = { SnackbarHost(snackbar) },
-        ) { padding ->
-            Row(Modifier.fillMaxSize().padding(padding)) {
-                if (useRail) {
-                    MobileNavRail(app)
-                }
-
-                Box(Modifier.weight(1f).fillMaxHeight()) {
-                    when (app.section) {
-                        MobileSection.DESIGN -> TouchDesignSurface(
-                            controller = controller,
-                            state = state,
-                            textures = textures,
-                            modifier = Modifier.fillMaxSize(),
-                            opaqueWorkspace = !app.backdropEnabled,
-                        )
-
-                        MobileSection.LAYERS -> MobileLayersSection(
-                            controller, state, Modifier.fillMaxSize(),
-                        )
-
-                        MobileSection.PREVIEW -> MobilePreviewSection(
-                            controller, state, textures, Modifier.fillMaxSize(),
-                        )
-
-                        MobileSection.CODE -> MobileCodeSection(
-                            app, state, Modifier.fillMaxSize(),
-                        )
-                    }
-
-                    // Floating selection actions: the mobile answer to the
-                    // desktop's arrange menu and right-click.
-                    if (app.section == MobileSection.DESIGN) {
-                        SelectionActionBar(
+            Scaffold(
+                containerColor = Color.Transparent,
+                contentWindowInsets = WindowInsets.safeDrawing,
+                topBar = {
+                    Column {
+                        MobileTopBar(
                             app = app,
                             controller = controller,
                             state = state,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 12.dp),
+                            onOpen = {
+                                app.guardUnsaved("open another project") { openLauncher.launch(arrayOf("*/*")) }
+                            },
+                            onSave = { if (!app.saveDocument(context)) createLauncher.launch(app.suggestedFileName()) },
+                            onSaveAs = { createLauncher.launch(app.suggestedFileName()) },
+                            onImportImages = { imageLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
+                            onImportFrames = { frameLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
+                            onImportPack = { packLauncher.launch(AndroidPackImport.PACK_MIME_TYPES) },
+                            metrics = metrics,
                         )
+                        EditionStrip(app, controller, state, metrics)
+                    }
+                },
+                bottomBar = {
+                    if (metrics.usesBottomNav) {
+                        MobileNavBar(app, metrics)
+                    }
+                },
+                snackbarHost = { SnackbarHost(snackbar) },
+            ) { padding ->
+                Row(Modifier.fillMaxSize().padding(padding)) {
+                    if (metrics.usesRail) {
+                        MobileNavRail(app, metrics)
+                    }
 
-                        // The move pad sits above the action bar, in whichever
-                        // corner the settings put it - a left-handed grip and a
-                        // right-handed one want different sides.
-                        if (state.hasSelection && state.settings.showNudgePad) {
-                            MobileNudgePad(
+                    Box(Modifier.weight(1f).fillMaxHeight()) {
+                        when (app.section) {
+                            MobileSection.DESIGN -> TouchDesignSurface(
                                 controller = controller,
-                                settings = state.settings,
-                                onOpenSettings = { app.sheet = MobileSheet.EDITOR_SETTINGS },
-                                modifier = Modifier
-                                    .align(state.settings.nudgePadCorner.toAlignment())
-                                    .padding(horizontal = 10.dp)
-                                    .padding(
-                                        top = 10.dp,
-                                        bottom = if (state.settings.nudgePadCorner.isBottom) 84.dp else 10.dp,
-                                    ),
+                                state = state,
+                                textures = textures,
+                                modifier = Modifier.fillMaxSize(),
+                                opaqueWorkspace = !app.backdropEnabled,
+                            )
+
+                            MobileSection.LAYERS -> MobileLayersSection(
+                                controller, state, Modifier.fillMaxSize(),
+                            )
+
+                            MobileSection.PREVIEW -> MobilePreviewSection(
+                                controller, state, textures, Modifier.fillMaxSize(),
+                            )
+
+                            MobileSection.CODE -> MobileCodeSection(
+                                app, state, Modifier.fillMaxSize(),
                             )
                         }
+
+                        // Floating selection actions: the mobile answer to the
+                        // desktop's arrange menu and right-click. On a tablet the
+                        // docked inspector already spells these out, so the bar
+                        // stays out of the way of the canvas.
+                        if (app.section == MobileSection.DESIGN) {
+                            if (!dockInspector) {
+                                SelectionActionBar(
+                                    app = app,
+                                    controller = controller,
+                                    state = state,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(bottom = 12.dp),
+                                )
+                            }
+
+                            // The move pad sits above the action bar, in whichever
+                            // corner the settings put it - a left-handed grip and a
+                            // right-handed one want different sides.
+                            if (state.hasSelection && state.settings.showNudgePad) {
+                                MobileNudgePad(
+                                    controller = controller,
+                                    settings = state.settings,
+                                    onOpenSettings = { app.sheet = MobileSheet.EDITOR_SETTINGS },
+                                    modifier = Modifier
+                                        .align(state.settings.nudgePadCorner.toAlignment())
+                                        .padding(horizontal = 10.dp)
+                                        .padding(
+                                            top = 10.dp,
+                                            bottom = if (state.settings.nudgePadCorner.isBottom) {
+                                                if (dockInspector) 16.dp else 84.dp
+                                            } else {
+                                                10.dp
+                                            },
+                                        ),
+                                )
+                            }
+                        }
+                    }
+
+                    // The tablet's second pane. Only on the design surface: the
+                    // layers, preview and code sections are already the whole of
+                    // what they show, and squeezing them would gain nothing.
+                    if (dockInspector) {
+                        Divider(Modifier.fillMaxHeight().width(1.dp), color = palette.chromeBorder)
+                        TabletInspector(
+                            app = app,
+                            controller = controller,
+                            state = state,
+                            metrics = metrics,
+                            modifier = Modifier.width(metrics.panelWidth).fillMaxHeight(),
+                        )
                     }
                 }
             }
-        }
 
-        MobileSheets(
-            app = app,
-            controller = controller,
-            state = state,
-            textures = textures,
-            onImportImages = { imageLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
-            onImportPack = { packLauncher.launch(AndroidPackImport.PACK_MIME_TYPES) },
-            onExport = { target ->
-                app.pendingExportTarget = target
-                exportLauncher.launch(app.exportFileName(target))
-            },
-        )
-
-        app.unsavedPrompt?.let { prompt ->
-            UnsavedChangesSheet(
-                prompt = prompt,
-                projectName = state.project.name,
-                onSave = { if (!app.saveThenContinue(context)) createLauncher.launch(app.suggestedFileName()) },
-                onDiscard = { app.confirmDiscard() },
-                onCancel = { app.cancelUnsavedPrompt() },
+            MobileSheets(
+                app = app,
+                controller = controller,
+                state = state,
+                textures = textures,
+                onImportImages = { imageLauncher.launch(AndroidFileIO.IMAGE_MIME_TYPES) },
+                onImportPack = { packLauncher.launch(AndroidPackImport.PACK_MIME_TYPES) },
+                onExport = { target ->
+                    app.pendingExportTarget = target
+                    exportLauncher.launch(app.exportFileName(target))
+                },
             )
+
+            app.unsavedPrompt?.let { prompt ->
+                UnsavedChangesSheet(
+                    prompt = prompt,
+                    projectName = state.project.name,
+                    onSave = { if (!app.saveThenContinue(context)) createLauncher.launch(app.suggestedFileName()) },
+                    onDiscard = { app.confirmDiscard() },
+                    onCancel = { app.cancelUnsavedPrompt() },
+                )
+            }
+
+            // The support page, over the top of everything including the bars.
+            // It is a destination, not a layer of the editor, and covering the
+            // navigation is what makes that obvious.
+            if (app.showDonate) {
+                DonateScreen(
+                    onClose = { app.showDonate = false },
+                    onSaveQr = { bytes ->
+                        app.pendingQrBytes = bytes
+                        qrLauncher.launch(Donation.QR_FILE_NAME)
+                    },
+                    onCopied = { app.status = it },
+                    metrics = metrics,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.safeDrawing),
+                )
+            }
         }
     }
 
@@ -286,6 +347,7 @@ fun AndroidEditor(
     BackHandler(enabled = true) {
         when {
             app.unsavedPrompt != null -> app.cancelUnsavedPrompt()
+            app.showDonate -> app.showDonate = false
             app.sheet == MobileSheet.PACK_IMPORT -> app.closePack()
             app.sheet != MobileSheet.NONE -> app.sheet = MobileSheet.NONE
             state.hasSelection -> controller.clearSelection()
@@ -365,6 +427,7 @@ private fun EditionStrip(
     app: AndroidAppState,
     controller: EditorController,
     state: EditorState,
+    metrics: AdaptiveMetrics,
 ) {
     val palette = LocalSkinPalette.current
     Row(
@@ -381,11 +444,17 @@ private fun EditionStrip(
                 controller.switchEdition(edition)
                 app.status = "Now designing for ${edition.displayName}."
             },
-            compact = true,
+            compact = metrics.sizeClass.isCompact,
             modifier = Modifier.weight(1f),
         )
         TopBarAction("⌗") { app.sheet = MobileSheet.ARRANGE }
         TopBarAction("◫") { app.sheet = MobileSheet.LIBRARY }
+        // Wide windows have the room to name the tools the phone reduces to
+        // glyphs, so the strip earns its extra height instead of just
+        // stretching.
+        if (metrics.sizeClass.isExpanded) {
+            TopBarAction("Gallery") { app.sheet = MobileSheet.GALLERY }
+        }
     }
 }
 
@@ -400,6 +469,7 @@ private fun MobileTopBar(
     onImportImages: () -> Unit,
     onImportFrames: () -> Unit,
     onImportPack: () -> Unit,
+    metrics: AdaptiveMetrics,
 ) {
     val palette = LocalSkinPalette.current
     var menuOpen by remember { mutableStateOf(false) }
@@ -430,6 +500,11 @@ private fun MobileTopBar(
             }
         },
         actions = {
+            // Only on the phone: the rail carries it on wider windows, and two
+            // of them on screen at once would be one too many.
+            if (metrics.usesBottomNav) {
+                DonateAction { app.showDonate = true }
+            }
             TopBarAction("↶", enabled = state.canUndo) { controller.undo() }
             TopBarAction("↷", enabled = state.canRedo) { controller.redo() }
             TopBarAction("⋮") { menuOpen = true }
@@ -510,6 +585,10 @@ private fun MobileTopBar(
                     text = { Text("Issues (${state.validation.issues.size})") },
                     onClick = { menuOpen = false; app.sheet = MobileSheet.ISSUES },
                 )
+                DropdownMenuItem(
+                    text = { Text("Support the designer") },
+                    onClick = { menuOpen = false; app.showDonate = true },
+                )
                 // No "switch edition" item: the tabs under this bar own that,
                 // and offering it in two places invites the two to disagree.
             }
@@ -523,6 +602,27 @@ private fun NudgePadCorner.toAlignment(): Alignment = when {
     isBottom -> Alignment.BottomStart
     isRight -> Alignment.TopEnd
     else -> Alignment.TopStart
+}
+
+/**
+ * The support entry point in the top bar.
+ *
+ * Drawn rather than lettered, because it is the one action here that is not
+ * about the document - a glyph in the same row as undo and redo would read as
+ * another editing tool.
+ */
+@Composable
+private fun DonateAction(onClick: () -> Unit) {
+    val palette = LocalSkinPalette.current
+    Box(
+        Modifier
+            .padding(horizontal = 2.dp)
+            .clip(RoundedCornerShape(50))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+    ) {
+        DonateIcon(size = 24.dp, ink = palette.chromeText, slot = palette.chromePanel)
+    }
 }
 
 @Composable
@@ -543,8 +643,15 @@ private fun TopBarAction(glyph: String, enabled: Boolean = true, onClick: () -> 
     }
 }
 
+/**
+ * Bottom navigation, phones only.
+ *
+ * Six destinations is the most this pattern carries before the labels start
+ * eliding, which is exactly why the support page is *not* one of them: it
+ * belongs in the top bar, where an action that leaves the editor should be.
+ */
 @Composable
-private fun MobileNavBar(app: AndroidAppState) {
+private fun MobileNavBar(app: AndroidAppState, metrics: AdaptiveMetrics) {
     val palette = LocalSkinPalette.current
     NavigationBar(containerColor = palette.chromePanel) {
         MobileSection.entries.forEach { section ->
@@ -552,14 +659,22 @@ private fun MobileNavBar(app: AndroidAppState) {
                 selected = app.section == section,
                 onClick = { app.section = section },
                 icon = { Text(section.glyph, style = MaterialTheme.typography.titleMedium) },
-                label = { Text(section.title, style = MaterialTheme.typography.labelSmall) },
+                label = if (metrics.showsNavLabels) {
+                    { Text(section.title, style = MaterialTheme.typography.labelSmall) }
+                } else {
+                    null
+                },
             )
         }
         NavigationBarItem(
             selected = app.sheet == MobileSheet.COMPONENTS,
             onClick = { app.sheet = MobileSheet.COMPONENTS },
             icon = { Text("＋", style = MaterialTheme.typography.titleMedium) },
-            label = { Text("Add", style = MaterialTheme.typography.labelSmall) },
+            label = if (metrics.showsNavLabels) {
+                { Text("Add", style = MaterialTheme.typography.labelSmall) }
+            } else {
+                null
+            },
         )
         // Separate from "Add" on purpose: that one lists Minecraft's own
         // widgets, this one lists shapes, GIFs and anything the catalog does
@@ -568,38 +683,70 @@ private fun MobileNavBar(app: AndroidAppState) {
             selected = app.sheet == MobileSheet.ADD_CUSTOM,
             onClick = { app.sheet = MobileSheet.ADD_CUSTOM },
             icon = { Text("◆", style = MaterialTheme.typography.titleMedium) },
-            label = { Text("Custom", style = MaterialTheme.typography.labelSmall) },
+            label = if (metrics.showsNavLabels) {
+                { Text("Custom", style = MaterialTheme.typography.labelSmall) }
+            } else {
+                null
+            },
         )
     }
 }
 
+/**
+ * The rail: tablets, and phones turned sideways.
+ *
+ * It carries the same destinations as the bottom bar plus the support page,
+ * pinned to the foot of the rail where a persistent secondary action belongs.
+ */
 @Composable
-private fun MobileNavRail(app: AndroidAppState) {
+private fun MobileNavRail(app: AndroidAppState, metrics: AdaptiveMetrics) {
     val palette = LocalSkinPalette.current
     NavigationRail(
         containerColor = palette.chromePanel,
-        modifier = Modifier.width(84.dp).windowInsetsPadding(WindowInsets.safeDrawing),
+        modifier = Modifier
+            .width(metrics.railWidth)
+            .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
+        val label: @Composable (String) -> (@Composable () -> Unit)? = { title ->
+            if (metrics.showsNavLabels) {
+                { Text(title, style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+            } else {
+                null
+            }
+        }
+
         MobileSection.entries.forEach { section ->
             NavigationRailItem(
                 selected = app.section == section,
                 onClick = { app.section = section },
                 icon = { Text(section.glyph, style = MaterialTheme.typography.titleMedium) },
-                label = { Text(section.title, style = MaterialTheme.typography.labelSmall) },
+                label = label(section.title),
             )
         }
         NavigationRailItem(
             selected = app.sheet == MobileSheet.COMPONENTS,
             onClick = { app.sheet = MobileSheet.COMPONENTS },
             icon = { Text("＋", style = MaterialTheme.typography.titleMedium) },
-            label = { Text("Add", style = MaterialTheme.typography.labelSmall) },
+            label = label("Add"),
         )
         NavigationRailItem(
             selected = app.sheet == MobileSheet.ADD_CUSTOM,
             onClick = { app.sheet = MobileSheet.ADD_CUSTOM },
             icon = { Text("◆", style = MaterialTheme.typography.titleMedium) },
-            label = { Text("Custom", style = MaterialTheme.typography.labelSmall) },
+            label = label("Custom"),
         )
+
+        Spacer(Modifier.weight(1f))
+
+        NavigationRailItem(
+            selected = app.showDonate,
+            onClick = { app.showDonate = true },
+            icon = {
+                DonateIcon(size = 24.dp, ink = palette.chromeText, slot = palette.chromePanel)
+            },
+            label = label("Support"),
+        )
+        Spacer(Modifier.height(8.dp))
     }
 }
 

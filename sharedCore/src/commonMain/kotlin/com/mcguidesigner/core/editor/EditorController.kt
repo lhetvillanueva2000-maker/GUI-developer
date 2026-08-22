@@ -933,7 +933,85 @@ class EditorController(initial: GuiProject) {
 
     fun setPan(x: Float, y: Float) = touch { it.copy(panX = x, panY = y) }
 
-    fun panBy(dx: Float, dy: Float) = touch { it.copy(panX = it.panX + dx, panY = it.panY + dy) }
+    /**
+     * Pans by a view-space delta.
+     *
+     * Pass the viewport and the canvas cannot be dragged off the screen -
+     * without it there is nothing to clamp against, so the caller that knows
+     * the viewport should always supply it.
+     */
+    fun panBy(dx: Float, dy: Float, viewportWidth: Float = 0f, viewportHeight: Float = 0f) = touch {
+        it.copy(panX = it.panX + dx, panY = it.panY + dy)
+            .withPanClampedTo(viewportWidth, viewportHeight)
+    }
+
+    /**
+     * Zooms by [factor] while keeping the canvas point under ([focalX], [focalY])
+     * where it is.
+     *
+     * This is what makes a pinch or a Ctrl+wheel feel attached to the content:
+     * zooming about the canvas centre instead slides whatever you were looking
+     * at out from under your fingers, and the further you are from the centre
+     * the worse it gets.
+     */
+    fun zoomAround(
+        factor: Float,
+        focalX: Float,
+        focalY: Float,
+        viewportWidth: Float,
+        viewportHeight: Float,
+    ) = touch { s ->
+        if (viewportWidth <= 0f || viewportHeight <= 0f) {
+            return@touch s.copy(zoom = (s.zoom * factor).coerceIn(MIN_ZOOM, MAX_ZOOM))
+        }
+        val from = s.zoom
+        val to = (from * factor).coerceIn(MIN_ZOOM, MAX_ZOOM)
+        if (to == from) return@touch s
+
+        val canvas = s.project.canvas
+        // origin = (viewport - canvas * zoom) / 2 + pan, so the canvas-space
+        // point under the focus is (focus - origin) / zoom. Solving for the pan
+        // that puts that same point back under the focus at the new zoom:
+        val originX = (viewportWidth - canvas.width * from) / 2f + s.panX
+        val originY = (viewportHeight - canvas.height * from) / 2f + s.panY
+        val canvasX = (focalX - originX) / from
+        val canvasY = (focalY - originY) / from
+
+        s.copy(
+            zoom = to,
+            panX = focalX - canvasX * to - (viewportWidth - canvas.width * to) / 2f,
+            panY = focalY - canvasY * to - (viewportHeight - canvas.height * to) / 2f,
+        ).withPanClampedTo(viewportWidth, viewportHeight)
+    }
+
+    /**
+     * Holds the canvas against the viewport so it can never be scrolled away
+     * entirely.
+     *
+     * A canvas smaller than the viewport is free to move anywhere inside it but
+     * not past the edges; a canvas larger than the viewport must always cover
+     * at least [MIN_CANVAS_ON_SCREEN] of it. Losing the design off the edge of
+     * the screen, with nothing on it to drag back, is not a state worth being
+     * able to reach.
+     */
+    private fun EditorState.withPanClampedTo(viewportWidth: Float, viewportHeight: Float): EditorState {
+        if (viewportWidth <= 0f || viewportHeight <= 0f) return this
+
+        fun clamp(pan: Float, canvasLength: Int, viewportLength: Float): Float {
+            val scaled = canvasLength * zoom
+            if (scaled <= 0f) return pan
+            val keep = min(scaled, viewportLength * MIN_CANVAS_ON_SCREEN)
+            val centred = (viewportLength - scaled) / 2f
+            // origin = centred + pan, and we need
+            //   origin + scaled >= keep   and   origin <= viewportLength - keep
+            return pan.coerceIn(keep - scaled - centred, viewportLength - keep - centred)
+        }
+
+        return copy(
+            panX = clamp(panX, project.canvas.width, viewportWidth),
+            panY = clamp(panY, project.canvas.height, viewportHeight),
+        )
+    }
 
     fun resetView() = touch { it.copy(zoom = 3f, panX = 0f, panY = 0f) }
 
@@ -1101,6 +1179,14 @@ class EditorController(initial: GuiProject) {
     companion object {
         const val MIN_ZOOM = 0.25f
         const val MAX_ZOOM = 16f
+
+        /**
+         * Least of the viewport the canvas must keep covering when panned.
+         *
+         * A fifth is enough to always leave something to grab and to make it
+         * obvious which way the rest of the design lies.
+         */
+        const val MIN_CANVAS_ON_SCREEN = 0.2f
 
         /** Snap tolerance expressed in *screen* pixels. */
         const val SNAP_SCREEN_PIXELS = 7f

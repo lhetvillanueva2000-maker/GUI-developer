@@ -260,7 +260,7 @@ private fun ComponentTile(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun PropertiesSheet(controller: EditorController, state: EditorState) {
+internal fun PropertiesSheet(controller: EditorController, state: EditorState) {
     val palette = LocalSkinPalette.current
     val element = state.primaryElement
     if (element == null) {
@@ -578,7 +578,7 @@ private fun AssetsSheet(
 }
 
 @Composable
-private fun IssuesSheet(controller: EditorController, state: EditorState) {
+internal fun IssuesSheet(controller: EditorController, state: EditorState) {
     val palette = LocalSkinPalette.current
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         SheetTitle(

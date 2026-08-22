@@ -35,6 +35,9 @@ kotlin {
                 implementation(compose.components.uiToolingPreview)
             }
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)

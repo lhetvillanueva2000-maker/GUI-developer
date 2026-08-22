@@ -215,7 +215,10 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.canvasGe
                     lastPosition = change.position
 
                     when (mode) {
-                        DragMode.PAN -> controller.panBy(frameDelta.x, frameDelta.y)
+                        DragMode.PAN -> controller.panBy(
+                            frameDelta.x, frameDelta.y,
+                            transform.viewport.width, transform.viewport.height,
+                        )
 
                         DragMode.MOVE -> {
                             val delta = transform.deltaToCanvas(totalDelta.x, totalDelta.y)
@@ -252,20 +255,25 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.canvasGe
 
                 PointerEventType.Scroll -> {
                     val scroll = change.scrollDelta.y
+                    val view = transform.viewport
                     if (ctrl) {
-                        // Zoom towards the pointer, the way every design tool does.
-                        val before = transform.toCanvas(change.position)
-                        controller.zoomBy(if (scroll < 0) 1.12f else 0.89f)
-                        val after = transformProvider().toCanvas(change.position)
-                        val corrected = transformProvider()
-                        controller.panBy(
-                            (after.x - before.x) * corrected.zoom,
-                            (after.y - before.y) * corrected.zoom,
+                        // Zoom towards the pointer, the way every design tool
+                        // does. This used to be a zoom followed by a corrective
+                        // pan computed from `toCanvas`, which floors to whole
+                        // GUI pixels - so every wheel notch threw away up to a
+                        // pixel of correction and the content crept away from
+                        // the cursor. `zoomAround` solves for the pan exactly.
+                        controller.zoomAround(
+                            factor = if (scroll < 0) 1.12f else 0.89f,
+                            focalX = change.position.x,
+                            focalY = change.position.y,
+                            viewportWidth = view.width,
+                            viewportHeight = view.height,
                         )
                     } else if (shift) {
-                        controller.panBy(-scroll * 40f, 0f)
+                        controller.panBy(-scroll * 40f, 0f, view.width, view.height)
                     } else {
-                        controller.panBy(0f, -scroll * 40f)
+                        controller.panBy(0f, -scroll * 40f, view.width, view.height)
                     }
                     change.consume()
                 }

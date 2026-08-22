@@ -16,7 +16,10 @@ import com.mcguidesigner.android.io.SessionStore
 import com.mcguidesigner.android.ui.AndroidEditor
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.templates.BuiltInTemplates
+import com.mcguidesigner.core.support.Donation
 import com.mcguidesigner.styles.render.decodeImageBitmap
+import com.mcguidesigner.styles.support.DonationQr
+import com.mcguidesigner.styles.support.LocalDonationQr
 import com.mcguidesigner.styles.theme.BackdropArtwork
 import com.mcguidesigner.styles.theme.DesignerBackdrop
 import com.mcguidesigner.styles.theme.DesignerTheme
@@ -50,6 +53,12 @@ class MainActivity : ComponentActivity() {
         appState.loadLibraries(this)
 
         val artwork = AssetBackdrops(this)
+        // Read once at startup rather than on every visit to the support page:
+        // it is a hundred and eighty kilobytes read from the APK, and the page
+        // should open instantly.
+        val donationQr = DonationQr.from(
+            runCatching { assets.open(Donation.QR_ASSET_NAME).use { it.readBytes() } }.getOrNull(),
+        )
 
         setContent {
             val state by appState.controller.state.collectAsState()
@@ -68,6 +77,7 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(
                     LocalBackdropArtwork provides artwork,
                     LocalBackdropMotion provides appState.backdropMotion,
+                    LocalDonationQr provides donationQr,
                 ) {
                     AndroidEditor(
                         app = appState,

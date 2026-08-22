@@ -4,6 +4,7 @@ import androidx.compose.animation.core.withInfiniteAnimationFrameMillis
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -86,7 +87,13 @@ fun GuiCanvas(
     val clock by rememberAnimationClock(playing)
     val time = if (playing) clock else 0L
     Box(modifier) {
-        Canvas(Modifier.fillMaxSize()) {
+        // clipToBounds is not optional here. Compose does not clip a Canvas to
+        // its own bounds, and this one deliberately draws a rect - the zoomed
+        // canvas sheet - that is far larger than the widget whenever the user
+        // zooms past "fit". Without the clip that overspill paints straight
+        // over whatever sits beside the canvas: the docks and toolbar on the
+        // desktop, the title bar and navigation bar on Android.
+        Canvas(Modifier.fillMaxSize().clipToBounds()) {
             drawCanvasSurface(
                 state = state,
                 transform = transform,
@@ -160,7 +167,9 @@ fun GuiPreview(
     val playing = playAnimations && project.hasPlayingAnimation
     val clock by rememberAnimationClock(playing)
     val time = if (playing) clock else 0L
-    Canvas(modifier) {
+    // Same reasoning as GuiCanvas: a preview zoomed past its box would
+    // otherwise paint over whatever is laid out next to it.
+    Canvas(modifier.clipToBounds()) {
         val transform = CanvasTransform(
             zoom = zoom,
             panX = 0f,
@@ -326,27 +335,32 @@ private fun DrawScope.drawElements(
         if (!element.visible) continue
         val rect = bounds[element.id] ?: continue
         val viewRect = transform.toView(rect)
-        // Skip anything entirely off-screen; large layouts stay smooth when
-        // the user zooms in on one corner.
-        if (viewRect.right < 0f || viewRect.bottom < 0f ||
-            viewRect.left > size.width || viewRect.top > size.height
-        ) {
-            continue
-        }
 
-        val context = ElementRenderContext(
-            element = element,
-            rect = viewRect,
-            scale = transform.zoom,
-            state = state,
-            project = project,
-            textures = textures,
-            textMeasurer = measurer,
-            form = form,
-            selected = element.id in selection,
-            timeMillis = timeMillis,
-        )
-        skin.draw(this, context)
+        // Off-screen elements are not drawn, but their children are still
+        // walked. A child is positioned relative to its parent and is free to
+        // sit outside it - drag a button past the edge of its panel and it
+        // stays a child - so "the parent is off-screen" says nothing about
+        // where the children are. Skipping the subtree here made every child
+        // of an off-screen parent vanish, including ones in full view.
+        //
+        // Walking a subtree that draws nothing costs a map lookup and four
+        // comparisons per node, which is nothing next to the drawing this
+        // still avoids.
+        if (isOnScreen(viewRect, size)) {
+            val context = ElementRenderContext(
+                element = element,
+                rect = viewRect,
+                scale = transform.zoom,
+                state = state,
+                project = project,
+                textures = textures,
+                textMeasurer = measurer,
+                form = form,
+                selected = element.id in selection,
+                timeMillis = timeMillis,
+            )
+            skin.draw(this, context)
+        }
 
         if (element.children.isNotEmpty()) {
             drawElements(
@@ -355,6 +369,42 @@ private fun DrawScope.drawElements(
             )
         }
     }
+}
+
+/**
+ * Whether [viewRect] intersects a viewport of [viewport] at the origin.
+ *
+ * Pulled out so the traversal in [visibleElementIds] can make exactly the same
+ * decision the draw pass does - a culling rule that only exists inside a
+ * `DrawScope` is a rule that cannot be tested.
+ */
+internal fun isOnScreen(viewRect: Rect, viewport: Size): Boolean =
+    viewRect.right >= 0f &&
+        viewRect.bottom >= 0f &&
+        viewRect.left <= viewport.width &&
+        viewRect.top <= viewport.height
+
+/**
+ * The ids a draw pass would paint, in paint order.
+ *
+ * Exists for the tests: rendering correctness that can only be checked by
+ * looking at a screenshot is rendering correctness nobody checks.
+ */
+internal fun visibleElementIds(
+    nodes: List<GuiElement>,
+    bounds: Map<String, IntRect>,
+    transform: CanvasTransform,
+    viewport: Size,
+): List<String> = buildList {
+    fun walk(list: List<GuiElement>) {
+        for (element in list) {
+            if (!element.visible) continue
+            val rect = bounds[element.id] ?: continue
+            if (isOnScreen(transform.toView(rect), viewport)) add(element.id)
+            walk(element.children)
+        }
+    }
+    walk(nodes)
 }
 
 private fun DrawScope.drawGrid(
@@ -513,16 +563,28 @@ fun CanvasRuler(
     background: Color = LocalSkinPalette.current.chromePanel,
 ) {
     val measurer = rememberTextMeasurer()
-    Canvas(modifier) {
+    // Clipped for the same reason [GuiCanvas] is: a tick's position comes from
+    // the same transform the canvas uses, so at any real zoom most of them land
+    // outside this strip - and an unclipped Canvas will happily draw them over
+    // whatever dock is next door.
+    Canvas(modifier.clipToBounds()) {
         drawRect(background, size = size)
         val step = chooseRulerStep(transform.zoom)
         val extent = if (vertical) transform.canvas.height else transform.canvas.width
+        val along = if (vertical) size.height else size.width
         var value = 0
         while (value <= extent) {
             val position = if (vertical) {
                 transform.toView(0f, value.toFloat()).y
             } else {
                 transform.toView(value.toFloat(), 0f).x
+            }
+            // The clip above makes an off-strip tick invisible; skipping it
+            // here means the label is never measured in the first place, which
+            // at a high zoom is most of them.
+            if (position < -RULER_TICK_MARGIN || position > along + RULER_TICK_MARGIN) {
+                value += step
+                continue
             }
             val major = value % (step * 4) == 0
             val length = if (major) size.minDimension else size.minDimension * 0.45f
@@ -545,6 +607,9 @@ fun CanvasRuler(
         }
     }
 }
+
+/** Slack around a ruler so a label anchored just off the edge still shows. */
+private const val RULER_TICK_MARGIN = 40f
 
 /** Picks a ruler tick interval that stays legible at the current zoom. */
 private fun chooseRulerStep(zoom: Float): Int {

@@ -8,10 +8,15 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -31,6 +36,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,8 +85,14 @@ import com.mcguidesigner.desktop.panels.TemplatesPanel
 import com.mcguidesigner.desktop.widgets.IconToggle
 import com.mcguidesigner.desktop.widgets.NudgePad
 import com.mcguidesigner.desktop.widgets.ToolbarButton
+import com.mcguidesigner.desktop.widgets.ToolbarIconButton
 import com.mcguidesigner.desktop.widgets.ToolbarSeparator
+import com.mcguidesigner.core.support.Donation
+import com.mcguidesigner.styles.layout.AdaptiveMetrics
+import com.mcguidesigner.styles.layout.LocalAdaptive
 import com.mcguidesigner.styles.render.rememberTextureCache
+import com.mcguidesigner.styles.support.DonateIcon
+import com.mcguidesigner.styles.support.DonateScreen
 import com.mcguidesigner.styles.theme.DesignerBackdrop
 import com.mcguidesigner.styles.theme.EditionTabs
 import com.mcguidesigner.styles.theme.LocalSkinPalette
@@ -104,120 +116,190 @@ fun DesktopEditor(
     val palette = LocalSkinPalette.current
     val textures = rememberTextureCache(state.project)
 
-    // The wallpaper sits behind everything; every dock and the status bar are
-    // opaque on top of it, so it only ever shows around the canvas.
-    DesignerBackdrop(
-        edition = state.edition,
-        modifier = modifier.background(
-            if (app.backdropEnabled) Color.Transparent else palette.chromeBackground,
-        ),
-    ) {
-        Column(Modifier.fillMaxSize()) {
-            EditionHeader(app, controller, state)
-            EditorToolbar(app, controller, state)
-            Divider(color = palette.chromeBorder)
+    BoxWithConstraints(modifier) {
+    // A desktop window is resizable down to a tablet's width and below, so the
+    // same three sizes apply here as on Android. What differs is the starting
+    // point: this shell opens expanded and sheds docks as the window narrows,
+    // rather than opening compact and gaining them.
+    val metrics = AdaptiveMetrics.of(maxWidth, maxHeight, touchMode = false)
+    // Captured here because the nested Boxes below shadow the constraints scope.
+    val windowWidth = maxWidth
+    // Room decides whether a dock *can* show; the user's toggle decides
+    // whether it does. Both have to agree, and neither is overwritten - drag
+    // the window wide again and the docks the user left open come back.
+    //
+    // The size class alone is not enough here. Two docks are 660dp between
+    // them, so an 840dp window is "expanded" and still leaves a canvas too
+    // narrow to design in; what matters is what is left over, so that is what
+    // is measured.
+    val docks = DesktopChrome.dockPlan(
+        windowWidth = windowWidth,
+        metrics = metrics,
+        wantLeft = app.showLeftDock,
+        wantRight = app.showRightDock,
+    )
 
-            Row(Modifier.weight(1f).fillMaxWidth()) {
-                AnimatedVisibility(
-                    visible = app.showLeftDock,
-                    enter = expandHorizontally() + fadeIn(),
-                    exit = shrinkHorizontally() + fadeOut(),
-                ) {
-                    Row {
-                        LeftDock(app, controller, state, textures, Modifier.width(320.dp).fillMaxHeight())
-                        Divider(Modifier.fillMaxHeight().width(1.dp), color = palette.chromeBorder)
-                    }
-                }
+    CompositionLocalProvider(LocalAdaptive provides metrics) {
+        // The wallpaper sits behind everything; every dock and the status bar are
+        // opaque on top of it, so it only ever shows around the canvas.
+        DesignerBackdrop(
+            edition = state.edition,
+            modifier = Modifier.fillMaxSize().background(
+                if (app.backdropEnabled) Color.Transparent else palette.chromeBackground,
+            ),
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                EditionHeader(app, controller, state, metrics)
+                EditorToolbar(app, controller, state, metrics)
+                Divider(color = palette.chromeBorder)
 
-                Box(Modifier.weight(1f).fillMaxHeight()) {
-                    // Crossfade rather than a hard switch: design, preview and
-                    // code are three views of one document, not three screens.
-                    Crossfade(targetState = state.viewMode, label = "viewMode") { mode ->
-                        when (mode) {
-                            ViewMode.DESIGN -> DesignCanvasArea(
-                                controller = controller,
-                                state = state,
-                                textures = textures,
-                                modifier = Modifier.fillMaxSize(),
-                                opaqueWorkspace = !app.backdropEnabled,
-                            )
-                            ViewMode.PREVIEW -> PreviewPanel(controller, state, textures, Modifier.fillMaxSize())
-                            ViewMode.CODE -> CodePanel(app, state, Modifier.fillMaxSize())
+                Row(Modifier.weight(1f).fillMaxWidth()) {
+                    AnimatedVisibility(
+                        visible = docks.left,
+                        enter = expandHorizontally() + fadeIn(),
+                        exit = shrinkHorizontally() + fadeOut(),
+                    ) {
+                        Row {
+                            LeftDock(app, controller, state, textures, Modifier.width(320.dp).fillMaxHeight())
+                            Divider(Modifier.fillMaxHeight().width(1.dp), color = palette.chromeBorder)
                         }
                     }
 
-                    // The move pad floats over the canvas, only while there is
-                    // something to move. Fading it rather than snapping it in
-                    // stops it flickering as the selection changes.
-                    //
-                    // Boxed first so the alignment comes from this Box rather
-                    // than the Row above it, which would otherwise win.
-                    Box(Modifier.align(state.settings.nudgePadCorner.alignment())) {
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = state.viewMode == ViewMode.DESIGN &&
-                                state.hasSelection &&
-                                state.settings.showNudgePad,
-                            enter = fadeIn(),
-                            exit = fadeOut(),
-                        ) {
-                            NudgePad(
-                                controller = controller,
-                                settings = state.settings,
-                                modifier = Modifier.padding(16.dp),
-                                onOpenSettings = { app.dialog = ActiveDialog.EDITOR_SETTINGS },
-                            )
+
+                    Box(Modifier.weight(1f).fillMaxHeight()) {
+                        // Crossfade rather than a hard switch: design, preview and
+                        // code are three views of one document, not three screens.
+                        Crossfade(targetState = state.viewMode, label = "viewMode") { mode ->
+                            when (mode) {
+                                ViewMode.DESIGN -> DesignCanvasArea(
+                                    controller = controller,
+                                    state = state,
+                                    textures = textures,
+                                    modifier = Modifier.fillMaxSize(),
+                                    opaqueWorkspace = !app.backdropEnabled,
+                                )
+                                ViewMode.PREVIEW -> PreviewPanel(controller, state, textures, Modifier.fillMaxSize())
+                                ViewMode.CODE -> CodePanel(app, state, Modifier.fillMaxSize())
+                            }
+                        }
+
+                        // The move pad floats over the canvas, only while there is
+                        // something to move. Fading it rather than snapping it in
+                        // stops it flickering as the selection changes.
+                        //
+                        // Boxed first so the alignment comes from this Box rather
+                        // than the Row above it, which would otherwise win.
+                        Box(Modifier.align(state.settings.nudgePadCorner.alignment())) {
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = state.viewMode == ViewMode.DESIGN &&
+                                    state.hasSelection &&
+                                    state.settings.showNudgePad,
+                                enter = fadeIn(),
+                                exit = fadeOut(),
+                            ) {
+                                NudgePad(
+                                    controller = controller,
+                                    settings = state.settings,
+                                    modifier = Modifier.padding(16.dp),
+                                    onOpenSettings = { app.dialog = ActiveDialog.EDITOR_SETTINGS },
+                                )
+                            }
+                        }
+
+                        // Below the width where a dock can sit beside the canvas it
+                        // slides over it instead. Hiding it outright would be the
+                        // easy answer and the wrong one: the properties are where
+                        // half the editing happens, and "resize your window" is not
+                        // an acceptable way to reach them.
+                        // Boxed for the same reason as the move pad above: an
+                        // AnimatedVisibility written straight into this Box picks
+                        // up the enclosing Row's scope instead of this one.
+                        Box(Modifier.align(Alignment.CenterEnd)) {
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = docks.rightAsDrawer,
+                                enter = slideInHorizontally { it } + fadeIn(),
+                                exit = slideOutHorizontally { it } + fadeOut(),
+                            ) {
+                                Row(Modifier.fillMaxHeight()) {
+                                    Divider(Modifier.fillMaxHeight().width(1.dp), color = palette.chromeBorder)
+                                    RightDock(
+                                        app, controller, state,
+                                        Modifier
+                                            .width(minOf(metrics.panelWidth, windowWidth * 0.86f))
+                                            .fillMaxHeight(),
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    AnimatedVisibility(
+                        visible = docks.rightDocked,
+                        enter = expandHorizontally(expandFrom = Alignment.Start) + fadeIn(),
+                        exit = shrinkHorizontally(shrinkTowards = Alignment.Start) + fadeOut(),
+                    ) {
+                        Row {
+                            Divider(Modifier.fillMaxHeight().width(1.dp), color = palette.chromeBorder)
+                            RightDock(app, controller, state, Modifier.width(metrics.panelWidth).fillMaxHeight())
                         }
                     }
                 }
 
                 AnimatedVisibility(
-                    visible = app.showRightDock,
-                    enter = expandHorizontally(expandFrom = Alignment.Start) + fadeIn(),
-                    exit = shrinkHorizontally(shrinkTowards = Alignment.Start) + fadeOut(),
+                    visible = app.showBottomDock,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut(),
                 ) {
-                    Row {
-                        Divider(Modifier.fillMaxHeight().width(1.dp), color = palette.chromeBorder)
-                        RightDock(app, controller, state, Modifier.width(340.dp).fillMaxHeight())
+                    Column {
+                        Divider(color = palette.chromeBorder)
+                        IssuesPanel(controller, state, Modifier.fillMaxWidth().height(180.dp))
                     }
                 }
-            }
 
-            AnimatedVisibility(
-                visible = app.showBottomDock,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                Column {
-                    Divider(color = palette.chromeBorder)
-                    IssuesPanel(controller, state, Modifier.fillMaxWidth().height(180.dp))
-                }
+                Divider(color = palette.chromeBorder)
+                BottomBar(app, state, metrics)
+                Divider(color = palette.chromeBorder)
+                StatusBar(app, state, metrics)
             }
+        }
 
-            Divider(color = palette.chromeBorder)
-            BottomBar(app, state)
-            Divider(color = palette.chromeBorder)
-            StatusBar(app, state)
+        // The support page, over the whole window. A page rather than a dialog:
+        // it is something to read, and a modal box with a scrollbar in it would
+        // make asking for a donation feel like an error message.
+        AnimatedVisibility(
+            visible = app.showDonate,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            DonateScreen(
+                onClose = { app.showDonate = false },
+                onSaveQr = { bytes -> app.saveDonationQr(bytes) },
+                onCopied = { app.status = it },
+                metrics = metrics,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        when (app.dialog) {
+            ActiveDialog.NEW_PROJECT -> NewProjectDialog(app)
+            ActiveDialog.TEMPLATES -> TemplateGalleryDialog(app)
+            ActiveDialog.EXPORT -> ExportDialog(app, state)
+            ActiveDialog.PROJECT_SETTINGS -> ProjectSettingsDialog(app, controller, state)
+            ActiveDialog.ABOUT -> AboutDialog(app)
+            ActiveDialog.SHORTCUTS -> ShortcutsDialog(app)
+            ActiveDialog.WELCOME -> WelcomeDialog(app)
+            ActiveDialog.UNSAVED_CHANGES -> UnsavedChangesDialog(app)
+            ActiveDialog.RECOVERY -> RecoveryDialog(app)
+            ActiveDialog.SAVE_PREFAB -> SavePrefabDialog(app, state)
+            ActiveDialog.COMPONENT_GALLERY -> ComponentGalleryDialog(app, state)
+            ActiveDialog.PACK_IMPORT -> PackImportDialog(app)
+            ActiveDialog.APPEARANCE -> AppearanceDialog(app)
+            ActiveDialog.EDITOR_SETTINGS -> EditorSettingsDialog(app)
+            ActiveDialog.ADD_CUSTOM -> AddCustomDialog(app)
+            ActiveDialog.CONFIRM_DELETE -> ConfirmDeleteDialog(app)
+            ActiveDialog.NONE -> Unit
         }
     }
-
-    when (app.dialog) {
-        ActiveDialog.NEW_PROJECT -> NewProjectDialog(app)
-        ActiveDialog.TEMPLATES -> TemplateGalleryDialog(app)
-        ActiveDialog.EXPORT -> ExportDialog(app, state)
-        ActiveDialog.PROJECT_SETTINGS -> ProjectSettingsDialog(app, controller, state)
-        ActiveDialog.ABOUT -> AboutDialog(app)
-        ActiveDialog.SHORTCUTS -> ShortcutsDialog(app)
-        ActiveDialog.WELCOME -> WelcomeDialog(app)
-        ActiveDialog.UNSAVED_CHANGES -> UnsavedChangesDialog(app)
-        ActiveDialog.RECOVERY -> RecoveryDialog(app)
-        ActiveDialog.SAVE_PREFAB -> SavePrefabDialog(app, state)
-        ActiveDialog.COMPONENT_GALLERY -> ComponentGalleryDialog(app, state)
-        ActiveDialog.PACK_IMPORT -> PackImportDialog(app)
-        ActiveDialog.APPEARANCE -> AppearanceDialog(app)
-        ActiveDialog.EDITOR_SETTINGS -> EditorSettingsDialog(app)
-        ActiveDialog.ADD_CUSTOM -> AddCustomDialog(app)
-        ActiveDialog.CONFIRM_DELETE -> ConfirmDeleteDialog(app)
-        ActiveDialog.NONE -> Unit
     }
 }
 
@@ -243,14 +325,19 @@ private fun com.mcguidesigner.core.editor.NudgePadCorner.alignment(): Alignment 
  * is reported rather than silently dropped.
  */
 @Composable
-private fun EditionHeader(app: AppState, controller: EditorController, state: EditorState) {
+private fun EditionHeader(
+    app: AppState,
+    controller: EditorController,
+    state: EditorState,
+    metrics: AdaptiveMetrics,
+) {
     val palette = LocalSkinPalette.current
 
     Surface(color = palette.chromePanel, contentColor = palette.chromeText) {
         Row(
             Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (metrics.sizeClass.isExpanded) 14.dp else 8.dp),
         ) {
             EditionTabs(
                 selected = state.edition,
@@ -259,7 +346,8 @@ private fun EditionHeader(app: AppState, controller: EditorController, state: Ed
                     app.status = "Now designing for ${edition.displayName}. " +
                         "The palette, the skin and the export format all followed."
                 },
-                modifier = Modifier.width(420.dp),
+                compact = !metrics.sizeClass.isExpanded,
+                modifier = Modifier.width(if (metrics.sizeClass.isExpanded) 420.dp else 240.dp),
             )
 
             Text(
@@ -270,12 +358,18 @@ private fun EditionHeader(app: AppState, controller: EditorController, state: Ed
                 modifier = Modifier.weight(1f),
             )
 
-            ToolbarButton("Components", hint = "Browse every component  (F1)") {
-                app.dialog = ActiveDialog.COMPONENT_GALLERY
+            // The two widest buttons are the first to go when the window is
+            // narrowed; both are still on the menu bar, which is where a
+            // desktop user looks for a command they cannot see.
+            if (metrics.widthDp >= DesktopChrome.HEADER_BUTTONS_MIN_WIDTH) {
+                ToolbarButton("Components", hint = "Browse every component  (F1)") {
+                    app.dialog = ActiveDialog.COMPONENT_GALLERY
+                }
+                ToolbarButton("Import pack", hint = "Import textures from a Minecraft resource pack") {
+                    app.browsePack()
+                }
             }
-            ToolbarButton("Import pack", hint = "Import textures from a Minecraft resource pack") {
-                app.browsePack()
-            }
+            DonateButton(hint = "Support the designer") { app.showDonate = true }
             ToolbarButton(
                 label = when (app.themeMode) {
                     ThemeMode.LIGHT -> "☀"
@@ -289,69 +383,112 @@ private fun EditionHeader(app: AppState, controller: EditorController, state: Ed
     }
 }
 
+/**
+ * The support entry point, drawn rather than lettered.
+ *
+ * It sits with the app-level controls at the right of the header - theme,
+ * settings - and not with the document tools, because it has nothing to do
+ * with the project that is open.
+ */
+@Composable
+private fun DonateButton(hint: String, onClick: () -> Unit) {
+    val palette = LocalSkinPalette.current
+    ToolbarIconButton(hint = hint, onClick = onClick) {
+        DonateIcon(size = 20.dp, ink = palette.chromeText, slot = palette.chromePanelAlt)
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Toolbar
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun EditorToolbar(app: AppState, controller: EditorController, state: EditorState) {
+private fun EditorToolbar(
+    app: AppState,
+    controller: EditorController,
+    state: EditorState,
+    metrics: AdaptiveMetrics,
+) {
     val palette = LocalSkinPalette.current
     Surface(color = palette.chromePanel, contentColor = palette.chromeText) {
         Row(
             Modifier.fillMaxWidth().height(46.dp).padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            EditorTool.entries.filter { it != EditorTool.PLACE }.forEach { tool ->
-                IconToggle(
-                    label = tool.displayName,
-                    hint = "${tool.displayName}  (${tool.shortcut})",
-                    selected = state.tool == tool,
-                    onClick = { controller.setTool(tool) },
-                )
-            }
+            // Two halves, and which is which matters. The left half is
+            // weighted and scrolls, so it can never push anything off the end
+            // of the bar; the right half - the zoom and the view switcher - is
+            // laid out afterwards and is therefore always on screen at every
+            // width. Before this the whole row was one line of children, and
+            // narrowing the window quietly pushed "Preview" and "Code" past
+            // the edge with no way to reach them.
+            Row(
+                Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                EditorTool.entries.filter { it != EditorTool.PLACE }.forEach { tool ->
+                    IconToggle(
+                        label = tool.displayName,
+                        hint = "${tool.displayName}  (${tool.shortcut})",
+                        selected = state.tool == tool,
+                        onClick = { controller.setTool(tool) },
+                    )
+                }
 
-            ToolbarSeparator()
+                ToolbarSeparator()
 
-            ToolbarButton("Undo", enabled = state.canUndo, hint = state.undoLabel?.let { "Undo $it" } ?: "Undo") {
-                controller.undo()
-            }
-            ToolbarButton("Redo", enabled = state.canRedo, hint = state.redoLabel?.let { "Redo $it" } ?: "Redo") {
-                controller.redo()
-            }
+                ToolbarButton("Undo", enabled = state.canUndo, hint = state.undoLabel?.let { "Undo $it" } ?: "Undo") {
+                    controller.undo()
+                }
+                ToolbarButton("Redo", enabled = state.canRedo, hint = state.redoLabel?.let { "Redo $it" } ?: "Redo") {
+                    controller.redo()
+                }
 
-            ToolbarSeparator()
+                ToolbarSeparator()
 
-            IconToggle("Grid", "Show grid  (Ctrl+G)", state.showGrid) { controller.toggleGrid() }
-            GridSizeControl(controller, state)
-            IconToggle("Snap", "Snap to grid", state.snapToGrid) { controller.toggleSnapToGrid() }
-            IconToggle("Guides", "Smart alignment guides", state.snapToElements) { controller.toggleSnapToElements() }
-            IconToggle("Rulers", "Show rulers  (Ctrl+R)", state.showRulers) { controller.toggleRulers() }
+                IconToggle("Grid", "Show grid  (Ctrl+G)", state.showGrid) { controller.toggleGrid() }
+                GridSizeControl(controller, state)
+                IconToggle("Snap", "Snap to grid", state.snapToGrid) { controller.toggleSnapToGrid() }
+                if (metrics.widthDp >= DesktopChrome.TOOLBAR_TOGGLES_MIN_WIDTH) {
+                    IconToggle("Guides", "Smart alignment guides", state.snapToElements) {
+                        controller.toggleSnapToElements()
+                    }
+                    IconToggle("Rulers", "Show rulers  (Ctrl+R)", state.showRulers) { controller.toggleRulers() }
+                }
 
-            ToolbarSeparator()
+                // Eight align buttons are the widest block in the bar. They
+                // are on the Arrange menu at every width, so a window that
+                // cannot fit them drops them rather than making the bar scroll
+                // for something a menu already has.
+                if (metrics.widthDp >= DesktopChrome.TOOLBAR_ALIGN_MIN_WIDTH) {
+                    ToolbarSeparator()
 
-            listOf(
-                AlignMode.LEFT to "⇤",
-                AlignMode.HORIZONTAL_CENTER to "⇔",
-                AlignMode.RIGHT to "⇥",
-                AlignMode.TOP to "⤒",
-                AlignMode.VERTICAL_CENTER to "⇕",
-                AlignMode.BOTTOM to "⤓",
-                AlignMode.DISTRIBUTE_HORIZONTAL to "⇹",
-                AlignMode.DISTRIBUTE_VERTICAL to "⇳",
-            ).forEach { (mode, glyph) ->
-                ToolbarButton(glyph, enabled = state.hasSelection, hint = "Align: ${mode.displayName}") {
-                    controller.align(mode)
+                    listOf(
+                        AlignMode.LEFT to "⇤",
+                        AlignMode.HORIZONTAL_CENTER to "⇔",
+                        AlignMode.RIGHT to "⇥",
+                        AlignMode.TOP to "⤒",
+                        AlignMode.VERTICAL_CENTER to "⇕",
+                        AlignMode.BOTTOM to "⤓",
+                        AlignMode.DISTRIBUTE_HORIZONTAL to "⇹",
+                        AlignMode.DISTRIBUTE_VERTICAL to "⇳",
+                    ).forEach { (mode, glyph) ->
+                        ToolbarButton(glyph, enabled = state.hasSelection, hint = "Align: ${mode.displayName}") {
+                            controller.align(mode)
+                        }
+                    }
                 }
             }
 
-            Spacer(Modifier.weight(1f))
-
-            ZoomControls(controller, state)
             ToolbarSeparator()
-            ViewModeTabs(controller, state)
+            ZoomControls(controller, state, metrics)
+            ToolbarSeparator()
+            ViewModeTabs(controller, state, metrics)
         }
     }
 }
+
+
 
 /**
  * Grid pitch, in GUI pixels, right next to the toggle that shows it.
@@ -388,7 +525,7 @@ private fun GridSizeControl(controller: EditorController, state: EditorState) {
 }
 
 @Composable
-private fun ZoomControls(controller: EditorController, state: EditorState) {
+private fun ZoomControls(controller: EditorController, state: EditorState, metrics: AdaptiveMetrics) {
     ToolbarButton("−", hint = "Zoom out  (Ctrl+-)") { controller.zoomBy(0.8f) }
     Text(
         text = "${(state.zoom * 100).toInt()}%",
@@ -397,15 +534,20 @@ private fun ZoomControls(controller: EditorController, state: EditorState) {
         modifier = Modifier.width(52.dp).padding(horizontal = 4.dp),
     )
     ToolbarButton("+", hint = "Zoom in  (Ctrl++)") { controller.zoomBy(1.25f) }
-    ToolbarButton("Reset", hint = "Reset zoom and pan  (Ctrl+0)") { controller.resetView() }
+    // The word is worth four glyphs of width; below that the same button
+    // carries the universal reset mark instead of losing the control.
+    ToolbarButton(
+        label = if (metrics.sizeClass.isCompact) "⟲" else "Reset",
+        hint = "Reset zoom and pan  (Ctrl+0)",
+    ) { controller.resetView() }
 }
 
 @Composable
-private fun ViewModeTabs(controller: EditorController, state: EditorState) {
+private fun ViewModeTabs(controller: EditorController, state: EditorState, metrics: AdaptiveMetrics) {
     Row {
         ViewMode.entries.forEach { mode ->
             IconToggle(
-                label = mode.displayName,
+                label = if (metrics.sizeClass.isCompact) mode.glyph() else mode.displayName,
                 hint = when (mode) {
                     ViewMode.DESIGN -> "Edit the layout"
                     ViewMode.PREVIEW -> "See it as the game would draw it"
@@ -416,6 +558,13 @@ private fun ViewModeTabs(controller: EditorController, state: EditorState) {
             )
         }
     }
+}
+
+/** The one-character stand-in for a view mode, for bars too narrow to spell it. */
+private fun ViewMode.glyph(): String = when (this) {
+    ViewMode.DESIGN -> "◈"
+    ViewMode.PREVIEW -> "▶"
+    ViewMode.CODE -> "</>"
 }
 
 // ---------------------------------------------------------------------------
@@ -525,7 +674,7 @@ private fun RightDock(app: AppState, controller: EditorController, state: Editor
  * it.
  */
 @Composable
-private fun BottomBar(app: AppState, state: EditorState) {
+private fun BottomBar(app: AppState, state: EditorState, metrics: AdaptiveMetrics) {
     val palette = LocalSkinPalette.current
     Surface(color = palette.chromePanel, contentColor = palette.chromeText) {
         Row(
@@ -534,15 +683,16 @@ private fun BottomBar(app: AppState, state: EditorState) {
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             ToolbarButton(
-                label = "＋  Add anything",
+                label = if (metrics.sizeClass.isCompact) "＋" else "＋  Add anything",
                 hint = "Shapes, animated images, GIFs and free-form custom elements",
             ) { app.dialog = ActiveDialog.ADD_CUSTOM }
 
             ToolbarSeparator()
 
-            // The four shapes people reach for most, one click away; the rest
-            // are behind the button above.
-            CustomPresets.shapes.take(6).forEach { preset ->
+            // The shapes people reach for most, one click away; the rest are
+            // behind the button above, which is also where they all go when
+            // the window is too narrow to line them up.
+            CustomPresets.shapes.take(metrics.gridColumns(compact = 2, medium = 4, expanded = 6)).forEach { preset ->
                 ToolbarButton(preset.glyph, hint = "Add a ${preset.label.lowercase()}") {
                     app.addCustomPreset(preset)
                 }
@@ -567,15 +717,21 @@ private fun BottomBar(app: AppState, state: EditorState) {
 }
 
 @Composable
-private fun StatusBar(app: AppState, state: EditorState) {
+private fun StatusBar(app: AppState, state: EditorState, metrics: AdaptiveMetrics) {
     val palette = LocalSkinPalette.current
     Surface(color = palette.chromePanelAlt, contentColor = palette.chromeTextMuted) {
         Row(
             Modifier.fillMaxWidth().height(26.dp).padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (metrics.sizeClass.isExpanded) 16.dp else 10.dp),
         ) {
-            Text(app.status, style = MaterialTheme.typography.labelSmall)
+            Text(
+                app.status,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
             Spacer(Modifier.weight(1f))
 
             val errors = state.validation.errorCount
@@ -599,11 +755,13 @@ private fun StatusBar(app: AppState, state: EditorState) {
                 style = MaterialTheme.typography.labelSmall,
                 fontFamily = FontFamily.Monospace,
             )
-            Text(
-                "${state.selection.size} selected",
-                style = MaterialTheme.typography.labelSmall,
-                fontFamily = FontFamily.Monospace,
-            )
+            if (metrics.sizeClass.atLeastMedium) {
+                Text(
+                    "${state.selection.size} selected",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = FontFamily.Monospace,
+                )
+            }
             state.primaryElement?.let { element ->
                 Text(
                     "${element.bounds.x}, ${element.bounds.y}  ${element.bounds.width}x${element.bounds.height}",

@@ -70,6 +70,15 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
   is a multi-dock, keyboard-driven design tool. The Android app is bottom sheets,
   a navigation rail and touch gestures built for a thumb. They share the document
   model, the editor logic and the exporters — nothing else.
+- **One design, three form factors.** Phone, tablet and desktop get layouts built
+  for the room they have, not one layout stretched three ways. A phone gets a
+  bottom bar and modal sheets; a tablet gets a navigation rail and the inspector
+  docked *beside* the canvas, so a value can be dragged while the thing it
+  changes is still visible; a desktop window gets both docks, the full toolbar
+  and the align cluster. Every one of them is the same design language — same
+  palette, same type, same corner radius, same icons — and the desktop window
+  sheds controls in a fixed order as it is narrowed rather than letting anything
+  overlap or fall off the end.
 - **Import your own textures.** Any PNG/JPG/WebP/GIF becomes a button skin, panel
   background, icon or item preview, with nine-slice insets so custom art
   stretches properly. Images live inside the project file, so a `.mcgui` is a
@@ -135,6 +144,12 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 - **It remembers where you were.** Window size and position, which docks were
   open, the last export target and the recent-projects list are all restored on
   the next launch.
+- **No ads, ever.** There is one **Support the designer** page, reached from the
+  hand-and-heart mark in the top bar, and that is the whole of the app's
+  monetisation. It shows an InstaPay / QR Ph code that around sixty wallets and
+  banks can pay, the same details as plain text for anyone who would rather type
+  them, and a **Save the QR code** button — press and hold the code itself to do
+  the same thing. Nothing on that page phones home.
 
 ---
 
@@ -147,7 +162,7 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 | Placement | Arm from palette, click to drop | Tap a component tile, it lands centred |
 | Move | Drag any element | Drag an **already selected** element |
 | Pan | Middle/right drag, wheel | One-finger drag on empty space |
-| Zoom | Ctrl+wheel | Pinch |
+| Zoom | Ctrl+wheel, towards the pointer | Pinch, around the pinch centre |
 | Multi-select | Shift+click, marquee | Long press |
 | Properties | Always-visible inspector dock | Bottom sheet with chip pickers |
 | Align & arrange | Toolbar row + Arrange menu | Arrange sheet |
@@ -156,6 +171,22 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 | Settings | View ▸ Editor Settings, or ⋯ in the bottom bar | ⋮ ▸ Editor settings |
 | Prefabs & library | Docks beside the palette | Bottom sheets |
 | Export | Folder or `.zip` | `.zip` via the Storage Access Framework |
+| Support page | Hand-and-heart in the header, or Help ▸ Support | Hand-and-heart in the top bar, or at the foot of the rail |
+
+### The same app at three sizes
+
+The breakpoints are shared by both shells, so a tablet and a narrowed desktop
+window reach the same layout by the same rule.
+
+| Width | Layout | Navigation | Inspector | Toolbar |
+| --- | --- | --- | --- | --- |
+| **under 600dp** — phone portrait | One pane | Bottom bar | Modal sheet, or a drawer over the canvas on desktop | Tools scroll; zoom and the view switcher stay pinned |
+| **600–839dp** — tablet, phone landscape | Two panes | Navigation rail | Docked beside the canvas | Adds guides and rulers |
+| **840dp and up** — desktop, tablet landscape | Multi-dock | Rail or menu bar | Docked, with the toolbox dock beside it | Adds the align cluster once there is room for all eight |
+
+A dock only opens if what is left over is still a workable canvas, so widening
+the window brings panels back and narrowing it gives them up in a fixed order —
+nothing is ever pushed off an edge or overlapped.
 
 ---
 
@@ -303,6 +334,7 @@ desktopApp/     Compose Desktop shell: menus, docks, mouse, AWT dialogs
 androidApp/     Compose Android shell: sheets, nav, touch, SAF
 assets/icon/    App icon, generated from build-scripts/icon
 assets/backdrop/ Editor wallpaper, generated from build-scripts/backdrop
+assets/donate/  The InstaPay QR shown on the support page
 templates/      Bundled .mcgui templates + sample export output (generated)
 docs/           Architecture, project format, exporting, editor guide
 build-scripts/  Packaging scripts and the icon renderer
@@ -320,6 +352,7 @@ build-scripts/  Packaging scripts and the icon renderer
 | [Exporting](docs/exporting.md) | Java pack, Bedrock pack, code generation, parity warnings |
 | [Editor guide](docs/editor-guide.md) | Desktop and Android interaction models, shortcuts, validation |
 | [Extending](docs/extending.md) | Adding components, templates, themes and code targets |
+| [Donation QR](docs/donation-qr.md) | Where the support page's QR came from and how to replace it |
 
 ---
 

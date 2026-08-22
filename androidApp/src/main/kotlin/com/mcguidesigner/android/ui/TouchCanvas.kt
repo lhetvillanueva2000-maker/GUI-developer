@@ -153,11 +153,22 @@ private suspend fun PointerInputScope.touchGestureLoop(
                     lastCentroid = centroid
                     onSnapFeedback(SnapResult.None)
                 } else {
+                    val view = transform.viewport
                     if (lastPinchDistance > 1f && distance > 1f) {
-                        controller.zoomBy(distance / lastPinchDistance)
+                        // Zoom about the point between the fingers. Zooming
+                        // about the canvas centre instead drags whatever you
+                        // are pinching out from under you, and the further from
+                        // the centre you pinch the further it runs.
+                        controller.zoomAround(
+                            factor = distance / lastPinchDistance,
+                            focalX = centroid.x,
+                            focalY = centroid.y,
+                            viewportWidth = view.width,
+                            viewportHeight = view.height,
+                        )
                     }
                     val panDelta = centroid - lastCentroid
-                    controller.panBy(panDelta.x, panDelta.y)
+                    controller.panBy(panDelta.x, panDelta.y, view.width, view.height)
                     lastPinchDistance = distance
                     lastCentroid = centroid
                 }
@@ -237,7 +248,10 @@ private suspend fun PointerInputScope.touchGestureLoop(
                     }
 
                     when (mode) {
-                        TouchMode.PAN -> controller.panBy(frame.x, frame.y)
+                        TouchMode.PAN -> controller.panBy(
+                            frame.x, frame.y,
+                            transform.viewport.width, transform.viewport.height,
+                        )
 
                         TouchMode.MOVE -> {
                             val delta = transform.deltaToCanvas(total.x, total.y)
