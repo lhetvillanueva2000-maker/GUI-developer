@@ -134,6 +134,9 @@ fun MobileSheets(
                 MobileSheet.PACK_IMPORT -> PackImportSheet(app)
                 MobileSheet.APPEARANCE -> AppearanceSheet(app)
                 MobileSheet.ARRANGE -> ArrangeSheet(controller, state)
+                MobileSheet.ADD_CUSTOM -> AddCustomSheet(app)
+                MobileSheet.EDITOR_SETTINGS -> EditorSettingsSheet(app)
+                MobileSheet.CONFIRM_DELETE -> ConfirmDeleteSheet(app, state)
                 MobileSheet.NONE -> Unit
             }
         }
@@ -630,7 +633,9 @@ private fun ExportSheet(app: AndroidAppState, state: EditorState, onExport: (Exp
     }
     val available = remember(state.edition) { ExportManager.availableTargets(state.edition).distinct() }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+    // fillMaxWidth, not fillMaxSize: a scrolling column measures its children
+    // with unbounded height, and asking to fill an unbounded height crashes.
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).verticalScroll(rememberScrollState())) {
         SheetTitle("Export", "Mobile exports are written as a single .zip")
 
         available.forEach { candidate ->
@@ -654,6 +659,14 @@ private fun ExportSheet(app: AndroidAppState, state: EditorState, onExport: (Exp
                     }
                 }
             }
+        }
+
+        if (target == ExportTarget.CODE) {
+            MobileCodeTargetPicker(
+                edition = state.edition,
+                selected = app.codeTarget,
+                onSelect = { app.codeTarget = it },
+            )
         }
 
         Text(

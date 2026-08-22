@@ -4,7 +4,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.mcguidesigner.core.catalog.CustomPresets
+import com.mcguidesigner.core.catalog.ElementCatalog
 import com.mcguidesigner.core.editor.EditorController
+import com.mcguidesigner.core.editor.EditorSettings
 import com.mcguidesigner.core.library.LibraryTexture
 import com.mcguidesigner.core.library.Prefab
 import com.mcguidesigner.core.library.PrefabLibrary
@@ -25,6 +28,7 @@ import com.mcguidesigner.desktop.io.Workspace
 import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
+import com.mcguidesigner.styles.render.createAnimatedTextureFromFrames
 import com.mcguidesigner.styles.render.createTextureAsset
 import com.mcguidesigner.styles.theme.ThemeMode
 import java.awt.Frame
@@ -46,6 +50,9 @@ enum class ActiveDialog {
     COMPONENT_GALLERY,
     PACK_IMPORT,
     APPEARANCE,
+    EDITOR_SETTINGS,
+    ADD_CUSTOM,
+    CONFIRM_DELETE,
 }
 
 /** Right-hand dock tab. */
@@ -150,6 +157,7 @@ class AppState(initial: GuiProject) {
         loaded.lastDirectory?.let { path ->
             File(path).takeIf { it.isDirectory }?.let { DesktopFileIO.lastDirectory = it }
         }
+        controller.setSettings(loaded.editorSettings)
         loaded.codeTarget?.let { id -> CodeTarget.entries.firstOrNull { it.name == id }?.let { codeTarget = it } }
         loaded.exportTarget?.let { id -> ExportTarget.entries.firstOrNull { it.name == id }?.let { exportTarget = it } }
         themeMode = loaded.theme
@@ -190,6 +198,7 @@ class AppState(initial: GuiProject) {
             themeMode = themeMode.name,
             backdropEnabled = backdropEnabled,
             backdropMotion = backdropMotion,
+            editorSettings = controller.current.settings,
         )
         Workspace.savePreferences(preferences)
     }
@@ -281,7 +290,7 @@ class AppState(initial: GuiProject) {
 
     /** Adopts a document recovered from a previous session's snapshot. */
     fun adoptRecovery(recovery: Workspace.Recovery) {
-        controller = EditorController(recovery.project)
+        controller = freshController(recovery.project)
         currentFile = recovery.originalFile?.takeIf { it.isFile }
         // Recovered work is by definition unsaved: it was never written to the
         // user's own file, so the editor has to keep asking about it.
@@ -302,7 +311,7 @@ class AppState(initial: GuiProject) {
     // -- Document lifecycle ------------------------------------------------
 
     fun newProject(edition: Edition, name: String) {
-        controller = EditorController(EditorController.newProject(edition, name))
+        controller = freshController(EditorController.newProject(edition, name))
         currentFile = null
         dialog = ActiveDialog.NONE
         Workspace.clearRecovery()
@@ -311,7 +320,7 @@ class AppState(initial: GuiProject) {
 
     fun newFromTemplate(templateId: String) {
         val template = BuiltInTemplates[templateId] ?: return
-        controller = EditorController(template.instantiate())
+        controller = freshController(template.instantiate())
         currentFile = null
         dialog = ActiveDialog.NONE
         Workspace.clearRecovery()
@@ -326,7 +335,7 @@ class AppState(initial: GuiProject) {
     fun openFile(file: File) {
         when (val result = DesktopFileIO.readProject(file)) {
             is LoadResult.Success -> {
-                controller = EditorController(result.project)
+                controller = freshController(result.project)
                 currentFile = file
                 rememberRecent(file)
                 dialog = ActiveDialog.NONE
@@ -384,7 +393,139 @@ class AppState(initial: GuiProject) {
         status = "Cleared the recent files list."
     }
 
+    /**
+     * A controller for [project] that keeps the user's editor settings.
+     *
+     * Opening a document replaces the whole controller, and settings live in
+     * the editor state - so without this, choosing a 4px move step would last
+     * exactly until the next File > Open.
+     */
+    private fun freshController(project: GuiProject) =
+        EditorController(project).apply { setSettings(controller.current.settings) }
+
+    // -- Deleting ----------------------------------------------------------
+
+    /**
+     * Deletes the selection, asking first when the user has said to ask.
+     *
+     * Every delete path - the key, the menu, the toolbar - comes through here
+     * so the setting cannot be honoured in some places and skipped in others.
+     */
+    fun requestDeleteSelection() {
+        if (!controller.current.hasSelection) return
+        if (controller.current.settings.confirmBeforeDelete) {
+            dialog = ActiveDialog.CONFIRM_DELETE
+        } else {
+            controller.deleteSelection()
+        }
+    }
+
+    fun confirmDeleteSelection() {
+        controller.deleteSelection()
+        dialog = ActiveDialog.NONE
+    }
+
+    // -- Editor settings ---------------------------------------------------
+
+    /** Applies [settings] to the live editor and writes them to disk. */
+    fun applyEditorSettings(settings: EditorSettings) {
+        controller.setSettings(settings)
+        persistPreferences()
+    }
+
+    // -- Adding custom content ---------------------------------------------
+
+    /**
+     * Drops a preset onto the middle of the canvas and selects it.
+     *
+     * The centre rather than the origin because that is where the user is
+     * looking, and selected because the next thing anyone does after adding a
+     * shape is resize or recolour it.
+     */
+    fun addCustomPreset(preset: CustomPresets.Preset) {
+        val canvas = controller.project.canvas
+        val added = controller.addElement(
+            typeId = preset.typeId,
+            at = IntPoint(canvas.width / 2, canvas.height / 2),
+            centreOnPoint = true,
+            initialProps = preset.props,
+            nameHint = preset.label,
+            sizeOverride = preset.size,
+        )
+        status = if (added == null) {
+            "Could not add ${preset.label}."
+        } else {
+            // Anything that needs a texture is useless until it has one, so the
+            // status line says what to do next rather than just "added".
+            when (preset.typeId) {
+                ElementCatalog.IMAGE_ANIMATED ->
+                    "Added ${preset.label}. Import a GIF (File > Import Textures) and pick it " +
+                        "as the frame strip in the Properties panel."
+
+                ElementCatalog.IMAGE_PLACEHOLDER ->
+                    "Added ${preset.label}. Choose a texture for it in the Properties panel."
+
+                else -> "Added ${preset.label}. Resize and restyle it in the Properties panel."
+            }
+        }
+    }
+
     // -- Textures ----------------------------------------------------------
+
+    /**
+     * Builds one animated texture from several image files.
+     *
+     * The route in for anything that is not a GIF - frames exported from a
+     * video, a sequence rendered elsewhere. Files are taken in name order,
+     * which is how frame sequences are always numbered.
+     */
+    fun importAnimationFrames() {
+        val files = DesktopFileIO.importImageDialog(frameProvider())
+            .sortedBy { it.name.lowercase() }
+        if (files.isEmpty()) return
+        if (files.size < 2) {
+            status = "Pick at least two images - one frame is a still, so import it as one."
+            return
+        }
+
+        val asset = runCatching {
+            createAnimatedTextureFromFrames(
+                id = Ids.prefixed("tex"),
+                // The shared stem of "walk_01.png".."walk_12.png" names the
+                // animation far better than the first file does.
+                name = commonFrameName(files.map { it.name }),
+                frameFiles = files.map { it.readBytes() },
+                sourcePath = files.first().parentFile?.absolutePath,
+            )
+        }.getOrNull()
+
+        if (asset == null) {
+            status = "Could not read those images as an animation."
+            return
+        }
+
+        controller.addTextures(listOf(asset))
+        rememberInLibrary(listOf(asset), source = "Animation")
+        inspectorTab = InspectorTab.ASSETS
+        status = "Built a ${asset.frameCount}-frame animation from ${files.size} images. " +
+            "Add an Animated image element and pick '${asset.name}' as its frame strip."
+    }
+
+    /**
+     * The shared prefix of a numbered frame sequence.
+     *
+     * `walk_01.png`, `walk_02.png` -> `walk`. Falls back to the first name
+     * when the files share nothing, which is the best guess available.
+     */
+    private fun commonFrameName(names: List<String>): String {
+        val stems = names.map { it.substringBeforeLast('.') }
+        val first = stems.first()
+        var shared = first.length
+        stems.drop(1).forEach { other ->
+            shared = minOf(shared, other.commonPrefixWith(first).length)
+        }
+        return first.take(shared).trimEnd('_', '-', ' ', '.').ifBlank { first }
+    }
 
     fun importTextures() {
         val files = DesktopFileIO.importImageDialog(frameProvider())

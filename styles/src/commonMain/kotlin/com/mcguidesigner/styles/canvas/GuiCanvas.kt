@@ -1,9 +1,15 @@
 package com.mcguidesigner.styles.canvas
 
+import androidx.compose.animation.core.withInfiniteAnimationFrameMillis
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -20,10 +26,14 @@ import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.editor.Interaction
 import com.mcguidesigner.core.editor.SnapResult
 import com.mcguidesigner.core.editor.ViewMode
+import com.mcguidesigner.core.catalog.ElementCatalog
 import com.mcguidesigner.core.model.GuiElement
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.InteractionState
 import com.mcguidesigner.core.model.IntRect
+import com.mcguidesigner.core.model.bool
+import com.mcguidesigner.core.model.texture
+import com.mcguidesigner.core.model.walkAll
 import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.validation.Severity
 import com.mcguidesigner.styles.render.EditionSkin
@@ -69,6 +79,12 @@ fun GuiCanvas(
     workspaceColor: Color = chrome.chromeBackground,
 ) {
     val measurer = rememberTextMeasurer()
+    // Turning animation off pins every frame strip to frame zero rather than
+    // freezing it wherever it happened to be, which is what makes laying out
+    // against an animation predictable.
+    val playing = state.settings.playAnimations && state.project.hasPlayingAnimation
+    val clock by rememberAnimationClock(playing)
+    val time = if (playing) clock else 0L
     Box(modifier) {
         Canvas(Modifier.fillMaxSize()) {
             drawCanvasSurface(
@@ -81,10 +97,48 @@ fun GuiCanvas(
                 workspaceColor = workspaceColor,
                 handleSize = handleSize,
                 snapFeedback = snapFeedback,
+                timeMillis = time,
             )
         }
     }
 }
+
+/**
+ * A millisecond clock that only runs while [enabled].
+ *
+ * Reading it in a composable that draws is what pulls the canvas onto the
+ * frame clock, so it is deliberately gated: a project with no playing
+ * animation must not repaint sixty times a second, which on a laptop is the
+ * difference between an idle editor and a warm one.  When it stops the value
+ * holds rather than resetting, so an animation paused and resumed picks up
+ * where it was instead of snapping back to frame zero.
+ */
+@Composable
+private fun rememberAnimationClock(enabled: Boolean): State<Long> {
+    val held = remember { mutableLongStateOf(0L) }
+    return produceState(initialValue = held.longValue, enabled) {
+        if (!enabled) return@produceState
+        // The frame clock hands out an arbitrary origin, so the first frame
+        // becomes the zero point and everything after it is a delta.
+        var origin = -1L
+        while (true) {
+            withInfiniteAnimationFrameMillis { frame ->
+                if (origin < 0L) origin = frame - held.longValue
+                held.longValue = frame - origin
+                value = held.longValue
+            }
+        }
+    }
+}
+
+/** True when any element is an animated image the editor should be playing. */
+private val GuiProject.hasPlayingAnimation: Boolean
+    get() = elements.walkAll().any { element ->
+        element.visible &&
+            element.type == ElementCatalog.IMAGE_ANIMATED &&
+            element.props.bool("playing", true) &&
+            texture(element.props.texture("texture"))?.isAnimated == true
+    }
 
 /**
  * Read-only rendering of a project, used by the preview pane, the template
@@ -99,9 +153,13 @@ fun GuiPreview(
     previewState: InteractionState = InteractionState.NORMAL,
     form: TargetForm = project.canvas.targetForm,
     drawBackdrop: Boolean = true,
+    playAnimations: Boolean = true,
     skin: EditionSkin = LocalEditionSkin.current,
 ) {
     val measurer = rememberTextMeasurer()
+    val playing = playAnimations && project.hasPlayingAnimation
+    val clock by rememberAnimationClock(playing)
+    val time = if (playing) clock else 0L
     Canvas(modifier) {
         val transform = CanvasTransform(
             zoom = zoom,
@@ -130,6 +188,7 @@ fun GuiPreview(
                 state = previewState,
                 form = form,
                 selection = emptySet(),
+                timeMillis = time,
             )
         }
     }
@@ -149,6 +208,7 @@ private fun DrawScope.drawCanvasSurface(
     workspaceColor: Color,
     handleSize: Float,
     snapFeedback: SnapResult,
+    timeMillis: Long,
 ) {
     val project = state.project
     val canvasRect = transform.canvasRect
@@ -198,6 +258,7 @@ private fun DrawScope.drawCanvasSurface(
             state = if (designMode) InteractionState.NORMAL else state.previewState,
             form = state.previewForm,
             selection = state.selection,
+            timeMillis = timeMillis,
         )
     }
 
@@ -259,6 +320,7 @@ private fun DrawScope.drawElements(
     state: InteractionState,
     form: TargetForm,
     selection: Set<String>,
+    timeMillis: Long,
 ) {
     for (element in nodes) {
         if (!element.visible) continue
@@ -282,13 +344,14 @@ private fun DrawScope.drawElements(
             textMeasurer = measurer,
             form = form,
             selected = element.id in selection,
+            timeMillis = timeMillis,
         )
         skin.draw(this, context)
 
         if (element.children.isNotEmpty()) {
             drawElements(
                 element.children, bounds, project, transform, textures,
-                measurer, skin, state, form, selection,
+                measurer, skin, state, form, selection, timeMillis,
             )
         }
     }

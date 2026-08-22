@@ -3,6 +3,8 @@ package com.mcguidesigner.styles.render
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toPixelMap
+import com.mcguidesigner.core.image.AnimatedTextureImport
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.TextureAsset
 import kotlin.io.encoding.Base64
@@ -70,6 +72,11 @@ fun rememberTextureCache(project: GuiProject): TextureCache {
 /**
  * Builds a [TextureAsset] from raw file bytes, reading the real pixel size so
  * the assets panel and nine-slice editor have something accurate to show.
+ *
+ * Animated sources are converted here rather than at the call sites: a GIF is
+ * turned into the vertical frame strip both editions animate, so importing one
+ * on the phone and importing one on the desktop cannot produce different
+ * projects, and nothing downstream ever has to handle a GIF.
  */
 @OptIn(ExperimentalEncodingApi::class)
 fun createTextureAsset(
@@ -78,6 +85,20 @@ fun createTextureAsset(
     bytes: ByteArray,
     sourcePath: String? = null,
 ): TextureAsset {
+    val cleanName = name.substringAfterLast('/').substringAfterLast('\\')
+    if (AnimatedTextureImport.isAnimatedSource(bytes)) {
+        AnimatedTextureImport.fromBytes(
+            bytes = bytes,
+            id = id,
+            // A `.gif` suffix on what is now a PNG would be a lie the exporters
+            // would faithfully write into the resource pack.
+            name = cleanName.removeSuffix(".gif").removeSuffix(".GIF"),
+            sourcePath = sourcePath,
+        )?.let { return it }
+        // Falling through means the GIF was unreadable; the platform decoder
+        // below may still manage a first frame, which beats importing nothing.
+    }
+
     val format = when {
         bytes.size > 8 && bytes[0] == 0x89.toByte() && bytes[1] == 'P'.code.toByte() -> "png"
         bytes.size > 3 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() -> "jpg"
@@ -88,11 +109,65 @@ fun createTextureAsset(
     val size = readImageSize(bytes) ?: (decodeImageBitmap(bytes)?.let { it.width to it.height }) ?: (0 to 0)
     return TextureAsset(
         id = id,
-        name = name.substringAfterLast('/').substringAfterLast('\\'),
+        name = cleanName,
         format = format,
         width = size.first,
         height = size.second,
         dataBase64 = Base64.encode(bytes),
         sourcePath = sourcePath,
     )
+}
+
+/**
+ * Builds one animated [TextureAsset] out of several separate images.
+ *
+ * The route in for anything that is not a GIF: frames exported from a video,
+ * a sequence rendered by another tool, a sprite sheet already cut up.  The
+ * files are decoded with the platform's own decoder and stacked into the
+ * vertical strip both editions animate, so from that point on the source
+ * format is nobody's problem.
+ *
+ * [frameFiles] is used in the order given - callers should sort by file name,
+ * which is how frame sequences are always numbered.  Returns null when fewer
+ * than two frames could be decoded, because one frame is a still and should be
+ * imported as one.
+ */
+fun createAnimatedTextureFromFrames(
+    id: String,
+    name: String,
+    frameFiles: List<ByteArray>,
+    frameDelayMillis: Int = AnimatedTextureImport.FALLBACK_FRAME_DELAY_MILLIS,
+    sourcePath: String? = null,
+): TextureAsset? {
+    val frames = frameFiles.mapNotNull { file ->
+        val bitmap = runCatching { decodeImageBitmap(file) }.getOrNull() ?: return@mapNotNull null
+        val map = runCatching { bitmap.toPixelMap() }.getOrNull() ?: return@mapNotNull null
+        AnimatedTextureImport.FramePixels(
+            // toPixelMap can hand back a buffer with row padding, so the rows
+            // are copied out rather than the backing array being trusted.
+            pixels = IntArray(bitmap.width * bitmap.height) { index ->
+                val x = index % bitmap.width
+                val y = index / bitmap.width
+                map[x, y].toArgbInt()
+            },
+            width = bitmap.width,
+            height = bitmap.height,
+            delayMillis = frameDelayMillis,
+        )
+    }
+    if (frames.size < 2) return null
+
+    return AnimatedTextureImport.fromFrameImages(
+        frames = frames,
+        id = id,
+        name = name.substringAfterLast('/').substringAfterLast('\\'),
+        frameDelayMillis = frameDelayMillis,
+        sourcePath = sourcePath,
+    )
+}
+
+/** Packs a Compose colour into the 0xAARRGGBB form the image pipeline uses. */
+private fun androidx.compose.ui.graphics.Color.toArgbInt(): Int {
+    fun channel(value: Float) = (value * 255f + 0.5f).toInt().coerceIn(0, 255)
+    return (channel(alpha) shl 24) or (channel(red) shl 16) or (channel(green) shl 8) or channel(blue)
 }

@@ -32,6 +32,14 @@ class ElementRenderContext(
     val textMeasurer: TextMeasurer,
     val form: TargetForm,
     val selected: Boolean = false,
+    /**
+     * Milliseconds since the editor's animation clock started.
+     *
+     * Only animated elements read it; everything else draws identically at
+     * every value, which is what lets the canvas repaint on a frame clock
+     * without every skin having to care.
+     */
+    val timeMillis: Long = 0L,
 ) {
     /** Properties with the current interaction state's overrides applied. */
     val props: Map<String, PropValue> = element.propsFor(state)

@@ -14,8 +14,9 @@ models are deliberately different. This page covers both.
 | Edition header | The **Java Edition / Bedrock Edition** tabs, the document title, and the component library, pack import, theme and appearance buttons |
 | Toolbar | Tools, undo/redo, grid size and snap toggles, align and distribute, zoom, view mode |
 | Left dock | **Palette** (live thumbnails), **Prefabs**, **Library** (textures), **Layers**, **Templates** |
-| Centre | Design canvas with rulers, or the live preview, or the code view |
+| Centre | Design canvas with rulers, or the live preview, or the code view — plus the **move pad** whenever something is selected |
 | Right dock | **Properties** (inspector), **Assets** (textures in this project), **Issues** (validation) |
+| Bottom bar | **＋ Add anything**, one-click shape buttons, animated image, custom element, and **⋯** for the editor settings |
 | Status bar | Status message, issue counts, canvas size, selection, selected element bounds |
 
 ### The edition tabs
@@ -57,8 +58,9 @@ automatically parents the new element to it.
 | Keys | Action |
 | --- | --- |
 | `Ctrl+N` / `Ctrl+O` | New project / Open |
-| `Ctrl+S` / `Ctrl+Shift+S` | Save / Save as |
-| `Ctrl+E` / `Ctrl+Shift+E` | Export / Export everything at once |
+| `Ctrl+S` | Save |
+| `Ctrl+Shift+S` / `Ctrl+E` | Export — every format, including the ones Minecraft reads |
+| `Ctrl+Shift+E` | Export everything at once |
 | `Ctrl+Shift+P` | Save the selection as a prefab |
 | `F1` | Browse the component library |
 | `Ctrl+Z` / `Ctrl+Y` | Undo / Redo |
@@ -68,7 +70,7 @@ automatically parents the new element to it.
 | `Delete` | Delete selection |
 | `Escape` | Deselect, or cancel a pending placement |
 | `V` / `H` / `M` | Select / Pan / Marquee tool |
-| Arrow keys | Nudge 1px (Shift: 8px) |
+| Arrow keys | Move the selection by the step set in Editor Settings (Shift: the big step) |
 | `Ctrl+]` / `Ctrl+[` | Bring forward / send backward |
 | `Ctrl+Shift+]` / `Ctrl+Shift+[` | Bring to front / send to back |
 | `Ctrl+G` / `Ctrl+R` | Toggle grid / rulers |
@@ -137,15 +139,23 @@ a thumb.
 ### Layout
 
 * **Bottom navigation** (portrait) or a **navigation rail** (landscape and
-  tablets, above 600dp wide): Design, Layers, Preview, Code, Add.
+  tablets, above 600dp wide): Design, Layers, Preview, Code, Add, Custom.
 * **Modal bottom sheets** replace the desktop docks - one purpose at a time,
   dismissible with a swipe, always leaving the canvas visible behind them.
 * A **floating selection bar** over the canvas holds the actions that live in
   menus on desktop: edit properties, duplicate, raise, lower, lock, delete.
+* A **move pad** sits above it whenever something is selected - four arrows and
+  the step they move by. A one-pixel drag is not something a fingertip can do,
+  so on a phone this is the only way to place something exactly.
 * **Edition tabs** sit directly under the title bar, exactly as on desktop.
-* The overflow menu holds save/open, templates, the texture library, prefabs,
-  the component library, resource-pack import, arrange, canvas settings,
-  appearance, project settings, issues and export.
+* The overflow menu holds save, export, open, templates, the texture library,
+  prefabs, the component library, resource-pack import, shapes and custom
+  elements, arrange, canvas settings, editor settings, appearance, project
+  settings and issues.
+
+**Add** and **Custom** are separate on purpose: the first lists Minecraft's own
+widgets, the second lists shapes, GIFs and anything the catalog does not have.
+Mixing them would bury both.
 * The **Arrange** sheet carries alignment, distribution, z-order, nudge and the
   grid controls that live in a toolbar row on desktop - lining elements up by
   dragging on a touchscreen is exactly the job alignment tools exist to remove.
@@ -265,6 +275,81 @@ Any element with a `texture` property can use an imported image - buttons,
 panels, the hotbar, icon buttons, tab icons, item previews in slots, and the
 dedicated Image / Texture Slot component.
 
+**GIFs become animations.** An imported GIF is decoded and rewritten as a
+vertical frame strip - a single PNG holding every frame, which is the one
+animation format both editions understand. Drop it onto an **Animated image**
+element and it plays in the editor, in the exported HTML, and in the game, with
+the `.mcmeta` timing sidecar written alongside it in the resource pack.
+
+Long or large GIFs are trimmed on import: at most 128 frames, sampled evenly
+across the whole animation so a trimmed one still plays end to end, and scaled
+down past 512px on the longer side. A GIF authored with uneven frame delays
+keeps them frame by frame rather than being flattened to one rate.
+
+**Anything that is not a GIF** goes through **Build an animation from images**
+(File menu on desktop, overflow menu on Android). Pick two or more images and
+they are stacked into the same frame strip, in file-name order - which is how
+frame sequences are always numbered. The first image sets the size and the rest
+are scaled to match, and the animation is named after the shared part of the
+file names, so `walk_01.png` … `walk_12.png` becomes `walk`.
+
+That is also the route for video: the app does not decode video files, because
+doing so needs a codec it would have to ship. Export the frames with any video
+tool - `ffmpeg -i clip.mp4 frame_%03d.png` will do it - and import those.
+
+### Shapes and custom elements
+
+**＋ Add anything** in the desktop bottom bar, or the **Custom** tab in the
+Android bottom navigation, opens a picker with three groups:
+
+* **Shapes** - seventeen of them, from a plain rectangle to a star with an
+  adjustable point count and notch depth. Each takes a solid or gradient fill,
+  an outline, rotation and a label, and resizes like anything else.
+* **Animated & imagery** - the animated image described above, and a plain
+  still.
+* **Anything else** - a **Custom element** with a type name of your choosing
+  and free-form `key=value` properties that every exporter passes straight
+  through, for a widget the catalog does not have.
+
+Shapes are deliberately not in the component palette. That palette lists
+Minecraft's own widgets; a hexagon is a drawing primitive, and filing it beside
+"Chest background panel" would misrepresent both.
+
+### Moving things exactly
+
+Four arrows appear over the canvas whenever something is selected. The number
+in the middle is the step they move by; tapping it switches between the small
+and big step, and both are set in **Editor settings**.
+
+On desktop the arrow keys use the same step, so the buttons and the keyboard
+can never disagree - Shift gives the big one. Turning
+*Arrow keys use the same steps* off restores the classic fixed 1px / Shift+8px
+behaviour for anyone who wants coarse buttons and fine keys.
+
+With *Snap moves to the grid* on, a move goes to the next grid line rather than
+a fixed number of pixels, so repeated presses walk the grid instead of drifting
+off it.
+
+### Editor settings
+
+**View ▸ Editor Settings** (or **⋯** in the bottom bar) on desktop, **⋮ ▸ Editor
+settings** on Android. Settings belong to you rather than to the document, so
+they survive opening another project, and each platform stores them in its own
+preferences.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| Small step | 1px | How far one press of a move arrow shifts the selection |
+| Big step | 8px | The step with Shift held, or the pad's step button lit |
+| Arrow keys use the same steps | On | Keyboard and buttons move by the same amount |
+| Snap moves to the grid | Off | Move to the next grid line instead of by a fixed amount |
+| Show the move pad | On | The four arrows over the canvas |
+| Move pad corner | Bottom right | Which corner it sits in |
+| Duplicate offset | 8px | How far a copy lands from its original |
+| Ask before deleting | Off | A confirmation before a delete; undo already covers it |
+| Play animated images | On | Off pins every animation to its first frame |
+| Autosave | 10s | How often unsaved work is snapshotted; Off disables it |
+
 ### Not losing work
 
 Nothing replaces the open document without asking. **New**, **Open**, **Open
@@ -278,7 +363,7 @@ On top of that, each platform guards against being killed rather than closed:
 | | Desktop | Android |
 | --- | --- | --- |
 | What is written | A recovery snapshot in the app data directory | The working document in internal storage |
-| When | Every 10 seconds while the document is dirty | Whenever the app is backgrounded (`onStop`) |
+| When | On the autosave interval while the document is dirty | On the same interval, and whenever the app is backgrounded (`onStop`) |
 | On next launch | Offers to recover, naming the project and the time | Restores silently, still marked unsaved |
 | Cleared when | The document is saved, or the app exits normally | The session is replaced |
 
@@ -295,8 +380,9 @@ snapshot, plus `prefabs.json` and `texture-library.json`.
 ### What is remembered between runs
 
 The desktop app restores its window size and position, whether it was
-maximised, which docks were open, the theme and wallpaper settings, the last
-export target and code language, and the ten most recent projects. Recent entries whose file has since been moved or
+maximised, which docks were open, the theme and wallpaper settings, every
+editor setting, the last export target and code language, and the ten most
+recent projects. Recent entries whose file has since been moved or
 deleted are dropped rather than offered. A corrupt or unreadable
 `preferences.json` is treated as a first run instead of failing to start.
 

@@ -23,6 +23,9 @@ import com.mcguidesigner.core.model.texture
 import com.mcguidesigner.styles.render.EditionSkin
 import com.mcguidesigner.styles.render.ElementRenderContext
 import com.mcguidesigner.styles.render.checkerboard
+import com.mcguidesigner.styles.render.drawAnimatedImage
+import com.mcguidesigner.styles.render.drawCustomElement
+import com.mcguidesigner.styles.render.drawCustomShape
 import com.mcguidesigner.styles.render.drawImageFitted
 import com.mcguidesigner.styles.render.drawShadowedText
 import com.mcguidesigner.styles.render.fillRect
@@ -117,6 +120,11 @@ object BedrockEditionSkin : EditionSkin {
             ElementCatalog.PROGRESS_BAR -> drawProgress(context)
             ElementCatalog.DECOR_SEPARATOR -> drawSeparator(context)
             ElementCatalog.IMAGE_PLACEHOLDER -> drawImage(context)
+            // User-authored artwork, with no vanilla appearance to imitate -
+            // see the note on the shared renderers in `render/CustomDraw.kt`.
+            ElementCatalog.IMAGE_ANIMATED -> drawAnimatedImage(context)
+            ElementCatalog.SHAPE_CUSTOM -> drawCustomShape(context)
+            ElementCatalog.CUSTOM_ELEMENT -> drawCustomElement(context)
             else -> drawUnsupported(context)
         }
 

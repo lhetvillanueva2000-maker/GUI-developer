@@ -117,7 +117,11 @@ centred on the window; Bedrock screens are usually anchored to safe-area edges.
     "dataBase64": "iVBORw0KGgoAAAANSUhEUg...",
     "nineSlice": { "left": 4, "top": 4, "right": 4, "bottom": 4 },
     "pixelated": true,
-    "sourcePath": "/home/me/art/custom_panel.png"
+    "sourcePath": "/home/me/art/custom_panel.png",
+    "frameCount": 1,
+    "frameTimeTicks": 2,
+    "interpolate": false,
+    "frameDelaysMillis": []
   }
 ]
 ```
@@ -125,6 +129,21 @@ centred on the window; Bedrock screens are usually anchored to safe-area edges.
 `nineSlice` is what turns a small PNG into a stretchable panel or button skin:
 the corners stay pixel-exact while the edges and centre stretch. All four at
 zero means "stretch the whole image".
+
+The four animation fields describe a frame strip. `frameCount` above 1 means
+the PNG is `width` wide and `width * frameCount` tall, played top to bottom -
+the format both editions animate natively, and what an imported GIF is
+converted to. `frameTimeTicks` is the `frametime` written to the exported
+`.mcmeta` (20 ticks to the second), and `interpolate` asks the game to
+cross-fade between frames.
+
+`frameDelaysMillis` keeps the source's own per-frame timings when it had
+uneven ones. Minecraft has a single `frametime` per texture, so the resource
+pack export writes explicit per-frame `time` entries to reproduce them
+exactly; every other export uses one averaged rate, and the validator says so.
+
+All four default to a still, so a document written before they existed loads
+unchanged.
 
 Deleting a texture in the app clears every reference to it, so a document can
 never contain a dangling asset id.

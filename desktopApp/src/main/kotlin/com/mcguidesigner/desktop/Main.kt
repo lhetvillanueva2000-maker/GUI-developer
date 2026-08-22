@@ -31,6 +31,7 @@ import androidx.compose.ui.window.rememberWindowState
 import com.mcguidesigner.desktop.io.Workspace
 import com.mcguidesigner.styles.render.decodeImageBitmap
 import kotlinx.coroutines.delay
+import com.mcguidesigner.core.catalog.CustomPresets
 import com.mcguidesigner.core.editor.EditorTool
 import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.AlignMode
@@ -118,9 +119,11 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
     // Autosave ticks while the document is dirty. Ten seconds is short enough
     // that a crash costs almost nothing and long enough that it never lands in
     // the middle of a drag.
-    LaunchedEffect(Unit) {
+    LaunchedEffect(editorState.settings.autosaveSeconds) {
+        val seconds = editorState.settings.autosaveSeconds
+        if (seconds <= 0) return@LaunchedEffect
         while (true) {
-            delay(AUTOSAVE_INTERVAL_MILLIS)
+            delay(seconds * 1000L)
             appState.autosaveIfDirty()
         }
     }
@@ -192,9 +195,6 @@ private object DesktopBackdrops : BackdropArtwork {
     }
 }
 
-/** How often the working document is snapshotted while it has unsaved edits. */
-private const val AUTOSAVE_INTERVAL_MILLIS = 10_000L
-
 /** Settle time before window geometry changes are written to disk. */
 private const val PERSIST_DEBOUNCE_MILLIS = 700L
 
@@ -226,7 +226,7 @@ private fun handleShortcut(app: AppState, key: Key, ctrl: Boolean, shift: Boolea
         ctrl && key == Key.Z && !shift -> { controller.undo(); true }
         ctrl && (key == Key.Y || (key == Key.Z && shift)) -> { controller.redo(); true }
         ctrl && key == Key.S && !shift -> { app.save(); true }
-        ctrl && key == Key.S && shift -> { app.saveAs(); true }
+        ctrl && key == Key.S && shift -> { app.dialog = ActiveDialog.EXPORT; true }
         ctrl && key == Key.O -> { app.guardUnsaved("open another project") { app.open() }; true }
         ctrl && key == Key.N -> {
             app.guardUnsaved("start a new project") { app.dialog = ActiveDialog.NEW_PROJECT }
@@ -245,6 +245,8 @@ private fun handleShortcut(app: AppState, key: Key, ctrl: Boolean, shift: Boolea
         ctrl && key == Key.C -> { controller.copySelectionToText()?.let(Clipboard::write); true }
         ctrl && key == Key.V -> { Clipboard.read()?.let { controller.pasteFromText(it) }; true }
         ctrl && key == Key.X -> {
+            // Cut keeps the content on the clipboard, so there is nothing to
+            // confirm - it is a move, not a loss.
             controller.copySelectionToText()?.let(Clipboard::write)
             controller.deleteSelection()
             true
@@ -261,24 +263,44 @@ private fun handleShortcut(app: AppState, key: Key, ctrl: Boolean, shift: Boolea
         ctrl && key == Key.RightBracket -> { controller.bringForward(); true }
         ctrl && key == Key.LeftBracket -> { controller.sendBackward(); true }
 
-        key == Key.Delete || key == Key.Backspace -> { controller.deleteSelection(); true }
+        key == Key.Delete || key == Key.Backspace -> { app.requestDeleteSelection(); true }
         key == Key.Escape -> { controller.clearSelection(); controller.armPlacement(null); true }
 
         key == Key.V && !ctrl -> { controller.setTool(EditorTool.SELECT); true }
         key == Key.H && !ctrl -> { controller.setTool(EditorTool.PAN); true }
         key == Key.M && !ctrl -> { controller.setTool(EditorTool.MARQUEE); true }
 
-        key == Key.DirectionLeft -> { controller.moveSelection(-nudge(shift), 0, null); true }
-        key == Key.DirectionRight -> { controller.moveSelection(nudge(shift), 0, null); true }
-        key == Key.DirectionUp -> { controller.moveSelection(0, -nudge(shift), null); true }
-        key == Key.DirectionDown -> { controller.moveSelection(0, nudge(shift), null); true }
+        // The arrow keys go through the same call the on-screen move pad does,
+        // so Windows, Linux and macOS keyboards all move by exactly the step
+        // the buttons show - see EditorSettings.arrowKeysUseNudgeStep.
+        key == Key.DirectionLeft -> { arrowNudge(app, -1, 0, shift); true }
+        key == Key.DirectionRight -> { arrowNudge(app, 1, 0, shift); true }
+        key == Key.DirectionUp -> { arrowNudge(app, 0, -1, shift); true }
+        key == Key.DirectionDown -> { arrowNudge(app, 0, 1, shift); true }
 
         else -> false
     }
 }
 
-/** Shift makes arrow-key nudges jump by a grid cell instead of one pixel. */
-private fun nudge(shift: Boolean) = if (shift) 8 else 1
+/**
+ * Moves the selection for one arrow-key press.
+ *
+ * With the setting on this is the move pad's step exactly. With it off the
+ * arrows keep their classic fixed 1px / Shift+8px behaviour, for anyone who
+ * wants coarse buttons and fine keys.
+ */
+private fun arrowNudge(app: AppState, dirX: Int, dirY: Int, shift: Boolean) {
+    val settings = app.controller.current.settings
+    if (settings.arrowKeysUseNudgeStep) {
+        app.controller.nudgeSelection(dirX, dirY, large = shift)
+    } else {
+        val step = if (shift) LEGACY_LARGE_ARROW_STEP else 1
+        app.controller.moveSelection(dirX * step, dirY * step, coalesceKey = "nudge")
+    }
+}
+
+/** The fixed Shift+arrow step used before the step became configurable. */
+private const val LEGACY_LARGE_ARROW_STEP = 8
 
 @Composable
 private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
@@ -312,15 +334,23 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
             }
             Separator()
             Item("Save", shortcut = KeyShortcut(Key.S, ctrl = true)) { app.save() }
-            Item("Save As...", shortcut = KeyShortcut(Key.S, ctrl = true, shift = true)) { app.saveAs() }
-            Separator()
-            Item("Import Textures...") { app.importTextures() }
-            Item("Import Resource Pack...") { app.browsePack() }
-            Item("Export...", shortcut = KeyShortcut(Key.E, ctrl = true)) { app.dialog = ActiveDialog.EXPORT }
+            // What used to be "Save As" is now "Export": saving the document
+            // under a new name is one of the things the export dialog does
+            // (its "Project document" target), and it also offers every code
+            // and resource-pack format, including the ones Minecraft reads
+            // directly. One door instead of two.
+            Item("Export...", shortcut = KeyShortcut(Key.S, ctrl = true, shift = true)) {
+                app.dialog = ActiveDialog.EXPORT
+            }
             Item("Export Everything...", shortcut = KeyShortcut(Key.E, ctrl = true, shift = true)) {
                 app.exportTarget = ExportTarget.EVERYTHING
                 app.dialog = ActiveDialog.EXPORT
             }
+            Item("Save a Copy...") { app.saveAs() }
+            Separator()
+            Item("Import Textures, Images or GIFs...") { app.importTextures() }
+            Item("Build an Animation from Images...") { app.importAnimationFrames() }
+            Item("Import Resource Pack...") { app.browsePack() }
             Separator()
             Item("Exit") { app.pendingExit = true }
         }
@@ -351,7 +381,7 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
                 controller.duplicateSelection()
             }
             Item("Delete", shortcut = KeyShortcut(Key.Delete), enabled = state.hasSelection) {
-                controller.deleteSelection()
+                app.requestDeleteSelection()
             }
             Separator()
             Item("Select All", shortcut = KeyShortcut(Key.A, ctrl = true)) { controller.selectAll() }
@@ -364,6 +394,26 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
             ) { app.beginSavePrefab() }
         }
 
+        Menu("Insert", mnemonic = 'I') {
+            Item("Add Anything...") { app.dialog = ActiveDialog.ADD_CUSTOM }
+            Separator()
+            Menu("Shape") {
+                CustomPresets.shapes.forEach { preset ->
+                    Item("${preset.glyph}  ${preset.label}") { app.addCustomPreset(preset) }
+                }
+            }
+            Menu("Image") {
+                CustomPresets.media.forEach { preset ->
+                    Item("${preset.glyph}  ${preset.label}") { app.addCustomPreset(preset) }
+                }
+            }
+            Menu("Custom") {
+                CustomPresets.anything.forEach { preset ->
+                    Item("${preset.glyph}  ${preset.label}") { app.addCustomPreset(preset) }
+                }
+            }
+        }
+
         Menu("Arrange", mnemonic = 'A') {
             Item("Bring to Front", shortcut = KeyShortcut(Key.RightBracket, ctrl = true, shift = true)) {
                 controller.bringToFront()
@@ -372,6 +422,30 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
             Item("Send Backward", shortcut = KeyShortcut(Key.LeftBracket, ctrl = true)) { controller.sendBackward() }
             Item("Send to Back", shortcut = KeyShortcut(Key.LeftBracket, ctrl = true, shift = true)) {
                 controller.sendToBack()
+            }
+            Separator()
+            Menu("Move") {
+                val step = state.settings.nudgeStep
+                val big = state.settings.largeNudgeStep
+                Item("Up  (${step}px)", shortcut = KeyShortcut(Key.DirectionUp), enabled = state.hasSelection) {
+                    controller.nudgeSelection(0, -1)
+                }
+                Item("Down  (${step}px)", shortcut = KeyShortcut(Key.DirectionDown), enabled = state.hasSelection) {
+                    controller.nudgeSelection(0, 1)
+                }
+                Item("Left  (${step}px)", shortcut = KeyShortcut(Key.DirectionLeft), enabled = state.hasSelection) {
+                    controller.nudgeSelection(-1, 0)
+                }
+                Item("Right  (${step}px)", shortcut = KeyShortcut(Key.DirectionRight), enabled = state.hasSelection) {
+                    controller.nudgeSelection(1, 0)
+                }
+                Separator()
+                Item("Up  (${big}px)", enabled = state.hasSelection) { controller.nudgeSelection(0, -1, large = true) }
+                Item("Down  (${big}px)", enabled = state.hasSelection) { controller.nudgeSelection(0, 1, large = true) }
+                Item("Left  (${big}px)", enabled = state.hasSelection) { controller.nudgeSelection(-1, 0, large = true) }
+                Item("Right  (${big}px)", enabled = state.hasSelection) { controller.nudgeSelection(1, 0, large = true) }
+                Separator()
+                Item("Change the step size...") { app.dialog = ActiveDialog.EDITOR_SETTINGS }
             }
             Separator()
             AlignMode.entries.forEach { mode ->
@@ -406,6 +480,7 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
             }
             Separator()
             Item("Appearance...") { app.dialog = ActiveDialog.APPEARANCE }
+            Item("Editor Settings...") { app.dialog = ActiveDialog.EDITOR_SETTINGS }
             Item("Switch Theme (${app.themeMode.displayName})") { app.cycleTheme() }
             Separator()
             Item("Zoom In", shortcut = KeyShortcut(Key.Equals, ctrl = true)) { controller.zoomBy(1.25f) }

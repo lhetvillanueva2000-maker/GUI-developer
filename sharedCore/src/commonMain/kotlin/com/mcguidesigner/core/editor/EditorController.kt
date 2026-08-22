@@ -109,6 +109,9 @@ class EditorController(initial: GuiProject) {
             canRedo = if (resetHistory) false else history.canRedo,
             validation = ProjectValidator.validate(next),
             statusMessage = null,
+            // Settings belong to the person using the editor, not to the
+            // document, so opening another project must not reset them.
+            settings = _state.value.settings,
         )
     }
 
@@ -252,10 +255,22 @@ class EditorController(initial: GuiProject) {
         at: IntPoint = IntPoint(0, 0),
         parentId: String? = null,
         centreOnPoint: Boolean = false,
+        /**
+         * Property values applied on top of the type's defaults.
+         *
+         * How a preset works: "Add a star" is the custom-shape type with
+         * `shape=star` set, not a type of its own, so the catalog does not
+         * grow an entry per shape.
+         */
+        initialProps: Map<String, PropValue> = emptyMap(),
+        /** Name for the new element; defaults to the type's display name. */
+        nameHint: String? = null,
+        /** Size override, for presets whose natural shape is not the default. */
+        sizeOverride: IntSize? = null,
     ): String? {
         val definition = ElementCatalog[typeId] ?: return null
         val s = _state.value
-        val size = definition.defaultSizeFor(s.edition)
+        val size = sizeOverride ?: definition.defaultSizeFor(s.edition)
         val resolvedParent = parentId ?: containerAt(at, excluding = emptySet())?.id
         val parentOrigin = resolvedParent?.let { s.absoluteBounds[it] } ?: IntRect.Zero
 
@@ -272,9 +287,9 @@ class EditorController(initial: GuiProject) {
         val element = GuiElement(
             id = Ids.prefixed(typeId.substringAfterLast('.')),
             type = typeId,
-            name = Ids.uniqueName(definition.displayName, takenNames),
+            name = Ids.uniqueName(nameHint ?: definition.displayName, takenNames),
             bounds = IntRect(snapped.x, snapped.y, size.width, size.height),
-            props = definition.defaultProps(s.edition),
+            props = definition.defaultProps(s.edition) + initialProps,
         )
 
         edit("Add ${definition.displayName}") { st ->
@@ -317,9 +332,15 @@ class EditorController(initial: GuiProject) {
         history.breakCoalescing()
     }
 
-    fun duplicateSelection(offset: IntPoint = IntPoint(8, 8)) {
+    /**
+     * Copies the selection, offset so the copy is visible rather than hidden
+     * exactly on top of what it came from.  The distance comes from
+     * [EditorSettings.duplicateOffset] unless a caller overrides it.
+     */
+    fun duplicateSelection(offset: IntPoint? = null) {
         val s = _state.value
         if (s.selection.isEmpty()) return
+        val offset = offset ?: s.settings.duplicateOffset.let { IntPoint(it, it) }
         val taken = s.project.elements.walkAll().map { it.name }.toSet().toMutableSet()
         val newIds = mutableSetOf<String>()
         var elements = s.project.elements
@@ -381,6 +402,73 @@ class EditorController(initial: GuiProject) {
             )
         }
     }
+
+    /**
+     * Moves the selection by one configured step in a cardinal direction.
+     *
+     * The single place a "nudge" is defined: the move buttons on both
+     * front-ends and the desktop arrow keys all come through here, so they
+     * cannot drift apart from each other or from the setting.
+     *
+     * [dirX] and [dirY] are -1, 0 or 1.  Nudges coalesce into one undo entry
+     * while they keep coming, so holding a key or tapping a button repeatedly
+     * is a single step back rather than forty.
+     */
+    fun nudgeSelection(dirX: Int, dirY: Int, large: Boolean = false) {
+        val settings = _state.value.settings
+        val step = settings.stepFor(large)
+
+        if (!settings.nudgeSnapsToGrid) {
+            moveSelection(dirX * step, dirY * step, coalesceKey = "nudge")
+            return
+        }
+
+        // Snapping mode moves to the next grid line in that direction rather
+        // than by a fixed amount, so repeated presses walk the grid instead of
+        // drifting off it.
+        val grid = _state.value.project.canvas.gridSize
+        if (grid <= 0) {
+            moveSelection(dirX * step, dirY * step, coalesceKey = "nudge")
+            return
+        }
+        val anchor = _state.value.selectionBounds
+            ?: run { moveSelection(dirX * step, dirY * step, coalesceKey = "nudge"); return }
+
+        moveSelection(
+            dx = gridDelta(anchor.x, dirX, grid),
+            dy = gridDelta(anchor.y, dirY, grid),
+            coalesceKey = "nudge",
+        )
+    }
+
+    /**
+     * Offset that lands [position] on the next grid line towards [direction].
+     *
+     * `floorDiv` rather than `/` throughout: integer division truncates
+     * towards zero, so at x = -5 with an 8px grid the "previous line" would
+     * come out as 0 - above the element rather than below it - and a nudge
+     * left would move it right. Elements are allowed to sit at negative
+     * coordinates (anything hanging off the canvas edge does), so this is a
+     * real position and not a defensive check.
+     */
+    private fun gridDelta(position: Int, direction: Int, grid: Int): Int = when {
+        direction == 0 -> 0
+        direction > 0 -> {
+            val next = (position.floorDiv(grid) + 1) * grid
+            (next - position).coerceAtLeast(1)
+        }
+        else -> {
+            // Already on a line: step to the one before it rather than staying.
+            val previous = if (position.mod(grid) == 0) position - grid else position.floorDiv(grid) * grid
+            (previous - position).coerceAtMost(-1)
+        }
+    }
+
+    /** Replaces the tunable editor settings, clamping anything out of range. */
+    fun setSettings(settings: EditorSettings) = touch { it.copy(settings = settings.sanitised()) }
+
+    fun updateSettings(transform: (EditorSettings) -> EditorSettings) =
+        setSettings(transform(_state.value.settings))
 
     fun setBounds(id: String, bounds: IntRect, coalesceKey: String? = null, label: String = "Resize") {
         val definition = _state.value.project.element(id)?.let { ElementCatalog[it.type] } ?: return

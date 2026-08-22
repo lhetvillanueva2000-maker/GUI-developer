@@ -38,9 +38,9 @@ does" ends and "how you tell it to" begins.
 
 | Module | Depends on | Contains |
 | --- | --- | --- |
-| `:sharedCore` | – | `GuiProject` and the element tree, the element catalog, `EditorController`, undo/redo, snapping, validation, serialization, templates. **No Compose.** |
+| `:sharedCore` | – | `GuiProject` and the element tree, the element catalog, `EditorController`, editor settings, undo/redo, snapping, validation, serialization, templates, and the image pipeline (GIF decode, DEFLATE, PNG write). **No Compose, and no platform APIs at all.** |
 | `:styles` | `:sharedCore`, Compose | The `EditionSkin` contract, pixel-art drawing primitives, the shared canvas widget, and the two edition skins in `styles/java` and `styles/bedrock`. |
-| `:exporters` | `:sharedCore` | Java resource-pack export, Bedrock JSON-UI export, and the code generators (HTML/CSS, Compose, Java `Screen`, JSON). |
+| `:exporters` | `:sharedCore` | Java resource-pack export, Bedrock JSON-UI export, the native `.mcmeta`/atlas definitions, and the code generators (HTML/CSS, SVG, Compose, Java `Screen`, JSON). |
 | `:desktopApp` | all of the above | Compose Desktop shell: menu bar, docks, mouse input, AWT file dialogs. |
 | `:androidApp` | all of the above | Compose Android shell: bottom navigation, modal sheets, touch input, Storage Access Framework. |
 
@@ -123,3 +123,12 @@ Only two things are `expect`/`actual`:
 Everything else that differs between platforms - file dialogs, gestures,
 navigation - lives in the platform module, not behind an abstraction, because
 those genuinely should not be the same.
+
+The image pipeline in `core/image` is a deliberate counter-example. Decoding a
+GIF and writing a PNG both have perfectly good platform APIs, and using them
+would have meant two implementations, two sets of edge cases and no way to test
+either from shared code. Writing the GIF decoder, a DEFLATE compressor and a
+PNG writer in common Kotlin instead - about 700 lines - means importing a GIF
+does *provably* the same thing on a phone and on a desktop, and the tests that
+prove it run against `java.util.zip` and `javax.imageio` rather than against
+themselves.

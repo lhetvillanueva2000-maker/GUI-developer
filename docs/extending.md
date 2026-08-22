@@ -123,14 +123,36 @@ may reference `styles/bedrock` or vice versa.
 
 1. Add a `CodeTarget` entry in
    `exporters/.../CodeGenerator.kt` with its language, extension and - if it
-   only makes sense for one edition - its `edition`.
+   only makes sense for one edition - its `edition`. Set `readByMinecraft` when
+   the game parses the format itself: both export surfaces group on it, and
+   getting it wrong tells someone a file works in a resource pack when it does
+   not. Give it a `tabLabel` if `language.uppercase()` would collide with
+   another target's.
 2. Add a branch to `CodeGenerator.generate`.
 3. Write the generator. Work from `project.absoluteBounds()` so the output is
    flat; `ExportUtil` has helpers for escaping, colour conversion (`cssRgba`,
    `bedrockColor`, `javaColorLiteral`) and identifier casing.
 
 Both front-ends pick the target list up from `CodeGenerator.targetsFor`, so the
-Code tab gains the new option with no UI change.
+Code tab and both export surfaces gain the new option with no UI change.
+
+`CustomContentExportTest` asserts that *every* target produces real output for
+a project containing shapes, an animated image and a custom element, so a new
+generator that quietly skips them fails the build rather than shipping.
+
+---
+
+## Adding a shape
+
+Shapes are values of one catalog type, not types of their own. Add an entry to
+`ShapeKind` in `sharedCore/.../model/ShapeKind.kt` with its id, display name and
+glyph, and return its corner points from `outline()` as fractions of the
+bounding box.
+
+That is the whole change. The canvas renderer, the `clip-path` in the CSS
+export, the `<polygon>` in the SVG export and the preset in the "add anything"
+picker are all driven from that one list, and `EditorSettingsTest` checks that
+every kind has a preset and that its outline stays inside its box.
 
 ---
 

@@ -62,8 +62,15 @@ fun CodePanel(
         ) {
             targets.forEach { target ->
                 IconToggle(
-                    label = target.language.uppercase(),
-                    hint = "${target.displayName}\n${target.description}",
+                    // A dot marks the formats Minecraft reads directly, so the
+                    // strip says which tabs produce something the game can use.
+                    label = if (target.readByMinecraft) "● ${target.tabLabel}" else target.tabLabel,
+                    hint = buildString {
+                        append(target.displayName)
+                        if (target.readByMinecraft) append("  -  read by Minecraft directly")
+                        append("\n")
+                        append(target.description)
+                    },
                     selected = generated.target == target,
                     onClick = { app.codeTarget = target },
                 )
@@ -90,7 +97,7 @@ fun CodePanel(
                 Clipboard.write(generated.source)
                 app.status = "Copied ${generated.fileName} to the clipboard."
             }
-            ToolbarButton("Save as...", hint = "Write the generated source to a file") {
+            ToolbarButton("Export to file...", hint = "Write the generated source to a file") {
                 app.saveGeneratedCode(generated.fileName, generated.source)
             }
         }

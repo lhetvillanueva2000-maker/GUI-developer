@@ -2,6 +2,7 @@ package com.mcguidesigner.core.catalog
 
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.IntSize
+import com.mcguidesigner.core.model.ShapeKind
 
 /**
  * The registry of every widget the designer can place.
@@ -44,6 +45,10 @@ object ElementCatalog {
     const val BAR_HEADER = "bar.header"
     const val DECOR_SEPARATOR = "decor.separator"
     const val IMAGE_PLACEHOLDER = "image.placeholder"
+    const val IMAGE_ANIMATED = "image.animated"
+
+    const val SHAPE_CUSTOM = "shape.custom"
+    const val CUSTOM_ELEMENT = "custom.element"
 
     // -- Shared property fragments ----------------------------------------
 
@@ -593,6 +598,132 @@ object ElementCatalog {
                 colorProp("placeholderColor", "Empty-slot colour", 0xFF404040),
                 intProp("rotation", "Rotation", 0, min = 0, max = 270, group = PropGroup.LAYOUT, help = "Multiples of 90 degrees."),
             ),
+        ),
+
+        // -- Animated imagery ---------------------------------------------
+
+        ElementDefinition(
+            typeId = IMAGE_ANIMATED,
+            displayName = "Animated Image / GIF",
+            category = ElementCategory.DECORATION,
+            defaultSize = IntSize(32, 32),
+            minSize = IntSize(2, 2),
+            glyph = "🎞",
+            description = "Plays a frame strip. Imported GIFs are converted to one automatically.",
+            properties = listOf(
+                textureProp(
+                    "texture", "Frame strip", group = PropGroup.CONTENT, stateAware = false,
+                    help = "A vertical strip of equally tall frames - exactly what Minecraft " +
+                        "animated textures use. Importing a GIF builds one for you.",
+                ),
+                intProp(
+                    "frameCount", "Frames", 0, min = 0, max = 1024, group = PropGroup.CONTENT,
+                    help = "0 reads the count stored with the imported strip.",
+                ),
+                intProp(
+                    "frameTime", "Ticks per frame", 2, min = 1, max = 600, group = PropGroup.BEHAVIOUR,
+                    help = "Minecraft ticks; 20 ticks = 1 second. This is the `frametime` " +
+                        "written to the texture's .mcmeta.",
+                ),
+                boolProp(
+                    "interpolate", "Interpolate frames", false, group = PropGroup.BEHAVIOUR,
+                    help = "Cross-fades between frames, as vanilla does for prismarine and clocks.",
+                ),
+                boolProp("loop", "Loop", true, group = PropGroup.BEHAVIOUR),
+                enumProp(
+                    "playback", "Playback", listOf("forward", "reverse", "ping_pong"),
+                    group = PropGroup.BEHAVIOUR,
+                ),
+                boolProp(
+                    "playing", "Play in the editor", true, group = PropGroup.BEHAVIOUR,
+                    help = "Preview only - it never affects the export.",
+                ),
+                enumProp("fit", "Fit mode", listOf("stretch", "contain", "cover"), default = "contain"),
+                boolProp("keepAspect", "Lock aspect ratio", true, group = PropGroup.LAYOUT),
+                boolProp("pixelated", "Nearest-neighbour", true, group = PropGroup.APPEARANCE),
+                floatProp("opacity", "Opacity", 1f, 0f, 1f),
+                colorProp("tint", "Tint", 0xFFFFFFFF),
+                colorProp("placeholderColor", "Empty-slot colour", 0xFF404040),
+            ),
+        ),
+
+        // -- Shapes ---------------------------------------------------------
+
+        ElementDefinition(
+            typeId = SHAPE_CUSTOM,
+            displayName = "Custom Shape",
+            category = ElementCategory.SHAPES,
+            defaultSize = IntSize(48, 48),
+            minSize = IntSize(2, 2),
+            glyph = "◆",
+            description = "Rectangles, circles, polygons, stars, arrows and more, drawn to any size.",
+            properties = listOf(
+                enumProp(
+                    "shape", "Shape", ShapeKind.ids, default = ShapeKind.RECTANGLE.id,
+                    group = PropGroup.CONTENT,
+                ),
+                intProp(
+                    "sides", "Sides / points", 6,
+                    min = ShapeKind.MIN_SIDES, max = ShapeKind.MAX_SIDES, group = PropGroup.CONTENT,
+                    help = "Used by the regular polygon and the star.",
+                ),
+                floatProp(
+                    "innerRadius", "Star inner radius", 0.5f, 0.05f, 0.95f, group = PropGroup.CONTENT,
+                    help = "How deep a star's notches cut in. Only used by the star.",
+                ),
+                intProp(
+                    "cornerRadius", "Corner radius", 6, min = 0, max = 64, group = PropGroup.LAYOUT,
+                    help = "Only used by the rounded rectangle.",
+                ),
+                intProp(
+                    "rotation", "Rotation", 0, min = 0, max = 359, group = PropGroup.LAYOUT,
+                    help = "Degrees clockwise about the centre.",
+                ),
+                enumProp("fillMode", "Fill", listOf("solid", "gradient", "none")),
+                colorProp("fillColor", "Fill colour", 0xFF56B84B),
+                colorProp("gradientColor", "Gradient end", 0xFF1E6F3A),
+                intProp("gradientAngle", "Gradient angle", 90, min = 0, max = 359, group = PropGroup.APPEARANCE),
+                colorProp("strokeColor", "Outline colour", 0xFF000000),
+                intProp("strokeWidth", "Outline width", 1, min = 0, max = 32, group = PropGroup.APPEARANCE),
+                floatProp("opacity", "Opacity", 1f, 0f, 1f),
+                textProp("label", "Label", "", group = PropGroup.CONTENT),
+            ) + labelStyleProps(stateAware = false),
+        ),
+
+        // -- Anything the catalog does not cover ----------------------------
+
+        ElementDefinition(
+            typeId = CUSTOM_ELEMENT,
+            displayName = "Custom Element",
+            category = ElementCategory.CUSTOM,
+            defaultSize = IntSize(80, 32),
+            minSize = IntSize(2, 2),
+            acceptsChildren = true,
+            glyph = "✦",
+            description = "A widget the catalog does not have: name it, give it any properties you like.",
+            properties = listOf(
+                textProp(
+                    "customType", "Type name", "custom_widget", group = PropGroup.CONTENT,
+                    help = "Written straight into the export, so use whatever the target expects.",
+                ),
+                textProp("label", "Label", "Custom", group = PropGroup.CONTENT),
+                stringListProp(
+                    "attributes", "Extra properties", emptyList(), group = PropGroup.CONTENT,
+                    help = "One `key=value` per line. Every exporter passes these through verbatim.",
+                ),
+                textProp("notes", "Notes", "", group = PropGroup.CONTENT, multiline = true),
+                enumProp(
+                    "exportAs", "Export as", listOf("panel", "image", "label", "button", "raw"),
+                    group = PropGroup.BEHAVIOUR,
+                    help = "Which built-in shape the exporters should fall back to. `raw` writes " +
+                        "the type name and properties out untouched.",
+                ),
+                colorProp("background", "Background", 0xC0303030),
+                colorProp("borderColor", "Border colour", 0xFF000000),
+                intProp("borderWidth", "Border width", 1, min = 0, max = 32, group = PropGroup.APPEARANCE),
+                intProp("cornerRadius", "Corner radius", 0, min = 0, max = 64, group = PropGroup.LAYOUT),
+                floatProp("opacity", "Opacity", 1f, 0f, 1f),
+            ) + skinTextureProps + labelStyleProps(stateAware = false),
         ),
     )
 

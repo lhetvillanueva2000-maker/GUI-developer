@@ -23,3 +23,7 @@ Thumbs.db
 
 # Packaging output
 dist/
+
+# Generated on the macOS runner by build-scripts/make-icns.sh; only macOS
+# tooling can build it, so it is produced per-build rather than committed.
+assets/icon/app-icon.icns

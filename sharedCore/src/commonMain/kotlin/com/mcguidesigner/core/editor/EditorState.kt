@@ -105,6 +105,15 @@ data class EditorState(
 
     val validation: ValidationReport = ValidationReport.empty(),
     val statusMessage: String? = null,
+
+    /**
+     * Editor behaviour the user has tuned.
+     *
+     * Part of the state rather than a platform preference object so the
+     * canvas, the controller and both front-ends all read one value - see
+     * [EditorSettings].
+     */
+    val settings: EditorSettings = EditorSettings(),
 ) {
     val edition get() = project.edition
 

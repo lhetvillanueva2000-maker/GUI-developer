@@ -55,7 +55,11 @@ compose.desktop {
             // Windows is the primary desktop target; the others are produced
             // by the same task on their own hosts, which is why they are all
             // listed here rather than switched on the current OS.
-            targetFormats(TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Dmg)
+            targetFormats(
+                TargetFormat.Exe, TargetFormat.Msi,
+                TargetFormat.Dmg, TargetFormat.Pkg,
+                TargetFormat.Deb,
+            )
 
             packageName = "MinecraftGuiDesigner"
             packageVersion = project.version.toString()
@@ -94,6 +98,15 @@ compose.desktop {
             macOS {
                 bundleID = "com.mcguidesigner.desktop"
                 dockName = "MC GUI Designer"
+                packageName = "MinecraftGuiDesigner"
+                // jpackage wants an .icns, which only macOS tooling can build.
+                // `build-scripts/make-icns.sh` produces it during the macOS CI
+                // job; when it has not run (any non-Mac build, or a local Mac
+                // build that skipped it) the app just gets the default Java
+                // icon rather than failing the build over a missing file.
+                rootProject.file("assets/icon/app-icon.icns")
+                    .takeIf { it.isFile }
+                    ?.let { iconFile.set(it) }
             }
         }
 

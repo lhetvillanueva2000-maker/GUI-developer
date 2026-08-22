@@ -14,6 +14,8 @@ enum class ElementCategory(val displayName: String) {
     FEEDBACK("Feedback"),
     DECORATION("Decoration"),
     TOUCH("Touch Controls"),
+    SHAPES("Shapes"),
+    CUSTOM("Custom"),
 }
 
 /**
