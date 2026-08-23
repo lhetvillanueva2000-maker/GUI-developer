@@ -144,12 +144,6 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 - **It remembers where you were.** Window size and position, which docks were
   open, the last export target and the recent-projects list are all restored on
   the next launch.
-- **No ads, ever.** There is one **Support the designer** page, reached from the
-  hand-and-heart mark in the top bar, and that is the whole of the app's
-  monetisation. It shows an InstaPay / QR Ph code that around sixty wallets and
-  banks can pay, the same details as plain text for anyone who would rather type
-  them, and a **Save the QR code** button — press and hold the code itself to do
-  the same thing. Nothing on that page phones home.
 
 ---
 
@@ -171,7 +165,6 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 | Settings | View ▸ Editor Settings, or ⋯ in the bottom bar | ⋮ ▸ Editor settings |
 | Prefabs & library | Docks beside the palette | Bottom sheets |
 | Export | Folder or `.zip` | `.zip` via the Storage Access Framework |
-| Support page | Hand-and-heart in the header, or Help ▸ Support | Hand-and-heart in the top bar, or at the foot of the rail |
 
 ### The same app at three sizes
 
@@ -334,7 +327,6 @@ desktopApp/     Compose Desktop shell: menus, docks, mouse, AWT dialogs
 androidApp/     Compose Android shell: sheets, nav, touch, SAF
 assets/icon/    App icon, generated from build-scripts/icon
 assets/backdrop/ Editor wallpaper, generated from build-scripts/backdrop
-assets/donate/  The InstaPay QR shown on the support page
 templates/      Bundled .mcgui templates + sample export output (generated)
 docs/           Architecture, project format, exporting, editor guide
 build-scripts/  Packaging scripts and the icon renderer
@@ -352,7 +344,6 @@ build-scripts/  Packaging scripts and the icon renderer
 | [Exporting](docs/exporting.md) | Java pack, Bedrock pack, code generation, parity warnings |
 | [Editor guide](docs/editor-guide.md) | Desktop and Android interaction models, shortcuts, validation |
 | [Extending](docs/extending.md) | Adding components, templates, themes and code targets |
-| [Donation QR](docs/donation-qr.md) | Where the support page's QR came from and how to replace it |
 
 ---
 

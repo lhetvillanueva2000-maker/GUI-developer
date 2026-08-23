@@ -91,33 +91,6 @@ class AndroidAppState(initial: GuiProject) {
     /** Set while an export is pending a "create document" result from SAF. */
     var pendingExportTarget: ExportTarget? = null
 
-    // -- Support page ------------------------------------------------------
-
-    /**
-     * True while the support page covers the editor.
-     *
-     * A destination of its own rather than a bottom sheet: it is a page you
-     * read, not a control you operate, and a sheet that tall is just a screen
-     * with a worse back gesture.
-     */
-    var showDonate by mutableStateOf(false)
-
-    /** The QR bytes waiting on a "create document" result from SAF. */
-    var pendingQrBytes: ByteArray? = null
-
-    fun saveQrCode(context: Context, uri: Uri) {
-        val bytes = pendingQrBytes
-        pendingQrBytes = null
-        if (bytes == null) {
-            status = "Nothing to save - try holding the QR code again."
-            return
-        }
-        AndroidFileIO.writeBytes(context, uri, bytes).fold(
-            onSuccess = { status = "QR code saved." },
-            onFailure = { status = "Could not save the QR code: ${it.message}" },
-        )
-    }
-
     // -- Appearance --------------------------------------------------------
 
     var themeMode by mutableStateOf(ThemeMode.SYSTEM)

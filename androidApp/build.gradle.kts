@@ -125,10 +125,6 @@ android {
         // to generate here anyway; the desktop build reads the very same files,
         // which is what stops the two apps drifting into different artwork.
         assets.srcDir(rootProject.file("assets/backdrop"))
-        // The donation QR, read the same way and for the same reason: the
-        // desktop build copies this exact file onto its classpath, so the code
-        // in the APK and the code in the installer cannot drift apart.
-        assets.srcDir(rootProject.file("assets/donate"))
     }
 }
 

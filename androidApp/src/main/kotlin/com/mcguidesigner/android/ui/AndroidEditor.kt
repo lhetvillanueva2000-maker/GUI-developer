@@ -68,12 +68,9 @@ import com.mcguidesigner.core.editor.NudgePadCorner
 import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.Edition
-import com.mcguidesigner.core.support.Donation
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
 import com.mcguidesigner.styles.layout.LocalAdaptive
 import com.mcguidesigner.styles.render.rememberTextureCache
-import com.mcguidesigner.styles.support.DonateIcon
-import com.mcguidesigner.styles.support.DonateScreen
 import com.mcguidesigner.styles.theme.DesignerBackdrop
 import com.mcguidesigner.styles.theme.EditionTabs
 import com.mcguidesigner.styles.theme.LocalSkinPalette
@@ -126,14 +123,6 @@ fun AndroidEditor(
     val packLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri -> uri?.let { app.openPack(context, it) } }
-
-    // Saving the donation QR goes through the same picker as everything else,
-    // which is why the app still needs no storage permission to do it.
-    val qrLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument(AndroidFileIO.PNG_MIME),
-    ) { uri ->
-        if (uri != null) app.saveQrCode(context, uri) else app.pendingQrBytes = null
-    }
 
     LaunchedEffect(app.status) {
         app.status?.let {
@@ -319,24 +308,6 @@ fun AndroidEditor(
                     onCancel = { app.cancelUnsavedPrompt() },
                 )
             }
-
-            // The support page, over the top of everything including the bars.
-            // It is a destination, not a layer of the editor, and covering the
-            // navigation is what makes that obvious.
-            if (app.showDonate) {
-                DonateScreen(
-                    onClose = { app.showDonate = false },
-                    onSaveQr = { bytes ->
-                        app.pendingQrBytes = bytes
-                        qrLauncher.launch(Donation.QR_FILE_NAME)
-                    },
-                    onCopied = { app.status = it },
-                    metrics = metrics,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.safeDrawing),
-                )
-            }
         }
     }
 
@@ -347,7 +318,6 @@ fun AndroidEditor(
     BackHandler(enabled = true) {
         when {
             app.unsavedPrompt != null -> app.cancelUnsavedPrompt()
-            app.showDonate -> app.showDonate = false
             app.sheet == MobileSheet.PACK_IMPORT -> app.closePack()
             app.sheet != MobileSheet.NONE -> app.sheet = MobileSheet.NONE
             state.hasSelection -> controller.clearSelection()
@@ -500,11 +470,6 @@ private fun MobileTopBar(
             }
         },
         actions = {
-            // Only on the phone: the rail carries it on wider windows, and two
-            // of them on screen at once would be one too many.
-            if (metrics.usesBottomNav) {
-                DonateAction { app.showDonate = true }
-            }
             TopBarAction("↶", enabled = state.canUndo) { controller.undo() }
             TopBarAction("↷", enabled = state.canRedo) { controller.redo() }
             TopBarAction("⋮") { menuOpen = true }
@@ -585,10 +550,6 @@ private fun MobileTopBar(
                     text = { Text("Issues (${state.validation.issues.size})") },
                     onClick = { menuOpen = false; app.sheet = MobileSheet.ISSUES },
                 )
-                DropdownMenuItem(
-                    text = { Text("Support the designer") },
-                    onClick = { menuOpen = false; app.showDonate = true },
-                )
                 // No "switch edition" item: the tabs under this bar own that,
                 // and offering it in two places invites the two to disagree.
             }
@@ -602,27 +563,6 @@ private fun NudgePadCorner.toAlignment(): Alignment = when {
     isBottom -> Alignment.BottomStart
     isRight -> Alignment.TopEnd
     else -> Alignment.TopStart
-}
-
-/**
- * The support entry point in the top bar.
- *
- * Drawn rather than lettered, because it is the one action here that is not
- * about the document - a glyph in the same row as undo and redo would read as
- * another editing tool.
- */
-@Composable
-private fun DonateAction(onClick: () -> Unit) {
-    val palette = LocalSkinPalette.current
-    Box(
-        Modifier
-            .padding(horizontal = 2.dp)
-            .clip(RoundedCornerShape(50))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-    ) {
-        DonateIcon(size = 24.dp, ink = palette.chromeText, slot = palette.chromePanel)
-    }
 }
 
 @Composable
@@ -647,8 +587,7 @@ private fun TopBarAction(glyph: String, enabled: Boolean = true, onClick: () -> 
  * Bottom navigation, phones only.
  *
  * Six destinations is the most this pattern carries before the labels start
- * eliding, which is exactly why the support page is *not* one of them: it
- * belongs in the top bar, where an action that leaves the editor should be.
+ * eliding, which is why anything beyond these lives in the overflow menu.
  */
 @Composable
 private fun MobileNavBar(app: AndroidAppState, metrics: AdaptiveMetrics) {
@@ -695,8 +634,8 @@ private fun MobileNavBar(app: AndroidAppState, metrics: AdaptiveMetrics) {
 /**
  * The rail: tablets, and phones turned sideways.
  *
- * It carries the same destinations as the bottom bar plus the support page,
- * pinned to the foot of the rail where a persistent secondary action belongs.
+ * It carries the same destinations as the bottom bar, laid out vertically so
+ * the whole width of the window is left for the canvas.
  */
 @Composable
 private fun MobileNavRail(app: AndroidAppState, metrics: AdaptiveMetrics) {
@@ -736,17 +675,6 @@ private fun MobileNavRail(app: AndroidAppState, metrics: AdaptiveMetrics) {
             label = label("Custom"),
         )
 
-        Spacer(Modifier.weight(1f))
-
-        NavigationRailItem(
-            selected = app.showDonate,
-            onClick = { app.showDonate = true },
-            icon = {
-                DonateIcon(size = 24.dp, ink = palette.chromeText, slot = palette.chromePanel)
-            },
-            label = label("Support"),
-        )
-        Spacer(Modifier.height(8.dp))
     }
 }
 

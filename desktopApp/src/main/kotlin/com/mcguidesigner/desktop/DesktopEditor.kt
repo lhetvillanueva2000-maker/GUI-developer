@@ -85,14 +85,10 @@ import com.mcguidesigner.desktop.panels.TemplatesPanel
 import com.mcguidesigner.desktop.widgets.IconToggle
 import com.mcguidesigner.desktop.widgets.NudgePad
 import com.mcguidesigner.desktop.widgets.ToolbarButton
-import com.mcguidesigner.desktop.widgets.ToolbarIconButton
 import com.mcguidesigner.desktop.widgets.ToolbarSeparator
-import com.mcguidesigner.core.support.Donation
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
 import com.mcguidesigner.styles.layout.LocalAdaptive
 import com.mcguidesigner.styles.render.rememberTextureCache
-import com.mcguidesigner.styles.support.DonateIcon
-import com.mcguidesigner.styles.support.DonateScreen
 import com.mcguidesigner.styles.theme.DesignerBackdrop
 import com.mcguidesigner.styles.theme.EditionTabs
 import com.mcguidesigner.styles.theme.LocalSkinPalette
@@ -263,23 +259,6 @@ fun DesktopEditor(
             }
         }
 
-        // The support page, over the whole window. A page rather than a dialog:
-        // it is something to read, and a modal box with a scrollbar in it would
-        // make asking for a donation feel like an error message.
-        AnimatedVisibility(
-            visible = app.showDonate,
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            DonateScreen(
-                onClose = { app.showDonate = false },
-                onSaveQr = { bytes -> app.saveDonationQr(bytes) },
-                onCopied = { app.status = it },
-                metrics = metrics,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-
         when (app.dialog) {
             ActiveDialog.NEW_PROJECT -> NewProjectDialog(app)
             ActiveDialog.TEMPLATES -> TemplateGalleryDialog(app)
@@ -369,7 +348,6 @@ private fun EditionHeader(
                     app.browsePack()
                 }
             }
-            DonateButton(hint = "Support the designer") { app.showDonate = true }
             ToolbarButton(
                 label = when (app.themeMode) {
                     ThemeMode.LIGHT -> "☀"
@@ -380,21 +358,6 @@ private fun EditionHeader(
             ) { app.cycleTheme() }
             ToolbarButton("⚙", hint = "Appearance settings") { app.dialog = ActiveDialog.APPEARANCE }
         }
-    }
-}
-
-/**
- * The support entry point, drawn rather than lettered.
- *
- * It sits with the app-level controls at the right of the header - theme,
- * settings - and not with the document tools, because it has nothing to do
- * with the project that is open.
- */
-@Composable
-private fun DonateButton(hint: String, onClick: () -> Unit) {
-    val palette = LocalSkinPalette.current
-    ToolbarIconButton(hint = hint, onClick = onClick) {
-        DonateIcon(size = 20.dp, ink = palette.chromeText, slot = palette.chromePanelAlt)
     }
 }
 
