@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.layer.GraphicsLayer
-import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
@@ -59,13 +58,22 @@ class ProjectImageRenderer internal constructor(
             drawProject(project, skin, textures, measurer, size.scale.toFloat(), background)
         }
         val bitmap = layer.toImageBitmap()
-        val pixels = IntArray(size.width * size.height)
-        bitmap.readPixels(pixels, 0, 0, size.width, size.height)
-        return PngWriter.encode(size.width, size.height, pixels)
-    }
 
-    /** Keeps the layer drawable; a layer never drawn is released by Compose. */
-    internal fun DrawScope.keepAlive() = drawLayer(layer)
+        // Read at the bitmap's own size rather than the size that was asked
+        // for. They should agree, and if a platform ever rounds one of them the
+        // mismatch is an out-of-bounds read inside readPixels rather than a
+        // slightly wrong picture - so trust what came back, not what was
+        // requested.
+        val width = bitmap.width
+        val height = bitmap.height
+        if (width <= 0 || height <= 0) {
+            error("The renderer produced a ${width}x$height image for ${size.label}.")
+        }
+
+        val pixels = IntArray(width * height)
+        bitmap.readPixels(pixels, 0, 0, width, height)
+        return PngWriter.encode(width, height, pixels)
+    }
 }
 
 /**

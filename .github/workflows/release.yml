@@ -419,58 +419,64 @@ jobs:
 
           ## What's new in $VERSION
 
-          ### Java and Bedrock open in their own tabs
+          ### Export the design as a picture
 
-          Picking the other edition used to *convert* the screen you had open, which
-          meant you could not have a Java screen and a Bedrock screen on the go at the
-          same time. Now each gets its own tab and both stay open. The tab carries its
-          edition's accent down its left edge, an unsaved document shows a dot instead
-          of a close button, and the strip only appears once there is more than one
-          document - one document is a document, not a set of tabs.
+          **Image (PNG)** now sits in the export list beside the resource packs, on the
+          desktop and on the phone. Sizes run from 144p to 2160p, or any whole multiple
+          of the canvas.
 
-          ### Rotation
+          Pixel art only survives whole-number scaling — a 176x166 screen at exactly 720
+          pixels tall means multiplying by 4.337, which lands source pixels between
+          destination pixels and blurs them. So each familiar name snaps to the nearest
+          whole multiple and shows you the size you actually get. A name that cannot be
+          honoured is simply not offered, rather than being attached to a picture that is
+          nothing like it.
 
-          Two buttons on the toolbar and on the Arrange sheet: 90 degrees either way, on
-          any selection, undoable, and wrapped so four right turns land back on 0 rather
-          than on 360.
+          There is also a **Background** choice: the canvas backdrop, as the editor draws
+          it, or fully transparent for laying a screen over a screenshot of the game. The
+          preview shows the difference over a chequerboard.
 
-          ### Twelve more shapes
+          ### Import a screen
 
-          Nothing was removed. Added: divider, capsule, cut-corner plate, tab, banner,
-          bookmark, shield, heart, downward triangle, upward arrow, downward chevron and
-          notched bar - chosen for what interfaces are actually built out of rather than
-          for variety. Every one is a polygon, so the canvas, the HTML clip-path, the SVG
-          export and both pack exporters understand them without any extra work.
+          Bedrock JSON UI, an HTML page, or an SVG drawing from any tool that writes one.
+          A Bedrock screen this app exported comes back as exactly the elements it was;
+          anything else is mapped to the nearest match.
 
-          ### Four more code exports
+          Because these readers translate between formats that do not agree about what a
+          layout is, **an import shows you what it found before it lands** — a picture of
+          the result, the element count, and everything it could not read. It then opens
+          in a **new tab**, so the document you already had open is never touched.
 
-          **React JSX**, **SwiftUI**, **Flutter** and **Android XML**, alongside the Java
-          Screen, Kotlin Compose, HTML+CSS, CSS and SVG that were already there.
+          ### The move pad, rebuilt
 
-          Each one positions absolutely rather than translating into that platform's flow
-          layout. A Minecraft screen is a fixed pixel canvas with no parent-child
-          relationships to express, and generating constraints or flexbox would mean
-          inventing a structure the design does not have.
+          The middle is now *only* up, down, left and right, with a hole where the fifth
+          button used to be — that centre is the space a thumb crosses on the way to all
+          four, and anything living there gets pressed by accident.
 
-          ### Help
+          The step moved to **one bar underneath**: touch it anywhere and that position
+          *is* the value, the way a slider works, so every step from 1 to 128 is one touch
+          away instead of a long push. Tap it to come home to 1. The scale is exponential,
+          so 1, 2, 4, 8, 16, 32, 64 and 128 are evenly spaced rather than the values you
+          actually use sharing the first few millimetres.
 
-          Every key and every function the app has, on one page, from the Help menu or
-          from Settings. Actions with no keyboard shortcut are listed with the column
-          blank rather than left out - most of the app on a phone has no shortcut, and a
-          page that only listed the ones that do would be a shortcut reference wearing
-          help's name.
+          Drag the grip on the pad's inner corner to **resize the whole pad**. The right
+          size for a thumb control is a property of the thumb, not of the screen.
 
-          ### Smaller things
+          ### Fixes
 
-          - **Back is at the top left on every device**, phones included. The system
-            gesture still works alongside it; it was the only back affordance on a phone
-            before, and an invisible one is no use to somebody opening the app for the
-            first time.
-          - **"Match the system" is gone from the theme setting.** There is no portable
-            way to ask a desktop what its theme is, so it silently resolved to dark -
-            making the control a choice between "dark", "light" and "dark again". Files
-            that stored it read as dark, so nothing changes on upgrade.
-          - Closing a tab, and **Ctrl+N**, both ask before discarding unsaved work.
+          - **Image exports could run the app out of memory.** Nothing bounded the pixel
+            count, and 32x of a 1920x1080 canvas asks for two billion pixels at eight
+            bytes each. Sizes are now capped by a real budget.
+          - **A named height could produce nothing like itself.** On a 1080-tall canvas,
+            "144p" gave you a 1080px image, because 0.13x floors to 1x and the label was
+            kept anyway.
+          - **Most children of a hand-written Bedrock screen were silently dropped.**
+            JSON UI writes a child reference as `alias@namespace.template`, and only the
+            part before the `@` was being looked up — so any aliased child, which is to
+            say most of them, resolved to nothing.
+          - **A screen with no root panel imported with every element in it twice.**
+          - **A page that merely mentioned a project's own key was misread** as a project
+            document and reported as broken.
 
           ---
 

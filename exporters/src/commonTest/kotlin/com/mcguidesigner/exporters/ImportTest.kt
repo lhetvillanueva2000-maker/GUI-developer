@@ -365,4 +365,71 @@ class ImportTest {
         assertEquals("Play", project.elements[0].props.string("label"))
         assertEquals("Quit", project.elements[1].name, "an unnamed shape takes the label")
     }
+
+    @Test
+    fun `an aliased child reference finds the control it inherits from`() {
+        // Real hand-written JSON UI almost always aliases: "close@common.button"
+        // defines a control named `close` inheriting from `common.button`. The
+        // referenced definition is the part AFTER the @, and looking only
+        // before it silently dropped every such child.
+        val json = """
+            {
+              "namespace": "demo",
+              "screen_content": {
+                "type": "panel",
+                "size": [ 200, 120 ],
+                "controls": [ { "close@demo.ok_button": {} } ]
+              },
+              "ok_button": { "type": "button", "size": [ 60, 20 ], "offset": [ 10, 90 ] }
+            }
+        """.trimIndent()
+
+        val project = assertNotNull(DesignImporter.import("screen.json", json).project)
+        assertEquals(1, project.elements.size, "the aliased child should have been found")
+        assertEquals(IntRect(10, 90, 60, 20), project.elements[0].bounds)
+    }
+
+    @Test
+    fun `a locally defined control wins over the one it aliases`() {
+        // "ok@demo.base" where `ok` is itself defined is an override, and the
+        // override is what the screen shows.
+        val json = """
+            {
+              "namespace": "demo",
+              "screen_content": {
+                "type": "panel",
+                "size": [ 200, 120 ],
+                "controls": [ { "ok@demo.base": {} } ]
+              },
+              "ok": { "type": "button", "size": [ 30, 10 ], "offset": [ 1, 2 ] },
+              "base": { "type": "button", "size": [ 99, 99 ], "offset": [ 0, 0 ] }
+            }
+        """.trimIndent()
+
+        val project = assertNotNull(DesignImporter.import("screen.json", json).project)
+        assertEquals(IntRect(1, 2, 30, 10), project.elements[0].bounds)
+    }
+
+    @Test
+    fun `an aliased child is not also treated as a root`() {
+        // The no-screen_content fallback has to claim children by the same rule
+        // the tree walk resolves them by, or the two disagree and the claimed
+        // control comes back twice.
+        val json = """
+            {
+              "namespace": "demo",
+              "outer": {
+                "type": "panel",
+                "size": [ 100, 60 ],
+                "offset": [ 0, 0 ],
+                "controls": [ { "close@demo.ok_button": {} } ]
+              },
+              "ok_button": { "type": "button", "size": [ 40, 20 ], "offset": [ 4, 4 ] }
+            }
+        """.trimIndent()
+
+        val project = assertNotNull(DesignImporter.import("screen.json", json).project)
+        assertEquals(1, project.elements.size, "only the outer panel is a root")
+        assertEquals(2, project.elements.walkAll().count(), "two controls, not three")
+    }
 }

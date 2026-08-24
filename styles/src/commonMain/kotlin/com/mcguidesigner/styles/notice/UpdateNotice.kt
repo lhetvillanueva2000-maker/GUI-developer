@@ -82,21 +82,22 @@ object AppNotice {
      */
     val current = Notice(
         id = "whatsnew-${Branding.VERSION}",
-        headline = "${Branding.NAME} ${Branding.VERSION} — tabs, rotation, twelve more shapes",
+        headline = "${Branding.NAME} ${Branding.VERSION} — export a picture, import a screen",
         points = listOf(
-            "Java and Bedrock open in their own tabs. Picking the other edition " +
-                "used to convert the screen you had open; now both stay open and " +
-                "the tab strip shows which is which.",
-            "Rotate is on the toolbar and in the Arrange sheet — 90° either way, " +
-                "on any selection, and undoable.",
-            "Twelve new shapes: dividers, capsules, cut-corner plates, tabs, " +
-                "banners, bookmarks, shields, hearts, carets and notched bars.",
-            "Four more code exports — React JSX, SwiftUI, Flutter and Android XML — " +
-                "on top of the Java, Compose, HTML, CSS and SVG that were already there.",
-            "Help lists every key and every function the app has, from the Help " +
-                "menu or Settings.",
-            "Back is at the top left on every device now, phones included, and the " +
-                "system gesture still works alongside it.",
+            "Export the design as a PNG, at 144p through 2160p or any whole " +
+                "multiple. Pixel art only survives whole-number scaling, so each " +
+                "name snaps to the nearest one and shows you the size you really get.",
+            "Choose a transparent background, for laying a screen over a " +
+                "screenshot of the game.",
+            "Import a Bedrock JSON UI screen, an HTML page or an SVG drawing. " +
+                "Every import shows what it found - and what it could not read - " +
+                "before it lands, and opens in a new tab so nothing you have open " +
+                "is touched.",
+            "The move pad is four arrows and nothing in the middle of them. The " +
+                "step is one bar underneath: touch it anywhere and that position " +
+                "is the value, tap it to come back to 1.",
+            "Drag the grip on the pad's inner corner to resize it. The right size " +
+                "for a thumb control is a property of the thumb.",
         ),
     )
 

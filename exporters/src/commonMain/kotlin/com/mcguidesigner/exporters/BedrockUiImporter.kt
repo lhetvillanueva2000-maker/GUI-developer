@@ -83,7 +83,8 @@ object BedrockUiImporter {
             ?: run {
                 val claimed = definitions.values.flatMap { control ->
                     (control["controls"] as? JsonArray).orEmpty().mapNotNull { entry ->
-                        (entry as? JsonObject)?.entries?.firstOrNull()?.key?.substringBefore('@')
+                        val key = (entry as? JsonObject)?.entries?.firstOrNull()?.key
+                        key?.let { resolvedName(it, definitions) }
                     }
                 }.toSet()
 
@@ -147,9 +148,35 @@ object BedrockUiImporter {
             val inline = value as? JsonObject
             when {
                 inline != null && inline.containsKey("type") -> inline
-                else -> definitions[key.substringBefore('@')]
+                else -> resolvedName(key, definitions)?.let { definitions[it] }
             }
         }
+    }
+
+    /**
+     * Which definition `close@common.button` actually refers to.
+     *
+     * JSON UI writes a child reference as `alias@namespace.template`: the part
+     * before the `@` names the control here, and the part after it names what
+     * it inherits from. Both can be the definition being pointed at - a screen
+     * may override `close` locally, or may simply be reusing `button` - so the
+     * local name is tried first and the inherited one second, which is the
+     * precedence the game itself uses.
+     *
+     * This used to look only before the `@`, so every aliased child - which is
+     * to say most children in any hand-written screen - resolved to nothing and
+     * was dropped without a word.
+     *
+     * Returning the *name* rather than the object is deliberate: the root-finder
+     * needs to know which key was claimed, and having it re-derive that from a
+     * second copy of this rule is how the two came to disagree in the first
+     * place.
+     */
+    private fun resolvedName(key: String, definitions: Map<String, JsonObject>): String? {
+        val alias = key.substringBefore('@')
+        if (alias in definitions) return alias
+        val inherited = key.substringAfter('@', "").substringAfterLast('.')
+        return inherited.takeIf { it.isNotBlank() && it in definitions }
     }
 
     private fun canvasFrom(screenContent: JsonObject?): CanvasSpec {

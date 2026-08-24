@@ -85,6 +85,7 @@ import com.mcguidesigner.styles.canvas.GuiPreview
 import com.mcguidesigner.styles.export.ImageExportPanel
 import com.mcguidesigner.styles.export.ImportPreviewPanel
 import com.mcguidesigner.styles.render.TextureCache
+import com.mcguidesigner.styles.render.rememberTextureCache
 import com.mcguidesigner.styles.theme.ErrorRed
 import com.mcguidesigner.styles.theme.InfoBlue
 import com.mcguidesigner.styles.theme.LocalSkinPalette
@@ -131,7 +132,7 @@ fun MobileSheets(
                 MobileSheet.ISSUES -> IssuesSheet(controller, state)
                 MobileSheet.EXPORT -> ExportSheet(app, state, onExport)
                 MobileSheet.IMAGE_EXPORT -> ImageExportSheet(app, state, textures, onSaveImage)
-                MobileSheet.IMPORT_PREVIEW -> ImportPreviewSheet(app, textures)
+                MobileSheet.IMPORT_PREVIEW -> ImportPreviewSheet(app)
                 MobileSheet.PROJECT -> ProjectSheet(controller, state)
                 MobileSheet.CANVAS -> CanvasSheet(controller, state)
                 MobileSheet.PREFABS -> PrefabsSheet(app, state)
@@ -779,9 +780,14 @@ private fun ImageExportSheet(
  * deciding rather than after.
  */
 @Composable
-private fun ImportPreviewSheet(app: AndroidAppState, textures: TextureCache) {
+private fun ImportPreviewSheet(app: AndroidAppState) {
     val outcome = app.pendingImport ?: return
     val project = outcome.project ?: return
+
+    // The *imported* project's textures, not the open document's. Passing the
+    // editor's cache drew every textured element in the preview blank, because
+    // the imported project's asset ids are not in it.
+    val textures = rememberTextureCache(project)
 
     Column(
         Modifier
