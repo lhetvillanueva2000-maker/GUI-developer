@@ -361,7 +361,7 @@ jobs:
         if: startsWith(github.ref, 'refs/heads/release/')
         env:
           GH_TOKEN: ${{ github.token }}
-          RETIRE_TAGS: "v1.6.0 v1.7.0"
+          RETIRE_TAGS: ""
         run: |
           for tag in $RETIRE_TAGS; do
             if gh release view "$tag" >/dev/null 2>&1; then
