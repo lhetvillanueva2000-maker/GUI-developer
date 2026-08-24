@@ -352,6 +352,40 @@ jobs:
           done
           ls -la
 
+      # Releases published in error, withdrawn so the version history reads in
+      # order. Normally empty - it is filled in for exactly one run and cleared
+      # again afterwards, which is why it is a literal here rather than an input:
+      # deleting a published release is not something a workflow should be able
+      # to be talked into doing casually.
+      - name: Retire superseded releases
+        if: startsWith(github.ref, 'refs/heads/release/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RETIRE_TAGS: "v1.6.0 v1.7.0"
+        run: |
+          for tag in $RETIRE_TAGS; do
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "retiring $tag"
+              gh release delete "$tag" --yes --cleanup-tag
+            fi
+          done
+
+      # Assets otherwise accumulate across re-cuts: a release republished after
+      # a rename keeps the old file names alongside the new ones, because
+      # --clobber only replaces an asset of the *same* name. What is attached to
+      # a release should be exactly what this build produced and nothing else.
+      - name: Clear assets already attached to this tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          tag="v$VERSION"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release view "$tag" --json assets --jq '.assets[].name' | while read -r asset; do
+              [ -n "$asset" ] && gh release delete-asset "$tag" "$asset" --yes
+            done
+          fi
+
       # The GitHub CLI is preinstalled on the runner, so publishing needs no
       # third-party action.
       - name: Publish the GitHub release
