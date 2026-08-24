@@ -114,13 +114,23 @@ class WorkspaceTest {
     @Test
     fun aRecoverySnapshotRoundTripsWithItsMetadata() {
         val project = BuiltInTemplates.demo.instantiate("Half Finished Screen")
-        Workspace.writeRecoverySnapshot(project, "/home/someone/work.mcgui")
+
+        // Built through File so the expectation means the same thing on every
+        // platform. `File("/home/someone/work.mcgui").path` is
+        // `\home\someone\work.mcgui` on Windows, so asserting the POSIX spelling
+        // against `originalFile.path` failed there and only there - a test that
+        // had a platform baked into it, not a product that had.
+        val originalPath = File("/home/someone/work.mcgui").path
+        Workspace.writeRecoverySnapshot(project, originalPath)
 
         val recovered = Workspace.pendingRecovery()
         assertNotNull(recovered)
         assertEquals(project, recovered.project)
         assertEquals("Half Finished Screen", recovered.marker.projectName)
-        assertEquals("/home/someone/work.mcgui", recovered.originalFile?.path)
+        // Both halves of the contract: the string is stored verbatim, and the
+        // File rebuilt from it points back at the same place.
+        assertEquals(originalPath, recovered.marker.originalPath)
+        assertEquals(originalPath, recovered.originalFile?.path)
         assertTrue(recovered.marker.savedAtMillis > 0L)
     }
 
