@@ -397,10 +397,6 @@ jobs:
           cat > notes.md <<EOF
           ## UILabs $VERSION
 
-          The app is called **UILabs** from this release on. Same project, same
-          editor, new name — and a home screen, a settings page and two ways out to
-          what other people have made.
-
           ### Get it
 
           | Platform | Download |
