@@ -364,8 +364,8 @@ jobs:
           ## UILabs $VERSION
 
           The app is called **UILabs** from this release on. Same project, same
-          editor, new name — and a home screen, a settings page and a signed Android build
-          to go with it.
+          editor, new name — and a home screen, a settings page and two ways out to
+          what other people have made.
 
           ### Get it
 
@@ -425,6 +425,17 @@ jobs:
           sent anywhere; the settings page says so in as many words, and says plainly what
           signing in would actually require rather than showing a button that does not
           work.
+
+          ### Public plugins and public creations
+
+          Two cards under the edition cards, linking out to what other people have
+          shared. They are drawn as chrome rather than as Minecraft widgets on purpose:
+          the cards above them are real Java and Bedrock containers because they preview
+          what you are about to design, and these two leave the app entirely.
+
+          Neither gallery is published yet, and neither button pretends otherwise — both
+          carry a **SOON** tag and do not respond. A button that looks live and opens
+          nothing is worse than one that says it is not ready.
 
           ### The home screen explains itself
 
