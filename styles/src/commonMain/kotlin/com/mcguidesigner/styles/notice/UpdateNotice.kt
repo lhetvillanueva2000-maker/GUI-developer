@@ -92,6 +92,8 @@ object AppNotice {
             "Motion can be turned down or off. On an older phone that is the setting " +
                 "worth changing — the drifting backdrop redraws every frame while it " +
                 "moves, and Reduced stops everything that loops.",
+            "Home links out to public plugins and public creations. Both galleries are " +
+                "still being set up, so the buttons say so rather than opening nothing.",
             "Android tells a tablet from a phone by the screen rather than the window, " +
                 "so a phone in landscape keeps the phone layout instead of being handed " +
                 "a rail and a docked inspector.",

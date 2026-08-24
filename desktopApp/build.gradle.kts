@@ -70,10 +70,10 @@ compose.desktop {
                 TargetFormat.Deb,
             )
 
-            packageName = "SurfaceStudio"
+            packageName = "UILabs"
             packageVersion = project.version.toString()
             description = "Design game and app interfaces, visually"
-            vendor = "Surface Studio"
+            vendor = "UILabs"
             copyright = "Released under the MIT License"
 
             // Only the modules the app actually needs, so the bundled runtime
@@ -88,7 +88,7 @@ compose.desktop {
 
             windows {
                 iconFile.set(rootProject.file("assets/icon/app-icon.ico"))
-                menuGroup = "Surface Studio"
+                menuGroup = "UILabs"
                 dirChooser = true
                 perUserInstall = true
                 shortcut = true
@@ -97,7 +97,7 @@ compose.desktop {
                 //
                 // Deliberately unchanged across the 1.6.0 rename: the UpgradeCode
                 // is what tells Windows this *is* the previous product, so keeping
-                // it is what lets "Surface Studio" replace an existing
+                // it is what lets "UILabs" replace an existing
                 // "MinecraftGuiDesigner" install instead of sitting next to it in
                 // Add/Remove Programs forever.
                 upgradeUuid = "0f2b7c1e-6b1a-4c53-9a3e-2f5b8d41c7a6"
@@ -105,15 +105,15 @@ compose.desktop {
 
             linux {
                 iconFile.set(rootProject.file("assets/icon/icon-512.png"))
-                packageName = "surface-studio"
+                packageName = "uilabs"
                 debMaintainer = "noreply@example.com"
                 appCategory = "Graphics"
             }
 
             macOS {
                 bundleID = "com.mcguidesigner.desktop"
-                dockName = "Surface Studio"
-                packageName = "SurfaceStudio"
+                dockName = "UILabs"
+                packageName = "UILabs"
                 // jpackage wants an .icns, which only macOS tooling can build.
                 // `build-scripts/make-icns.sh` produces it during the macOS CI
                 // job; when it has not run (any non-Mac build, or a local Mac

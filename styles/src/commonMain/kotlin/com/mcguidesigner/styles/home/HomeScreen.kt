@@ -106,6 +106,7 @@ fun HomeScreen(
     overlay: HomeOverlay,
     onOverlayChange: (HomeOverlay) -> Unit,
     onOpen: (Edition) -> Unit,
+    onOpenLink: (String) -> Unit,
     onSaveQr: (ByteArray) -> Unit,
     onToggleTheme: () -> Unit,
     systemIsDark: Boolean,
@@ -125,6 +126,9 @@ fun HomeScreen(
     val panel by animateColorAsState(chrome.panel, spec, label = "homePanel")
     val text by animateColorAsState(chrome.text, spec, label = "homeText")
     val muted by animateColorAsState(chrome.textMuted, spec, label = "homeMuted")
+    // From the edition's palette rather than the chrome: the accent is the one
+    // colour a theme is not allowed to move, so it stays the edition's own.
+    val accent = skin.paletteFor(dark, settings.chromeTheme).accent
 
     // Key events only reach a focused node, so the screen takes focus on
     // arrival. Without this the shortcut hints along the bottom would be
@@ -221,7 +225,25 @@ fun HomeScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = metrics.gutter, vertical = metrics.sectionGap),
                         ) {
-                            Text(settings.greeting?.let { "WELCOME BACK, ${it.uppercase()}" } ?: eyebrow, style = label(muted))
+                            // The mark, then what you are here to do. One
+                            // line rather than two stacked mono labels: the
+                            // top bar already carries the wordmark, so a
+                            // second full-height one directly under it would
+                            // read as a repeat rather than a heading.
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    Branding.NAME.uppercase(),
+                                    style = label(muted).copy(
+                                        color = accent,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                )
+                                Text("  ·  ", style = label(muted))
+                                Text(
+                                    settings.greeting?.let { "WELCOME BACK, ${it.uppercase()}" } ?: eyebrow,
+                                    style = label(muted),
+                                )
+                            }
                             Spacer(Modifier.height(6.dp))
                             Text(
                                 "Design a screen for",
@@ -269,6 +291,19 @@ fun HomeScreen(
                                     cards(Modifier.fillMaxWidth())
                                 }
                             }
+
+                            Spacer(Modifier.height(metrics.sectionGap))
+                            PublicLinkRow(
+                                links = Branding.publicLinks,
+                                panel = panel,
+                                border = chrome.border,
+                                text = text,
+                                muted = muted,
+                                accent = accent,
+                                metrics = metrics,
+                                onOpenLink = onOpenLink,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
 
                             // Keyboard hints belong where there is a keyboard.
                             if (!metrics.touchMode) {

@@ -225,6 +225,24 @@ class AndroidAppState(initial: GuiProject) {
         editor = controller.current.settings,
     )
 
+    /**
+     * Hands a link to whatever app the device uses for one.
+     *
+     * `NEW_TASK` because the launcher may be started from a context that is not
+     * an Activity, and wrapped because a device with no browser at all - a
+     * stripped ROM, a locked-down work profile - throws rather than no-opping.
+     */
+    fun openLink(context: Context, url: String) {
+        if (url.isBlank()) return
+        val intent = android.content.Intent(
+            android.content.Intent.ACTION_VIEW,
+            android.net.Uri.parse(url),
+        ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        status = runCatching { context.startActivity(intent); "Opened $url" }
+            .getOrElse { "Nothing on this device can open a link. It is $url" }
+    }
+
     // -- Notifications -----------------------------------------------------
 
     /**

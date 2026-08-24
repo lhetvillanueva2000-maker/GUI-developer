@@ -38,8 +38,10 @@ import com.mcguidesigner.styles.render.createTextureAsset
 import com.mcguidesigner.styles.settings.AppearanceSettings
 import com.mcguidesigner.styles.theme.MotionLevel
 import com.mcguidesigner.styles.theme.ThemeMode
+import java.awt.Desktop
 import java.awt.Frame
 import java.io.File
+import java.net.URI
 
 /**
  * Which of the app's two screens is showing.
@@ -294,6 +296,29 @@ class AppState(initial: GuiProject) {
                 motion = if (motion) MotionLevel.FULL else MotionLevel.REDUCED,
             ),
         )
+    }
+
+    /**
+     * Opens a link in whatever the desktop considers the browser.
+     *
+     * Guarded rather than assumed: `Desktop` is unsupported on a headless JVM
+     * and on some Linux setups, and the app is not important enough to be
+     * worth a stack trace to the console when someone clicks a link on one of
+     * them. A failure says so in the status bar and the app carries on.
+     */
+    fun openLink(url: String) {
+        if (url.isBlank()) return
+        val opened = runCatching {
+            val desktop = if (Desktop.isDesktopSupported()) Desktop.getDesktop() else null
+            if (desktop?.isSupported(Desktop.Action.BROWSE) == true) {
+                desktop.browse(URI(url))
+                true
+            } else {
+                false
+            }
+        }.getOrDefault(false)
+
+        status = if (opened) "Opened $url" else "Could not open a browser. The link is $url"
     }
 
     /** Provider for the AWT frame the file dialogs should parent to. */

@@ -10,11 +10,11 @@
 # artifacts into, so it looks like:
 #
 #   artifacts/
-#     windows-desktop/       SurfaceStudio-1.0.0.exe, ...msi
-#     macos-desktop-aarch64/ SurfaceStudio-1.0.0-macos-aarch64.dmg
-#     macos-desktop-x64/     SurfaceStudio-1.0.0-macos-x64.dmg
+#     windows-desktop/       UILabs-1.0.0.exe, ...msi
+#     macos-desktop-aarch64/ UILabs-1.0.0-macos-aarch64.dmg
+#     macos-desktop-x64/     UILabs-1.0.0-macos-x64.dmg
 #     linux-and-android/     androidApp-release.apk / .aab, ...amd64.deb
-#     portable-jar/          SurfaceStudio-<os>-<arch>-1.0.0.jar
+#     portable-jar/          UILabs-<os>-<arch>-1.0.0.jar
 #
 # Anything missing is reported and skipped rather than failing the build, so a
 # partial run still produces a usable archive.
@@ -31,10 +31,10 @@ cd "$ROOT"
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 
-ZIP_NAME="surface-studio-$VERSION.zip"
+ZIP_NAME="uilabs-$VERSION.zip"
 mkdir -p "$OUT_DIR" "$STAGE"/{desktop,android,docs,templates,build-scripts}
 
-echo "==> Bundling Surface Studio $VERSION"
+echo "==> Bundling UILabs $VERSION"
 
 collect() {
   local label="$1" pattern="$2" destination="$3"
@@ -73,7 +73,7 @@ git archive --format=zip --prefix="source/" -o "$STAGE/source.zip" HEAD
 echo "    + source.zip ($(du -h "$STAGE/source.zip" | cut -f1))"
 
 {
-  echo "Surface Studio $VERSION"
+  echo "UILabs $VERSION"
   echo "Bundled $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
   echo "Commit: $(git rev-parse HEAD)"
   echo

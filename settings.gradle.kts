@@ -1,4 +1,4 @@
-rootProject.name = "surface-studio"
+rootProject.name = "uilabs"
 
 pluginManagement {
     repositories {
@@ -81,7 +81,7 @@ if (androidEnabled) {
     include(":androidApp")
 } else {
     logger.lifecycle(
-        "[surface-studio] Android SDK not found - the :androidApp module and all " +
+        "[uilabs] Android SDK not found - the :androidApp module and all " +
             "androidTarget() source sets are disabled for this build."
     )
 }

@@ -34,9 +34,9 @@ if (-not $Version) {
 
 $stage = Join-Path $root 'dist\stage'
 $out = Join-Path $root 'dist'
-$zipName = "surface-studio-$Version-windows.zip"
+$zipName = "uilabs-$Version-windows.zip"
 
-Write-Host "==> Surface Studio $Version"
+Write-Host "==> UILabs $Version"
 
 if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
 foreach ($dir in 'desktop', 'android', 'docs', 'templates') {
@@ -94,7 +94,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $manifest = @(
-    "Surface Studio $Version",
+    "UILabs $Version",
     "Built on $((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm:ss')) UTC from Windows",
     '',
     'Contents:',

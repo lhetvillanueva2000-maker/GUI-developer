@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/icon/icon-256.png" width="128" alt="Surface Studio">
+<img src="assets/icon/icon-256.png" width="128" alt="UILabs">
 
-# Surface Studio
+# UILabs
 
 **A standalone visual designer for Minecraft screens — Java Edition and Bedrock
 Edition, each with its own widget set, visual identity and export pipeline.**
@@ -22,13 +22,13 @@ Everything is published on the
 
 | You want | Grab |
 | --- | --- |
-| **Windows** | `SurfaceStudioInstaller-<version>.exe` — installer, no Java needed |
-| **macOS (Apple Silicon)** | `SurfaceStudioInstaller-<version>-macos-aarch64.dmg` — any Mac from late 2020 on |
+| **Windows** | `UILabsInstaller-<version>.exe` — installer, no Java needed |
+| **macOS (Apple Silicon)** | `UILabsInstaller-<version>-macos-aarch64.dmg` — any Mac from late 2020 on |
 | **Android** | `androidApp-release.apk` — enable "install from unknown sources" when prompted |
 | **Google Play** | `androidApp-release.aab` — an app bundle for uploading to Play, not installable on a phone |
-| **Linux** | `SurfaceStudioInstaller-<version>-amd64.deb` |
-| **Any OS with a JVM** | `SurfaceStudio-<version>.jar` — `java -jar <file>` |
-| **Everything at once** | `surface-studio-<version>.zip` — all of the above plus source, templates and docs |
+| **Linux** | `UILabsInstaller-<version>-amd64.deb` |
+| **Any OS with a JVM** | `UILabs-<version>.jar` — `java -jar <file>` |
+| **Everything at once** | `uilabs-<version>.zip` — all of the above plus source, templates and docs |
 
 The individual installers are attached to the release alongside the combined
 ZIP, so there is no need to download ~360 MB just to get one of them. Each
@@ -42,13 +42,13 @@ certificate, so Gatekeeper blocks the first launch. Open it once with
 **right-click → Open** and choose **Open**, or clear the quarantine flag:
 
 ```bash
-xattr -dr com.apple.quarantine "/Applications/SurfaceStudio.app"
+xattr -dr com.apple.quarantine "/Applications/UILabs.app"
 ```
 
 Every launch after the first is normal.
 
 The `.dmg` is Apple Silicon only — which is every Mac sold since late 2020. On
-an older **Intel** Mac, run the portable `SurfaceStudio-<version>.jar`
+an older **Intel** Mac, run the portable `UILabs-<version>.jar`
 with `java -jar` instead (Java 17 or newer). An Apple Silicon binary cannot run
 on Intel, and Rosetta only translates the other way.
 
@@ -299,7 +299,7 @@ cd gui-developer
 .\build-scripts\package-release.ps1 -Version 1.0.0   # Windows
 ```
 
-Produces `dist/surface-studio-<version>.zip` containing the desktop
+Produces `dist/uilabs-<version>.zip` containing the desktop
 installer, the APK, the templates, the docs and a source archive, plus a
 `MANIFEST.txt` listing every file.
 

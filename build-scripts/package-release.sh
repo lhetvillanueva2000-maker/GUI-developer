@@ -20,9 +20,9 @@ VERSION="${VERSION:-1.0.0}"
 
 STAGE="$ROOT/dist/stage"
 OUT="$ROOT/dist"
-ZIP_NAME="surface-studio-$VERSION.zip"
+ZIP_NAME="uilabs-$VERSION.zip"
 
-echo "==> Surface Studio $VERSION"
+echo "==> UILabs $VERSION"
 echo "==> Cleaning previous staging output"
 rm -rf "$STAGE"
 mkdir -p "$STAGE"/{desktop,android,docs,templates}
@@ -101,7 +101,7 @@ fi
 # ---------------------------------------------------------------------------
 
 {
-  echo "Surface Studio $VERSION"
+  echo "UILabs $VERSION"
   echo "Built on $(date -u '+%Y-%m-%d %H:%M:%S UTC') from $(uname -s) $(uname -m)"
   echo
   echo "Contents:"

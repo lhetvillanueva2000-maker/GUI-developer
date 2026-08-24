@@ -98,6 +98,7 @@ fun AndroidApp(
                         systemIsDark = systemIsDark,
                         eyebrow = app.homeEyebrow,
                         onOpen = app::openEditor,
+                        onOpenLink = { app.openLink(context, it) },
                         onSaveQr = { bytes ->
                             app.pendingQrBytes = bytes
                             qrLauncher.launch(Donation.QR_FILE_NAME)

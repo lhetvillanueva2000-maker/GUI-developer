@@ -340,14 +340,14 @@ jobs:
           }
           for file in *; do
             case "$file" in
-              *.exe) rename_to "$file" "SurfaceStudioInstaller-$VERSION.exe" ;;
-              *.msi) rename_to "$file" "SurfaceStudioInstaller-$VERSION.msi" ;;
-              *.deb) rename_to "$file" "SurfaceStudioInstaller-$VERSION-amd64.deb" ;;
-              *.apk) rename_to "$file" "SurfaceStudioInstaller-$VERSION.apk" ;;
-              *.dmg) rename_to "$file" "SurfaceStudioInstaller-$VERSION-macos-aarch64.dmg" ;;
-              *.pkg) rename_to "$file" "SurfaceStudioInstaller-$VERSION-macos-aarch64.pkg" ;;
-              *.aab) rename_to "$file" "SurfaceStudio-$VERSION.aab" ;;
-              *.jar) rename_to "$file" "SurfaceStudio-$VERSION.jar" ;;
+              *.exe) rename_to "$file" "UILabsInstaller-$VERSION.exe" ;;
+              *.msi) rename_to "$file" "UILabsInstaller-$VERSION.msi" ;;
+              *.deb) rename_to "$file" "UILabsInstaller-$VERSION-amd64.deb" ;;
+              *.apk) rename_to "$file" "UILabsInstaller-$VERSION.apk" ;;
+              *.dmg) rename_to "$file" "UILabsInstaller-$VERSION-macos-aarch64.dmg" ;;
+              *.pkg) rename_to "$file" "UILabsInstaller-$VERSION-macos-aarch64.pkg" ;;
+              *.aab) rename_to "$file" "UILabs-$VERSION.aab" ;;
+              *.jar) rename_to "$file" "UILabs-$VERSION.jar" ;;
             esac
           done
           ls -la
@@ -361,9 +361,9 @@ jobs:
           VERSION: ${{ needs.version.outputs.version }}
         run: |
           cat > notes.md <<EOF
-          ## Surface Studio $VERSION
+          ## UILabs $VERSION
 
-          The app is called **Surface Studio** from this release on. Same project, same
+          The app is called **UILabs** from this release on. Same project, same
           editor, new name — and a home screen, a settings page and a signed Android build
           to go with it.
 
@@ -371,13 +371,13 @@ jobs:
 
           | Platform | Download |
           | --- | --- |
-          | **Windows** | \`SurfaceStudioInstaller-$VERSION.exe\` — installer, no Java needed |
-          | **macOS (Apple Silicon)** | \`SurfaceStudioInstaller-$VERSION-macos-aarch64.dmg\` — every Mac since late 2020 |
-          | **Android** | \`SurfaceStudioInstaller-$VERSION.apk\` — allow "install from unknown sources" when prompted |
-          | **Linux** | \`SurfaceStudioInstaller-$VERSION-amd64.deb\` |
-          | **Any OS with a JVM** | \`SurfaceStudio-$VERSION.jar\` — \`java -jar <file>\` |
-          | **Google Play** | \`SurfaceStudio-$VERSION.aab\` — for uploading to Play, **not** installable on a phone |
-          | **Everything at once** | \`surface-studio-$VERSION.zip\` — every installer above, plus templates, docs and full source |
+          | **Windows** | \`UILabsInstaller-$VERSION.exe\` — installer, no Java needed |
+          | **macOS (Apple Silicon)** | \`UILabsInstaller-$VERSION-macos-aarch64.dmg\` — every Mac since late 2020 |
+          | **Android** | \`UILabsInstaller-$VERSION.apk\` — allow "install from unknown sources" when prompted |
+          | **Linux** | \`UILabsInstaller-$VERSION-amd64.deb\` |
+          | **Any OS with a JVM** | \`UILabs-$VERSION.jar\` — \`java -jar <file>\` |
+          | **Google Play** | \`UILabs-$VERSION.aab\` — for uploading to Play, **not** installable on a phone |
+          | **Everything at once** | \`uilabs-$VERSION.zip\` — every installer above, plus templates, docs and full source |
 
           Each desktop package embeds its own Java runtime, so nothing has to be installed
           first — which is also why they are ~90-110 MB each.
@@ -391,7 +391,7 @@ jobs:
 
           ### A new name
 
-          **Surface Studio.** The old one described the first thing the editor could do
+          **UILabs.** The old one described the first thing the editor could do
           rather than what it is: a visual editor for interfaces, which happens to speak
           Minecraft's two dialects fluently and exports to six other targets besides. The
           installers, the window title, the Android launcher and the generated file headers
@@ -480,7 +480,7 @@ jobs:
           quarantine flag:
 
           \`\`\`
-          xattr -dr com.apple.quarantine "/Applications/SurfaceStudio.app"
+          xattr -dr com.apple.quarantine "/Applications/UILabs.app"
           \`\`\`
 
           Every launch after that is normal. The \`.dmg\` is Apple Silicon only; on an Intel
@@ -517,7 +517,7 @@ jobs:
           else
             gh release create "$tag" \
               --target "$GITHUB_SHA" \
-              --title "Surface Studio $VERSION" \
+              --title "UILabs $VERSION" \
               --notes-file notes.md \
               dist/*.zip standalone/*
           fi

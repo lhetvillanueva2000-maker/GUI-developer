@@ -204,6 +204,7 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
                                     systemIsDark = appState.systemIsDark,
                                     eyebrow = appState.homeEyebrow,
                                     onOpen = appState::openEditor,
+                                    onOpenLink = appState::openLink,
                                     onSaveQr = appState::saveDonationQr,
                                     onToggleTheme = appState::cycleTheme,
                                     onCopied = { appState.status = it },
