@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/icon/icon-256.png" width="128" alt="Minecraft GUI Designer">
+<img src="assets/icon/icon-256.png" width="128" alt="Surface Studio">
 
-# Minecraft GUI Designer
+# Surface Studio
 
 **A standalone visual designer for Minecraft screens — Java Edition and Bedrock
 Edition, each with its own widget set, visual identity and export pipeline.**
@@ -22,13 +22,13 @@ Everything is published on the
 
 | You want | Grab |
 | --- | --- |
-| **Windows** | `MinecraftGuiDesigner-<version>.exe` — installer, no Java needed |
-| **macOS (Apple Silicon)** | `MinecraftGuiDesigner-<version>-macos-aarch64.dmg` — any Mac from late 2020 on |
+| **Windows** | `SurfaceStudioInstaller-<version>.exe` — installer, no Java needed |
+| **macOS (Apple Silicon)** | `SurfaceStudioInstaller-<version>-macos-aarch64.dmg` — any Mac from late 2020 on |
 | **Android** | `androidApp-release.apk` — enable "install from unknown sources" when prompted |
 | **Google Play** | `androidApp-release.aab` — an app bundle for uploading to Play, not installable on a phone |
-| **Linux** | `minecraft-gui-designer_<version>-1_amd64.deb` |
-| **Any OS with a JVM** | `MinecraftGuiDesigner-windows-x64-<version>.jar` — `java -jar <file>` |
-| **Everything at once** | `minecraft-gui-designer-<version>.zip` — all of the above plus source, templates and docs |
+| **Linux** | `SurfaceStudioInstaller-<version>-amd64.deb` |
+| **Any OS with a JVM** | `SurfaceStudio-<version>.jar` — `java -jar <file>` |
+| **Everything at once** | `surface-studio-<version>.zip` — all of the above plus source, templates and docs |
 
 The individual installers are attached to the release alongside the combined
 ZIP, so there is no need to download ~360 MB just to get one of them. Each
@@ -42,13 +42,13 @@ certificate, so Gatekeeper blocks the first launch. Open it once with
 **right-click → Open** and choose **Open**, or clear the quarantine flag:
 
 ```bash
-xattr -dr com.apple.quarantine "/Applications/MinecraftGuiDesigner.app"
+xattr -dr com.apple.quarantine "/Applications/SurfaceStudio.app"
 ```
 
 Every launch after the first is normal.
 
 The `.dmg` is Apple Silicon only — which is every Mac sold since late 2020. On
-an older **Intel** Mac, run the portable `MinecraftGuiDesigner-<version>.jar`
+an older **Intel** Mac, run the portable `SurfaceStudio-<version>.jar`
 with `java -jar` instead (Java 17 or newer). An Apple Silicon binary cannot run
 on Intel, and Rosetta only translates the other way.
 
@@ -161,7 +161,6 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 
 | | Desktop | Android |
 | --- | --- | --- |
-| Edition switch | Tabs across the top | Tabs across the top |
 | Navigation | Menu bar + five toolbox docks | Bottom nav / rail + modal sheets |
 | Placement | Arm from palette, click to drop | Tap a component tile, it lands centred |
 | Move | Drag any element | Drag an **already selected** element |
@@ -172,13 +171,16 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 | Align & arrange | Toolbar row + Arrange menu | Arrange sheet |
 | Nudge | Move pad on the canvas, or the arrow keys | Move pad on the canvas |
 | Shapes & custom | Bottom bar + Insert menu | "Custom" in the bottom nav |
-| Settings | View ▸ Editor Settings, or ⋯ in the bottom bar | ⋮ ▸ Editor settings |
+| Editor settings | View ▸ Editor Settings, or ⋯ in the bottom bar | ⋮ ▸ Editor settings |
+| App settings | Gear at the top right of home, or **S** | Gear at the top right of home |
+| Themes & motion | Settings ▸ Theme, Settings ▸ Motion | Settings ▸ Theme, Settings ▸ Motion |
 | Prefabs & library | Docks beside the palette | Bottom sheets |
 | Export | Folder or `.zip` | `.zip` via the Storage Access Framework |
 | Edition | Chosen on the home screen | Chosen on the home screen |
 | Back to home | Arrow at the top left, or Escape | System back gesture; arrow on tablets |
 | Support page | Hand-and-heart at the top right of home | Hand-and-heart at the top right of home |
-| What's new | Strip under the top bar — click the chevron | Strip under the top bar — swipe it down |
+| Notifications | Panel under the top bar — click the chevron, or dismiss | Panel under the top bar — swipe down to read, up to dismiss |
+| Phone vs tablet | Follows the window width | Follows the *screen*, so landscape stays a phone |
 
 ### The same app at three sizes
 
@@ -297,7 +299,7 @@ cd gui-developer
 .\build-scripts\package-release.ps1 -Version 1.0.0   # Windows
 ```
 
-Produces `dist/minecraft-gui-designer-<version>.zip` containing the desktop
+Produces `dist/surface-studio-<version>.zip` containing the desktop
 installer, the APK, the templates, the docs and a source archive, plus a
 `MANIFEST.txt` listing every file.
 

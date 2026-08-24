@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import android.app.Activity
 import com.mcguidesigner.android.AndroidAppState
@@ -20,8 +21,10 @@ import com.mcguidesigner.android.io.AndroidFileIO
 import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.support.Donation
+import com.mcguidesigner.styles.home.HomeOverlay
 import com.mcguidesigner.styles.home.HomeScreen
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
+import com.mcguidesigner.styles.layout.DeviceClass
 import com.mcguidesigner.styles.layout.LocalAdaptive
 
 /**
@@ -44,9 +47,18 @@ fun AndroidApp(
     state: EditorState,
     /** Resolved by the activity, which is the only thing that can ask the OS. */
     dark: Boolean,
+    /** What the OS reports for its own light/dark setting. */
+    systemIsDark: Boolean,
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
+
+    // The shorter edge of the *screen*, which does not change when the device
+    // is rotated - so a phone is still a phone on its side. Reading the window
+    // width instead is what used to hand a landscape phone the tablet layout:
+    // around 900dp wide, a navigation rail and a docked inspector, on a screen
+    // four inches tall.
+    val device = DeviceClass.ofSmallestWidth(LocalConfiguration.current.smallestScreenWidthDp)
 
     // Saving the donation QR goes through the same picker as everything else,
     // which is why the app still needs no storage permission to do it.
@@ -56,21 +68,34 @@ fun AndroidApp(
         if (uri != null) app.saveQrCode(context, uri) else app.pendingQrBytes = null
     }
 
-    // Home is the first screen, so back from it leaves the app. The editor
-    // owns its own handler; this one is only registered while home is up, so
-    // the two can never both claim a press.
-    BackHandler(enabled = app.screen == AppScreen.HOME) {
+    // Innermost first. A page open over home is what back should close, and
+    // only once there is nothing left over home does back leave the app. Each
+    // handler is enabled for exactly one state, so no two can claim a press.
+    BackHandler(enabled = app.screen == AppScreen.HOME && app.homeOverlay != HomeOverlay.NONE) {
+        app.homeOverlay = HomeOverlay.NONE
+    }
+    BackHandler(enabled = app.screen == AppScreen.HOME && app.homeOverlay == HomeOverlay.NONE) {
         app.guardUnsaved("leave the app") { activity?.finish() }
     }
 
     Crossfade(targetState = app.screen, label = "screen") { screen ->
         when (screen) {
             AppScreen.HOME -> BoxWithConstraints(Modifier.fillMaxSize()) {
-                val metrics = AdaptiveMetrics.of(maxWidth, maxHeight, touchMode = true)
+                val metrics = AdaptiveMetrics.of(
+                    widthDp = maxWidth,
+                    heightDp = maxHeight,
+                    touchMode = true,
+                    device = device,
+                )
                 CompositionLocalProvider(LocalAdaptive provides metrics) {
                     HomeScreen(
                         lastUsed = state.edition,
                         dark = dark,
+                        settings = app.appearance,
+                        onSettingsChange = { app.applyAppearance(context, it) },
+                        overlay = app.homeOverlay,
+                        onOverlayChange = { app.homeOverlay = it },
+                        systemIsDark = systemIsDark,
                         eyebrow = app.homeEyebrow,
                         onOpen = app::openEditor,
                         onSaveQr = { bytes ->
@@ -86,7 +111,7 @@ fun AndroidApp(
                 }
             }
 
-            AppScreen.EDITOR -> AndroidEditor(app, controller, state)
+            AppScreen.EDITOR -> AndroidEditor(app, controller, state, device)
         }
     }
 

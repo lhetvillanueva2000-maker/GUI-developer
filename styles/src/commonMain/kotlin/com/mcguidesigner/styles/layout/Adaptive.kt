@@ -19,13 +19,13 @@ import androidx.compose.ui.unit.dp
  * window begin.
  */
 enum class WindowSizeClass(val displayName: String) {
-    /** Phone portrait. One pane, bottom navigation, everything else modal. */
+    /** Phone. One pane, bottom navigation, everything else modal. */
     COMPACT("Phone"),
 
-    /** Tablet, and phones turned sideways. A rail, and room for two panes. */
+    /** Tablet in portrait. A rail, and room for two panes. */
     MEDIUM("Tablet"),
 
-    /** Desktop windows and large tablets in landscape. Docks stay open. */
+    /** Desktop windows and tablets in landscape. Docks stay open. */
     EXPANDED("Desktop"),
     ;
 
@@ -44,6 +44,63 @@ enum class WindowSizeClass(val displayName: String) {
         }
 
         fun ofWidth(widthDp: Dp): WindowSizeClass = ofWidth(widthDp.value.toInt())
+
+        /**
+         * The layout for a window this wide **on this kind of device**.
+         *
+         * Width alone is not enough, and believing it was is a real bug: a
+         * large phone turned sideways is around 900dp wide, which
+         * [ofWidth] happily calls EXPANDED, and the phone would then be handed
+         * a desktop layout with two docks open on a screen four inches tall.
+         * A phone is a phone whichever way you hold it, so [DeviceClass.HANDSET]
+         * is pinned to COMPACT and the width is not consulted at all.
+         *
+         * The other two do read the width, for opposite reasons: a tablet
+         * genuinely changes layout between portrait and landscape, and a
+         * desktop window is resizable, so a narrow one really should get the
+         * phone layout rather than a squashed desktop.
+         */
+        fun resolve(widthDp: Dp, device: DeviceClass): WindowSizeClass = when (device) {
+            DeviceClass.HANDSET -> COMPACT
+            DeviceClass.TABLET, DeviceClass.DESKTOP -> ofWidth(widthDp)
+        }
+    }
+}
+
+/**
+ * What the app is running on, as distinct from how big its window currently is.
+ *
+ * The two are not the same question and only the host can answer this one.
+ * Android knows because `Configuration.smallestScreenWidthDp` reports the
+ * shorter edge of the screen and therefore does not change when the device is
+ * rotated - which is the whole point, since a device does not become a
+ * different class of hardware when you turn it. Desktop knows because it is a
+ * desktop.
+ */
+enum class DeviceClass {
+    /** A phone. Gets the phone layout in portrait and in landscape. */
+    HANDSET,
+
+    /** A tablet or an unfolded foldable: real estate that changes with rotation. */
+    TABLET,
+
+    /** A resizable window on a desktop OS. */
+    DESKTOP,
+    ;
+
+    companion object {
+        /**
+         * Android's own tablet threshold: the shorter screen edge in dp.
+         *
+         * 600dp is the value the platform itself uses to pick `sw600dp`
+         * resources, so classifying the same way means the app agrees with the
+         * system about what it is running on.
+         */
+        const val TABLET_MIN_SMALLEST_WIDTH_DP = 600
+
+        /** Classifies a touch device from its shorter screen edge. */
+        fun ofSmallestWidth(smallestWidthDp: Int): DeviceClass =
+            if (smallestWidthDp >= TABLET_MIN_SMALLEST_WIDTH_DP) TABLET else HANDSET
     }
 }
 
@@ -114,9 +171,28 @@ data class AdaptiveMetrics(
      * desktop layout gets more *panels*, not longer lines.
      */
     val readingWidth: Dp,
+
+    /**
+     * What the app is running on.
+     *
+     * Kept alongside the size class rather than folded into it because a few
+     * decisions turn on the hardware rather than the room: whether to offer
+     * keyboard shortcuts, and whether "back" means a button in the chrome or
+     * the gesture the system already provides.
+     */
+    val device: DeviceClass = DeviceClass.DESKTOP,
 ) {
     /** Shorthand for the question every adaptive layout asks first. */
     val isCompact: Boolean get() = sizeClass.isCompact
+
+    /**
+     * Whether this shell should draw its own back affordance.
+     *
+     * A handset already has one - the system gesture or button - and drawing a
+     * second one in the chrome is a duplicate that costs a row of pixels on
+     * the screen that has the fewest to spare.
+     */
+    val showsBackControl: Boolean get() = device != DeviceClass.HANDSET
 
     /** Bottom navigation is a phone pattern; anything wider gets the rail. */
     val usesBottomNav: Boolean get() = sizeClass.isCompact
@@ -157,6 +233,7 @@ data class AdaptiveMetrics(
             touchMode: Boolean = sizeClass != WindowSizeClass.EXPANDED,
             widthDp: Dp = 0.dp,
             heightDp: Dp = 0.dp,
+            device: DeviceClass = DeviceClass.DESKTOP,
         ): AdaptiveMetrics {
             val target = if (touchMode) {
                 if (sizeClass.isCompact) 48.dp else 52.dp
@@ -168,6 +245,7 @@ data class AdaptiveMetrics(
                     sizeClass = sizeClass,
                     heightClass = heightClass,
                     touchMode = touchMode,
+                    device = device,
                     widthDp = widthDp,
                     heightDp = heightDp,
                     gutter = 16.dp,
@@ -187,6 +265,7 @@ data class AdaptiveMetrics(
                     sizeClass = sizeClass,
                     heightClass = heightClass,
                     touchMode = touchMode,
+                    device = device,
                     widthDp = widthDp,
                     heightDp = heightDp,
                     gutter = 24.dp,
@@ -203,6 +282,7 @@ data class AdaptiveMetrics(
                     sizeClass = sizeClass,
                     heightClass = heightClass,
                     touchMode = touchMode,
+                    device = device,
                     widthDp = widthDp,
                     heightDp = heightDp,
                     gutter = 20.dp,
@@ -217,12 +297,18 @@ data class AdaptiveMetrics(
             }
         }
 
-        fun of(widthDp: Dp, heightDp: Dp, touchMode: Boolean): AdaptiveMetrics = of(
-            sizeClass = WindowSizeClass.ofWidth(widthDp),
+        fun of(
+            widthDp: Dp,
+            heightDp: Dp,
+            touchMode: Boolean,
+            device: DeviceClass = DeviceClass.DESKTOP,
+        ): AdaptiveMetrics = of(
+            sizeClass = WindowSizeClass.resolve(widthDp, device),
             heightClass = WindowHeightClass.ofHeight(heightDp),
             touchMode = touchMode,
             widthDp = widthDp,
             heightDp = heightDp,
+            device = device,
         )
     }
 }

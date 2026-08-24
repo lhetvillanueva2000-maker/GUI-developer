@@ -2,6 +2,7 @@ package com.mcguidesigner.styles.home
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import com.mcguidesigner.core.Branding
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
 import com.mcguidesigner.styles.layout.LocalAdaptive
 import com.mcguidesigner.styles.layout.WindowSizeClass
@@ -20,15 +21,8 @@ import com.mcguidesigner.styles.layout.WindowSizeClass
  */
 object HomeMetrics {
 
-    /**
-     * Printed beside the wordmark.
-     *
-     * A constant rather than a build-time value: `styles` is a library module
-     * with no `project.version` to read, and a wrong number here is a cosmetic
-     * fib rather than a broken build - which is exactly the kind of thing that
-     * rots unnoticed, so it lives in one place with a comment on it.
-     */
-    const val VERSION = "1.5.0"
+    /** Printed beside the wordmark. Owned by [Branding], not restated here. */
+    const val VERSION = Branding.VERSION
 
     /** Two columns from tablet width up, one on a phone. */
     fun sideBySide(metrics: AdaptiveMetrics): Boolean =

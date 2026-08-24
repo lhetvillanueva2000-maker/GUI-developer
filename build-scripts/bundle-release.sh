@@ -10,11 +10,11 @@
 # artifacts into, so it looks like:
 #
 #   artifacts/
-#     windows-desktop/       MinecraftGuiDesigner-1.0.0.exe, ...msi
-#     macos-desktop-aarch64/ MinecraftGuiDesigner-1.0.0-macos-aarch64.dmg
-#     macos-desktop-x64/     MinecraftGuiDesigner-1.0.0-macos-x64.dmg
+#     windows-desktop/       SurfaceStudio-1.0.0.exe, ...msi
+#     macos-desktop-aarch64/ SurfaceStudio-1.0.0-macos-aarch64.dmg
+#     macos-desktop-x64/     SurfaceStudio-1.0.0-macos-x64.dmg
 #     linux-and-android/     androidApp-release.apk / .aab, ...amd64.deb
-#     portable-jar/          MinecraftGuiDesigner-<os>-<arch>-1.0.0.jar
+#     portable-jar/          SurfaceStudio-<os>-<arch>-1.0.0.jar
 #
 # Anything missing is reported and skipped rather than failing the build, so a
 # partial run still produces a usable archive.
@@ -31,10 +31,10 @@ cd "$ROOT"
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 
-ZIP_NAME="minecraft-gui-designer-$VERSION.zip"
+ZIP_NAME="surface-studio-$VERSION.zip"
 mkdir -p "$OUT_DIR" "$STAGE"/{desktop,android,docs,templates,build-scripts}
 
-echo "==> Bundling Minecraft GUI Designer $VERSION"
+echo "==> Bundling Surface Studio $VERSION"
 
 collect() {
   local label="$1" pattern="$2" destination="$3"
@@ -73,7 +73,7 @@ git archive --format=zip --prefix="source/" -o "$STAGE/source.zip" HEAD
 echo "    + source.zip ($(du -h "$STAGE/source.zip" | cut -f1))"
 
 {
-  echo "Minecraft GUI Designer $VERSION"
+  echo "Surface Studio $VERSION"
   echo "Bundled $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
   echo "Commit: $(git rev-parse HEAD)"
   echo

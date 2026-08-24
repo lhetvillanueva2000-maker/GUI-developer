@@ -1,5 +1,6 @@
 package com.mcguidesigner.exporters
 
+import com.mcguidesigner.core.Branding
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.serialization.PROJECT_EXTENSION
@@ -94,7 +95,7 @@ object ExportManager {
     private fun everythingReadme(project: GuiProject, base: String): String = buildString {
         appendLine("# ${project.name}")
         appendLine()
-        appendLine("Everything this screen exports to, produced in one pass by Minecraft GUI Designer.")
+        appendLine("Everything this screen exports to, produced in one pass by ${Branding.NAME}.")
         appendLine("Designed for **${project.edition.displayName}**, ${project.canvas.width}x${project.canvas.height} GUI pixels.")
         appendLine()
         appendLine("| Folder | What it is |")

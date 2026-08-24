@@ -43,6 +43,7 @@ import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.core.support.Donation
 import com.mcguidesigner.styles.home.HomeScreen
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
+import com.mcguidesigner.styles.layout.DeviceClass
 import com.mcguidesigner.styles.layout.LocalAdaptive
 import com.mcguidesigner.styles.support.DonationQr
 import com.mcguidesigner.styles.support.LocalDonationQr
@@ -169,10 +170,15 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
             edition = editorState.edition,
             touchMode = false,
             dark = appState.darkChrome,
+            chromeTheme = appState.appearance.chromeTheme,
+            motion = appState.appearance.motion,
         ) {
             CompositionLocalProvider(
                 LocalBackdropArtwork provides if (appState.backdropEnabled) DesktopBackdrops else BackdropArtwork.None,
-                LocalBackdropMotion provides appState.backdropMotion,
+                // One derived answer rather than two flags to keep in step:
+                // the artwork only drifts when it is drawn at all *and* the
+                // motion level allows anything to loop.
+                LocalBackdropMotion provides appState.appearance.backdropMoves,
                 LocalDonationQr provides donationQr,
             ) {
                 // Crossfade rather than a hard cut: home and the editor share
@@ -181,11 +187,21 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
                 Crossfade(targetState = appState.screen, label = "screen") { screen ->
                     when (screen) {
                         AppScreen.HOME -> BoxWithConstraints(Modifier.fillMaxSize()) {
-                            val metrics = AdaptiveMetrics.of(maxWidth, maxHeight, touchMode = false)
+                            val metrics = AdaptiveMetrics.of(
+                                widthDp = maxWidth,
+                                heightDp = maxHeight,
+                                touchMode = false,
+                                device = DeviceClass.DESKTOP,
+                            )
                             CompositionLocalProvider(LocalAdaptive provides metrics) {
                                 HomeScreen(
                                     lastUsed = editorState.edition,
                                     dark = appState.darkChrome,
+                                    settings = appState.appearance,
+                                    onSettingsChange = appState::applyAppearance,
+                                    overlay = appState.homeOverlay,
+                                    onOverlayChange = { appState.homeOverlay = it },
+                                    systemIsDark = appState.systemIsDark,
                                     eyebrow = appState.homeEyebrow,
                                     onOpen = appState::openEditor,
                                     onSaveQr = appState::saveDonationQr,
@@ -262,13 +278,38 @@ private fun rememberAppIcon(): Painter? = remember {
 }
 
 /**
+ * Whether the editor's global shortcuts should see this key press at all.
+ *
+ * They are installed as `onPreviewKeyEvent`, which fires *before* whatever has
+ * focus, so anything they claim is a key that no text field, no dialog and no
+ * other screen will ever receive. That is exactly what a design tool wants
+ * while you are looking at a canvas, and exactly what it does not want
+ * anywhere else. Two things went wrong without this gate:
+ *
+ *  - **On the home screen.** Pressing Delete there ran `requestDeleteSelection`
+ *    and opened a confirmation about elements you could not see, and V, H and
+ *    M silently changed the tool in an editor that was not on screen.
+ *  - **In a dialog.** Backspace in any text field deleted the *selected
+ *    element* instead of a character, because the canvas got the key first.
+ *
+ * So: the editor screen only, and a modal dialog owns the keyboard while it is
+ * open, apart from Escape - which is how modality is supposed to work.
+ */
+internal fun editorShortcutsApply(screen: AppScreen, dialog: ActiveDialog, key: Key): Boolean = when {
+    screen != AppScreen.EDITOR -> false
+    dialog != ActiveDialog.NONE -> key == Key.Escape
+    else -> true
+}
+
+/**
  * Global shortcuts.
  *
  * Handled in `onPreviewKeyEvent` rather than per-widget so they work no matter
  * which panel currently has focus - the behaviour people expect from a
- * desktop design tool.
+ * desktop design tool. See [editorShortcutsApply] for where that stops.
  */
 private fun handleShortcut(app: AppState, key: Key, ctrl: Boolean, shift: Boolean): Boolean {
+    if (!editorShortcutsApply(app.screen, app.dialog, key)) return false
     val controller = app.controller
     return when {
         ctrl && key == Key.Z && !shift -> { controller.undo(); true }

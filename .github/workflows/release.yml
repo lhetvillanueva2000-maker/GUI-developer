@@ -320,6 +320,38 @@ jobs:
             -exec cp {} standalone/ \;
           ls -la standalone
 
+      # jpackage names its output after the *application*, and the Android
+      # build after its Gradle module. Neither is what somebody scanning a
+      # release page needs to see, so the downloads are given the name of the
+      # thing they actually are, once, here - rather than in each of the three
+      # build jobs, where they would drift apart.
+      #
+      # The .jar and the .aab are deliberately not called installers: one is
+      # the app itself and the other is an upload for Google Play. Calling
+      # either an installer would send somebody to the wrong file.
+      - name: Name the downloads
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          cd standalone
+          rename_to() {
+            [ "$1" = "$2" ] && return 0
+            mv -- "$1" "$2"
+          }
+          for file in *; do
+            case "$file" in
+              *.exe) rename_to "$file" "SurfaceStudioInstaller-$VERSION.exe" ;;
+              *.msi) rename_to "$file" "SurfaceStudioInstaller-$VERSION.msi" ;;
+              *.deb) rename_to "$file" "SurfaceStudioInstaller-$VERSION-amd64.deb" ;;
+              *.apk) rename_to "$file" "SurfaceStudioInstaller-$VERSION.apk" ;;
+              *.dmg) rename_to "$file" "SurfaceStudioInstaller-$VERSION-macos-aarch64.dmg" ;;
+              *.pkg) rename_to "$file" "SurfaceStudioInstaller-$VERSION-macos-aarch64.pkg" ;;
+              *.aab) rename_to "$file" "SurfaceStudio-$VERSION.aab" ;;
+              *.jar) rename_to "$file" "SurfaceStudio-$VERSION.jar" ;;
+            esac
+          done
+          ls -la
+
       # The GitHub CLI is preinstalled on the runner, so publishing needs no
       # third-party action.
       - name: Publish the GitHub release
@@ -329,99 +361,108 @@ jobs:
           VERSION: ${{ needs.version.outputs.version }}
         run: |
           cat > notes.md <<EOF
-          ## Minecraft GUI Designer $VERSION
+          ## Surface Studio $VERSION
+
+          The app is called **Surface Studio** from this release on. Same project, same
+          editor, new name — and a home screen, a settings page and a signed Android build
+          to go with it.
 
           ### Get it
 
           | Platform | Download |
           | --- | --- |
-          | **Windows** | \`MinecraftGuiDesigner-$VERSION.exe\` — installer, no Java needed |
-          | **macOS (Apple Silicon)** | \`MinecraftGuiDesigner-$VERSION-macos-aarch64.dmg\` — every Mac since late 2020 |
-          | **Android** | \`androidApp-release.apk\` — allow "install from unknown sources" when prompted |
-          | **Linux** | \`minecraft-gui-designer_$VERSION-1_amd64.deb\` |
-          | **Any OS with a JVM** | \`MinecraftGuiDesigner-windows-x64-$VERSION.jar\` — \`java -jar <file>\` |
-          | **Google Play** | \`androidApp-release.aab\` — for uploading to Play, **not** installable on a phone |
-          | **Everything at once** | \`minecraft-gui-designer-$VERSION.zip\` — every installer above, plus templates, docs and full source |
+          | **Windows** | \`SurfaceStudioInstaller-$VERSION.exe\` — installer, no Java needed |
+          | **macOS (Apple Silicon)** | \`SurfaceStudioInstaller-$VERSION-macos-aarch64.dmg\` — every Mac since late 2020 |
+          | **Android** | \`SurfaceStudioInstaller-$VERSION.apk\` — allow "install from unknown sources" when prompted |
+          | **Linux** | \`SurfaceStudioInstaller-$VERSION-amd64.deb\` |
+          | **Any OS with a JVM** | \`SurfaceStudio-$VERSION.jar\` — \`java -jar <file>\` |
+          | **Google Play** | \`SurfaceStudio-$VERSION.aab\` — for uploading to Play, **not** installable on a phone |
+          | **Everything at once** | \`surface-studio-$VERSION.zip\` — every installer above, plus templates, docs and full source |
 
           Each desktop package embeds its own Java runtime, so nothing has to be installed
           first — which is also why they are ~90-110 MB each.
 
-          Upgrading from 1.4.0 is a normal install over the top on every platform.
+          > **Upgrading on Android:** this build is signed with a different key from 1.5.0
+          > and earlier, and Android refuses an update whose signature changed. Uninstall
+          > the old app first, then install this one. Every release after this upgrades
+          > normally. On Windows, macOS and Linux it is a normal install over the top.
 
           ---
 
           ## What's new in $VERSION
 
-          The app opens somewhere new. Java and Bedrock are no longer two tabs inside
-          the editor — they are two cards on a home screen, and you pick one before the
-          editor exists.
+          ### A new name
 
-          ### A home screen
+          **Surface Studio.** The old one described the first thing the editor could do
+          rather than what it is: a visual editor for interfaces, which happens to speak
+          Minecraft's two dialects fluently and exports to six other targets besides. The
+          installers, the window title, the Android launcher and the generated file headers
+          all say the new name.
 
-          Each card is a real container from its own edition, holding real slots and a
-          real button, drawn entirely from that edition's palette. Java comes out flat,
-          square and hard-edged; Bedrock comes out soft-cornered with a 2px
-          light-over-dark border. They are deliberately not reconciled with each other,
-          because the difference between them is the thing being chosen.
+          Nothing about your projects changes. \`.mcgui\` files, prefabs, the texture library
+          and your preferences are all read exactly as before.
 
-          Home has no edition of its own, so it wears the chrome of whichever card you
-          are hovering — the whole shell repaints as you move between them, and the app
-          changes identity before you commit to anything. The backdrop is drawn in code
-          rather than loaded, so it retints with it.
+          ### A settings page
 
-          **J**, **B** and **T** open Java, open Bedrock and cycle the theme.
+          The gear at the top right of the home screen. It replaces the light/dark toggle
+          that used to live there, and it holds rather more than that toggle did:
 
-          ### The edition tabs have left the editor
+          **Seven themes.** Light and dark are still there, and on top of them sit
+          Midnight, Deepslate, Slate, Sandstone, Nether and End. Each one recolours the
+          application around the canvas and nothing else — a Minecraft button is the same
+          grey in every one of them, because a design tool that retinted its own preview
+          would be lying about the result. Each theme previews as the colours it actually
+          produces, against the edition you are in and the light/dark setting you have
+          chosen.
 
-          The header reports which edition you are in instead of offering to change it,
-          and the arrow at its top left goes back to the picker. Nothing about the open
-          document is lost on the way there or back — picking the other edition converts
-          what you have rather than replacing it, and reports anything the new edition
-          cannot express.
+          **Motion.** Full, Reduced, or Off. This is the one to reach for on an older
+          phone: the drifting backdrop and the star field redraw every frame while they
+          are moving, and Reduced stops everything that loops while keeping the
+          transitions. It also fixes a real bug — turning the backdrop drift off used to
+          cost exactly as much as leaving it on, because the animation was still running
+          with its result thrown away.
 
-          | | |
-          | --- | --- |
-          | **Desktop** | Arrow at the top left, or **Escape** |
-          | **Tablet** | Arrow in the tool row |
-          | **Phone** | The system back gesture |
+          **A name.** Purely local, stored in the same preferences file as everything
+          else, used to greet you on the home screen. There is no account and nothing is
+          sent anywhere; the settings page says so in as many words, and says plainly what
+          signing in would actually require rather than showing a button that does not
+          work.
 
-          Escape unwinds one step at a time, the same order Android's back gesture uses:
-          it cancels an armed placement first, then clears a selection, and only leaves
-          the editor when there is nothing left inside it to dismiss.
+          ### The home screen explains itself
 
-          ### A what's-new strip
+          Three short answers under the edition cards: what this is, who it is for, and
+          how to use it. New here and unsure what you are looking at — that is what they
+          are for, and they are at the bottom so everyone else can ignore them.
 
-          Where the edition tabs used to be. Collapsed it is one line; pull it down and
-          it lists the detail. On a phone that is a downward swipe anywhere on the strip;
-          on a desktop it is the chevron on the right. Both work everywhere — a gesture
-          nobody can see is not an affordance, and a small target is not a good one for a
-          thumb.
+          ### Android knows a tablet from a phone
 
-          ### Support moved to home
+          It used to decide from the window width alone, which meant a large phone turned
+          sideways — around 900dp — was handed the tablet layout: a navigation rail and a
+          docked inspector on a screen four inches tall. It now asks the system for the
+          device's shorter edge, which does not change when you rotate, so a phone stays a
+          phone in both orientations and a tablet gets the layout its window can carry in
+          each.
 
-          The hand-and-heart mark now sits at the top right of the home screen, and that
-          is its only home. It still carries the InstaPay / QR Ph code, the same details
-          as copyable text, and the list of every app that can pay it. Press and hold the
-          code — or use the button — to save it.
+          ### A signed Android build
 
-          Still the whole of the app's monetisation: no ads, no paywall, no account, no
-          telemetry.
+          The APK and the App Bundle are signed with a real upload key rather than the
+          repository's development key. See the upgrade note above.
 
           ### Fixes
 
-          - The welcome dialog no longer opens on startup. Home already asks which
-            edition you want, and two front doors in a row is one front door too many.
-            It is still on the Help menu.
-          - A session recovered after a crash, or restored after Android killed the
-            process, goes straight back to the editor instead of stopping at the picker.
-          - Four faults in the merged home-screen sources, found on the way in: the two
-            cards were fighting over which one repainted the shell, the card's hover was
-            wired to a source nothing was listening to, the keyboard shortcuts were
-            advertised on a node that never held focus, and the content column asked for
-            a full screen height underneath a bar that had already taken 56dp of it.
+          - **Keyboard shortcuts fired on screens they did not belong to.** They are
+            installed ahead of everything focused, so on the home screen Delete opened a
+            confirmation about elements that were not on screen, and V, H and M silently
+            changed the tool in an editor that was not showing. Worse, inside any dialog
+            Backspace reached the canvas before the text field you were typing in and
+            deleted the selected element. Shortcuts are now the editor's, and a dialog
+            keeps the keyboard while it is open.
+          - **Backdrop motion off cost the same as on.** See Motion, above.
+          - **The home backdrop rebuilt itself on every hover.** 260 stars and about 570
+            ridge segments were regenerated to arrive at the same silhouette in a
+            different colour. The shape is generated once now and only the colours change.
 
           ---
-
 
           ### First launch notes
 
@@ -431,15 +472,19 @@ jobs:
           quarantine flag:
 
           \`\`\`
-          xattr -dr com.apple.quarantine "/Applications/MinecraftGuiDesigner.app"
+          xattr -dr com.apple.quarantine "/Applications/SurfaceStudio.app"
           \`\`\`
 
           Every launch after that is normal. The \`.dmg\` is Apple Silicon only; on an Intel
           Mac use the portable \`.jar\` with \`java -jar\` (Java 17+).
 
-          **Android.** The APK is signed with the repository's development key, which makes
-          it installable and upgradeable but is not a publishing key — see
-          \`build-scripts/README.md\`.
+          **Android.** Play Protect will offer to scan the APK before installing it. That
+          prompt appears for anything installed outside the Play Store, whatever it is
+          signed with, and the only thing that removes it is publishing on Play itself.
+
+          **Windows.** SmartScreen warns that the publisher is unknown. Choose **More
+          info → Run anyway**. Removing that warning needs a paid code-signing
+          certificate from a commercial CA; this project does not have one.
 
           ### Inside the combined ZIP
 
@@ -464,7 +509,7 @@ jobs:
           else
             gh release create "$tag" \
               --target "$GITHUB_SHA" \
-              --title "Minecraft GUI Designer $VERSION" \
+              --title "Surface Studio $VERSION" \
               --notes-file notes.md \
               dist/*.zip standalone/*
           fi

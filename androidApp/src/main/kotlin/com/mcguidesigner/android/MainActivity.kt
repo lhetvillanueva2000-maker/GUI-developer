@@ -76,10 +76,15 @@ class MainActivity : ComponentActivity() {
                 edition = state.edition,
                 touchMode = true,
                 dark = appState.themeMode.isDark(systemIsDark),
+                chromeTheme = appState.appearance.chromeTheme,
+                motion = appState.appearance.motion,
             ) {
                 CompositionLocalProvider(
                     LocalBackdropArtwork provides artwork,
-                    LocalBackdropMotion provides appState.backdropMotion,
+                    // One derived answer rather than two flags to keep in
+                    // step: the artwork only drifts when it is drawn at all
+                    // *and* the motion level allows anything to loop.
+                    LocalBackdropMotion provides appState.appearance.backdropMoves,
                     LocalDonationQr provides donationQr,
                 ) {
                     AndroidApp(
@@ -87,6 +92,7 @@ class MainActivity : ComponentActivity() {
                         controller = appState.controller,
                         state = state,
                         dark = appState.themeMode.isDark(systemIsDark),
+                        systemIsDark = systemIsDark,
                     )
                 }
             }

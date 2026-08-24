@@ -1,5 +1,6 @@
 package com.mcguidesigner.desktop.dialogs
 
+import com.mcguidesigner.core.Branding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -407,7 +408,7 @@ fun ProjectSettingsDialog(app: AppState, controller: EditorController, state: Ed
 fun AboutDialog(app: AppState) {
     AlertDialog(
         onDismissRequest = { app.dialog = ActiveDialog.NONE },
-        title = { Text("Minecraft GUI Designer") },
+        title = { Text(Branding.NAME) },
         text = {
             Column(Modifier.width(400.dp)) {
                 Text(

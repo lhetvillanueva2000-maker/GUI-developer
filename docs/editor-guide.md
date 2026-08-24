@@ -373,7 +373,11 @@ Recovering never overwrites anything.
 
 The desktop app data directory is `%APPDATA%\MinecraftGuiDesigner` on Windows,
 `~/Library/Application Support/MinecraftGuiDesigner` on macOS and
-`$XDG_CONFIG_HOME/MinecraftGuiDesigner` (usually `~/.config/...`) elsewhere. It
+`$XDG_CONFIG_HOME/MinecraftGuiDesigner` (usually `~/.config/...`) elsewhere.
+
+That folder keeps the old name deliberately. Renaming it in 1.6.0 alongside the
+app would have orphaned every existing install's preferences, recent files and
+crash-recovery snapshot — a cosmetic gain paid for with the user's data. It
 holds `preferences.json` and, only after an unclean shutdown, the recovery
 snapshot, plus `prefabs.json` and `texture-library.json`.
 

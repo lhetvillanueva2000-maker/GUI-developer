@@ -1,5 +1,6 @@
 package com.mcguidesigner.desktop.io
 
+import com.mcguidesigner.core.Branding
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.serialization.LoadResult
 import com.mcguidesigner.core.serialization.PROJECT_EXTENSION
@@ -21,7 +22,7 @@ import java.util.zip.ZipOutputStream
 object DesktopFileIO {
 
     /** Where "Open"/"Save" start when the project has never been saved. */
-    var lastDirectory: File = File(System.getProperty("user.home"), "MinecraftGuiDesigner")
+    var lastDirectory: File = File(System.getProperty("user.home"), Branding.NAME)
         .also { runCatching { it.mkdirs() } }
 
     // -- Project documents -------------------------------------------------

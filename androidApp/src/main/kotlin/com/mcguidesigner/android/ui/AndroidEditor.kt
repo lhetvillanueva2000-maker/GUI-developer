@@ -37,8 +37,6 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -70,9 +68,10 @@ import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
+import com.mcguidesigner.styles.layout.DeviceClass
 import com.mcguidesigner.styles.layout.LocalAdaptive
 import com.mcguidesigner.styles.render.rememberTextureCache
-import com.mcguidesigner.styles.notice.AppNotice
+import com.mcguidesigner.styles.notice.Notice
 import com.mcguidesigner.styles.notice.NoticeStrip
 import com.mcguidesigner.styles.theme.DesignerBackdrop
 import com.mcguidesigner.styles.theme.LocalSkinPalette
@@ -91,11 +90,17 @@ fun AndroidEditor(
     app: AndroidAppState,
     controller: EditorController,
     state: EditorState,
+    /**
+     * Phone or tablet, decided from the screen rather than the window.
+     *
+     * Passed in rather than read here so home and the editor cannot disagree
+     * about what the device is halfway through a rotation.
+     */
+    device: DeviceClass,
 ) {
     val context = LocalContext.current
     val palette = LocalSkinPalette.current
     val textures = rememberTextureCache(state.project)
-    val snackbar = remember { SnackbarHostState() }
 
     // --- Storage Access Framework launchers ------------------------------
 
@@ -126,9 +131,16 @@ fun AndroidEditor(
         ActivityResultContracts.OpenDocument(),
     ) { uri -> uri?.let { app.openPack(context, it) } }
 
+    // Status messages go to the notification panel at the top rather than a
+    // snackbar at the bottom. A floating bar over the tool row was covering
+    // the controls that produced the message, and it meant the app had two
+    // notification systems talking over each other in opposite corners.
+    //
+    // One id for all of them, so a message that fires on every nudge replaces
+    // the last rather than stacking.
     LaunchedEffect(app.status) {
-        app.status?.let {
-            snackbar.showSnackbar(it)
+        app.status?.let { message ->
+            app.postNotice(Notice(id = "status", headline = message, transient = true))
             app.status = null
         }
     }
@@ -162,7 +174,12 @@ fun AndroidEditor(
         // every measurement below is read off it. Deriving "is this a tablet?"
         // separately at each call site is how a rail and a bottom bar end up on
         // screen at the same time.
-        val metrics = AdaptiveMetrics.of(maxWidth, maxHeight, touchMode = true)
+        val metrics = AdaptiveMetrics.of(
+            widthDp = maxWidth,
+            heightDp = maxHeight,
+            touchMode = true,
+            device = device,
+        )
         val dockInspector = metrics.usesDockedInspector && app.section == MobileSection.DESIGN
 
         CompositionLocalProvider(LocalAdaptive provides metrics) {
@@ -196,9 +213,10 @@ fun AndroidEditor(
                         )
                         ToolStrip(app, state, metrics)
                         NoticeStrip(
-                            notice = AppNotice.current,
+                            notices = app.notices,
                             expanded = app.noticeExpanded,
                             onExpandedChange = { app.noticeExpanded = it },
+                            onDismiss = { app.dismissNotice(context, it) },
                             metrics = metrics,
                         )
                     }
@@ -208,7 +226,6 @@ fun AndroidEditor(
                         MobileNavBar(app, metrics)
                     }
                 },
-                snackbarHost = { SnackbarHost(snackbar) },
             ) { padding ->
                 Row(Modifier.fillMaxSize().padding(padding)) {
                     if (metrics.usesRail) {

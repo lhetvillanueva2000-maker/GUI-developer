@@ -12,6 +12,7 @@ import com.mcguidesigner.core.model.InteractionState
 import com.mcguidesigner.core.model.PropValue
 import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.styles.theme.ChromeColors
+import com.mcguidesigner.styles.theme.ChromeTheme
 import com.mcguidesigner.styles.theme.SkinPalette
 import com.mcguidesigner.styles.theme.withChrome
 
@@ -83,13 +84,14 @@ interface EditionSkin {
     val lightChrome: ChromeColors
 
     /**
-     * This edition's palette with the chrome for [dark] applied.
+     * This edition's palette with the chrome for [dark] and [theme] applied.
      *
-     * Widget colours are identical either way: only the application around the
-     * canvas changes with the theme.
+     * Widget colours are identical whatever is passed: only the application
+     * around the canvas changes. The edition supplies the starting chrome and
+     * the theme recolours it, so a skin never has to know which themes exist.
      */
-    fun paletteFor(dark: Boolean): SkinPalette =
-        palette.withChrome(if (dark) darkChrome else lightChrome)
+    fun paletteFor(dark: Boolean, theme: ChromeTheme = ChromeTheme.DEFAULT): SkinPalette =
+        palette.withChrome(theme.apply(if (dark) darkChrome else lightChrome, dark))
 
     /** Paints one element. Children are painted by the caller, on top. */
     fun DrawScope.drawElement(context: ElementRenderContext)

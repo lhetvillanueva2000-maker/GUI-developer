@@ -3,6 +3,7 @@ package com.mcguidesigner.core.editor
 import com.mcguidesigner.core.catalog.ElementCatalog
 import com.mcguidesigner.core.catalog.ElementDefinition
 import com.mcguidesigner.core.library.Prefab
+import com.mcguidesigner.core.Branding
 import com.mcguidesigner.core.model.AlignMode
 import com.mcguidesigner.core.model.Anchor
 import com.mcguidesigner.core.model.CanvasSpec
@@ -1217,7 +1218,7 @@ class EditorController(initial: GuiProject) {
                 meta = ProjectMeta(
                     namespace = "mcgui",
                     screenId = Ids.slug(name),
-                    description = "Created with Minecraft GUI Designer.",
+                    description = "Created with ${Branding.NAME}.",
                 ),
             )
         }

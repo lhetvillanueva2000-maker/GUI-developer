@@ -1,4 +1,4 @@
-rootProject.name = "minecraft-gui-designer"
+rootProject.name = "surface-studio"
 
 pluginManagement {
     repositories {
@@ -81,7 +81,7 @@ if (androidEnabled) {
     include(":androidApp")
 } else {
     logger.lifecycle(
-        "[minecraft-gui-designer] Android SDK not found - the :androidApp module and all " +
+        "[surface-studio] Android SDK not found - the :androidApp module and all " +
             "androidTarget() source sets are disabled for this build."
     )
 }

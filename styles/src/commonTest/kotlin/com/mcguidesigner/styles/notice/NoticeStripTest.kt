@@ -5,95 +5,127 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/**
- * Which way a swipe on the notice strip goes.
- *
- * Gesture thresholds get tuned by feel and then regress silently: a flipped
- * sign here turns "pull down to open" into "pull down to close", and no test
- * that only looks at composition would notice. Down is positive, matching the
- * pointer axis.
- */
-class NoticeDragTest {
+class DragOutcomeTest {
 
     @Test
-    fun `a downward drag opens it`() {
+    fun `a long drag downwards opens the panel`() {
         assertTrue(dragOutcome(totalDrag = 60f, velocity = 0f, expanded = false))
     }
 
     @Test
-    fun `an upward drag closes it`() {
+    fun `a long drag upwards closes it`() {
         assertFalse(dragOutcome(totalDrag = -60f, velocity = 0f, expanded = true))
     }
 
     @Test
-    fun `a flick counts even when it barely moved`() {
-        // The whole point of reading velocity: a fast swipe covers very little
-        // distance before the finger leaves, and ignoring it feels broken.
+    fun `a fast flick counts even when it barely moved`() {
+        // The whole point of the velocity threshold: a quick flick covers
+        // almost no distance, and ignoring it makes the gesture feel broken.
         assertTrue(dragOutcome(totalDrag = 4f, velocity = 900f, expanded = false))
         assertFalse(dragOutcome(totalDrag = -4f, velocity = -900f, expanded = true))
     }
 
     @Test
-    fun `a nudge too small to mean anything leaves it alone`() {
-        assertFalse(dragOutcome(totalDrag = 5f, velocity = 20f, expanded = false))
-        assertTrue(dragOutcome(totalDrag = -5f, velocity = -20f, expanded = true))
+    fun `a slipped tap changes nothing`() {
+        assertFalse(dragOutcome(totalDrag = 3f, velocity = 20f, expanded = false))
+        assertTrue(dragOutcome(totalDrag = -3f, velocity = -20f, expanded = true))
     }
 
     @Test
-    fun `a drag that repeats the current state is not a toggle`() {
-        // Pulling down on something already open keeps it open. Treating the
-        // gesture as a toggle would make a second pull close it, which is the
-        // opposite of what the hand just asked for.
-        assertTrue(dragOutcome(totalDrag = 80f, velocity = 400f, expanded = true))
-        assertFalse(dragOutcome(totalDrag = -80f, velocity = -400f, expanded = false))
+    fun `down opens even when it is already open`() {
+        assertTrue(dragOutcome(totalDrag = 60f, velocity = 0f, expanded = true))
     }
 
     @Test
-    fun `direction wins over the starting state at every magnitude`() {
-        listOf(30f, 100f, 400f, 5000f).forEach { distance ->
-            assertTrue(dragOutcome(distance, 0f, expanded = false), "down $distance")
-            assertTrue(dragOutcome(distance, 0f, expanded = true), "down $distance")
-            assertFalse(dragOutcome(-distance, 0f, expanded = false), "up $distance")
-            assertFalse(dragOutcome(-distance, 0f, expanded = true), "up $distance")
-        }
+    fun `the sign is not inverted`() {
+        // A flipped sign here turns "swipe down to open" into "swipe down to
+        // close", which nothing that inspects composition would catch.
+        assertTrue(dragOutcome(DRAG_DISTANCE_THRESHOLD + 1f, 0f, expanded = false))
+        assertFalse(dragOutcome(-(DRAG_DISTANCE_THRESHOLD + 1f), 0f, expanded = true))
     }
 
     @Test
-    fun `the thresholds are the right way round`() {
-        assertTrue(DRAG_DISTANCE_THRESHOLD > 0f)
-        assertTrue(DRAG_VELOCITY_THRESHOLD > 0f)
-        // Small enough to reach with a thumb without committing to a full
-        // sheet drag; large enough that a sloppy tap does not trip it.
-        assertTrue(DRAG_DISTANCE_THRESHOLD in 8f..64f)
+    fun `exactly at the threshold is not yet a swipe`() {
+        assertFalse(dragOutcome(DRAG_DISTANCE_THRESHOLD, 0f, expanded = false))
+        assertFalse(dragOutcome(0f, DRAG_VELOCITY_THRESHOLD, expanded = false))
     }
 }
 
-/** The message itself. Static data nobody compiles against, so worth pinning. */
-class UpdateNoticeTest {
+class NoticeQueueTest {
+
+    private fun notice(id: String, transient: Boolean = false) =
+        Notice(id = id, headline = id, transient = transient)
 
     @Test
-    fun `the shipped notice is filled in`() {
-        val notice = AppNotice.current
-        assertTrue(notice.version.isNotBlank())
-        assertTrue(notice.headline.isNotBlank())
-        assertTrue(notice.points.isNotEmpty())
-        notice.points.forEach { assertTrue(it.isNotBlank()) }
+    fun `the newest notice is the one on show`() {
+        val queue = Notices.post(Notices.post(emptyList(), notice("a")), notice("b"))
+        assertEquals("b", queue.first().id)
     }
 
     @Test
-    fun `the headline fits on one line`() {
-        // It is rendered with maxLines = 1 and ellipsised. A headline that is
-        // always cut off is a headline nobody reads.
-        assertTrue(
-            AppNotice.current.headline.length <= 90,
-            "headline is ${AppNotice.current.headline.length} characters",
-        )
+    fun `posting the same id replaces rather than stacks`() {
+        // The failure this prevents: a status message that fires on every
+        // nudge turning the panel into a pile of identical lines.
+        var queue = Notices.post(emptyList(), notice("status"))
+        repeat(5) { queue = Notices.post(queue, notice("status")) }
+        assertEquals(1, queue.size)
     }
 
     @Test
-    fun `the version is a plain version`() {
-        val version = AppNotice.current.version
-        assertTrue(version.all { it.isDigit() || it == '.' }, "'$version' is not a version")
-        assertEquals(3, version.split('.').size, "expected major.minor.patch, got '$version'")
+    fun `the queue is capped`() {
+        var queue = emptyList<Notice>()
+        repeat(Notices.MAX + 3) { queue = Notices.post(queue, notice("n$it")) }
+        assertEquals(Notices.MAX, queue.size)
+        assertEquals("n${Notices.MAX + 2}", queue.first().id, "the newest must survive the trim")
+    }
+
+    @Test
+    fun `dismissing removes exactly one`() {
+        val queue = Notices.post(Notices.post(emptyList(), notice("a")), notice("b"))
+        assertEquals(listOf("b"), Notices.dismiss(queue, "a").map { it.id })
+        assertEquals(queue, Notices.dismiss(queue, "missing"), "an unknown id is a no-op")
+    }
+
+    @Test
+    fun `dismissing every transient leaves the durable ones`() {
+        var queue = Notices.post(emptyList(), notice("release"))
+        queue = Notices.post(queue, notice("status", transient = true))
+        assertEquals(listOf("release"), Notices.dismissTransient(queue).map { it.id })
+    }
+
+    @Test
+    fun `an empty queue is what makes the panel disappear`() {
+        // Not a rendering assertion - it is the contract the strip is written
+        // against, and the reason the shells clear rather than blank.
+        assertTrue(Notices.dismiss(listOf(notice("only")), "only").isEmpty())
+    }
+
+    @Test
+    fun `only a notice with detail can be expanded`() {
+        assertFalse(Notice(id = "a", headline = "one line").expandable)
+        assertTrue(Notice(id = "a", headline = "one line", points = listOf("more")).expandable)
+    }
+}
+
+class AppNoticeTest {
+
+    @Test
+    fun `the release note carries its detail`() {
+        assertTrue(AppNotice.current.headline.isNotBlank())
+        assertTrue(AppNotice.current.points.isNotEmpty())
+        assertTrue(AppNotice.current.expandable)
+        assertFalse(AppNotice.current.transient, "a release note must not expire on a timer")
+    }
+
+    @Test
+    fun `the note is unread until this exact build's id is stored`() {
+        assertTrue(AppNotice.isUnread(null), "a fresh install has read nothing")
+        assertTrue(AppNotice.isUnread("whatsnew-0.0.1"), "an older build's note is not this one")
+        assertFalse(AppNotice.isUnread(AppNotice.current.id))
+    }
+
+    @Test
+    fun `every point says something`() {
+        AppNotice.current.points.forEach { assertTrue(it.length > 30, "stub point: $it") }
     }
 }

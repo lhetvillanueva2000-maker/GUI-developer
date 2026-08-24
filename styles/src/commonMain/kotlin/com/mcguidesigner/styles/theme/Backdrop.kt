@@ -75,18 +75,18 @@ fun DesignerBackdrop(
     val motion = LocalBackdropMotion.current
     val image = artwork.imageFor(edition, dark)
 
-    // The transition is created unconditionally - Compose requires a stable
-    // call structure - and simply ignored when motion is switched off.
-    val drift by rememberInfiniteTransition(label = "backdrop").animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(BACKDROP_DRIFT_MILLIS, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "backdropPhase",
-    )
-    val phase = if (motion) drift else 0f
+    // Called conditionally, which is the whole point.
+    //
+    // This used to create the transition unconditionally and discard the value
+    // when motion was off, on the theory that Compose needs a stable call
+    // structure. It does not - a conditional composable call is exactly what
+    // `if` in a composable is for - and the old shape meant "backdrop motion:
+    // off" cost precisely as much as leaving it on: the phase was still read
+    // every frame, so this Canvas still repainted every frame, it just
+    // repainted the same picture. Not creating the transition at all is the
+    // difference between a still backdrop and a still backdrop that is being
+    // redrawn sixty times a second.
+    val phase = if (motion) rememberDriftPhase() else 0f
 
     Box(modifier) {
         Canvas(Modifier.fillMaxSize()) {
@@ -100,6 +100,21 @@ fun DesignerBackdrop(
         }
         content()
     }
+}
+
+/** The drifting phase, 0..1. Only in composition while motion is switched on. */
+@Composable
+private fun rememberDriftPhase(): Float {
+    val drift by rememberInfiniteTransition(label = "backdrop").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(BACKDROP_DRIFT_MILLIS, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "backdropPhase",
+    )
+    return drift
 }
 
 /** One full drift cycle. Long enough that the motion is felt, not watched. */

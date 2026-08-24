@@ -1,5 +1,6 @@
 package com.mcguidesigner.desktop.dialogs
 
+import com.mcguidesigner.core.Branding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -71,7 +72,7 @@ fun WelcomeDialog(app: AppState) {
         onDismissRequest = { dismiss() },
         title = {
             Column {
-                Text("Minecraft GUI Designer", fontWeight = FontWeight.SemiBold)
+                Text(Branding.NAME, fontWeight = FontWeight.SemiBold)
                 Text(
                     "Design screens for Java Edition and Bedrock Edition, then export a " +
                         "resource pack, a UI pack or ready-to-paste code.",

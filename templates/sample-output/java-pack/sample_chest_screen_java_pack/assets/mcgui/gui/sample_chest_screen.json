@@ -1,7 +1,7 @@
 {
   "format": 1,
   "edition": "java",
-  "generator": "minecraft-gui-designer",
+  "generator": "surface-studio",
   "screen": {
     "id": "sample_chest_screen",
     "namespace": "mcgui",

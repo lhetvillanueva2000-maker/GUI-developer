@@ -4,6 +4,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.mcguidesigner.core.Branding
+import com.mcguidesigner.styles.home.HomeOverlay
+import com.mcguidesigner.styles.notice.AppNotice
+import com.mcguidesigner.styles.notice.Notice
+import com.mcguidesigner.styles.notice.Notices
 import com.mcguidesigner.core.catalog.CustomPresets
 import com.mcguidesigner.core.catalog.ElementCatalog
 import com.mcguidesigner.core.editor.EditorController
@@ -30,6 +35,8 @@ import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.render.createAnimatedTextureFromFrames
 import com.mcguidesigner.styles.render.createTextureAsset
+import com.mcguidesigner.styles.settings.AppearanceSettings
+import com.mcguidesigner.styles.theme.MotionLevel
 import com.mcguidesigner.styles.theme.ThemeMode
 import java.awt.Frame
 import java.io.File
@@ -104,20 +111,56 @@ class AppState(initial: GuiProject) {
     var status by mutableStateOf("Ready")
     var pendingExit by mutableStateOf(false)
 
+    // -- Notifications -----------------------------------------------------
+
     /**
-     * Whether the what's-new strip is pulled down.
+     * Whether the notification panel is pulled down.
      *
-     * Held by the shell rather than by the strip so it survives every
+     * Held by the shell rather than by the panel so it survives every
      * recomposition of the editor around it, and so it stays open across a
      * view-mode switch - closing itself the moment you looked at the canvas
      * would make it feel broken.
      */
     var noticeExpanded by mutableStateOf(false)
 
+    /**
+     * What the panel is showing. Empty means there is no panel at all.
+     *
+     * The editor draws nothing for an empty list rather than an empty bar: a
+     * strip with no message in it is chrome charging rent, and on a phone it
+     * is a row of pixels taken off the canvas permanently.
+     */
+    var notices by mutableStateOf(emptyList<Notice>())
+        private set
+
+    fun postNotice(notice: Notice) {
+        notices = Notices.post(notices, notice)
+    }
+
+    fun dismissNotice(notice: Notice) {
+        notices = Notices.dismiss(notices, notice.id)
+        // Only the release note is remembered as read. A status message is a
+        // receipt, and recording that one was seen would be recording noise.
+        if (notice.id == AppNotice.current.id) {
+            preferences = preferences.copy(dismissedNoticeId = notice.id)
+            persistPreferences()
+        }
+    }
+
     // -- Navigation --------------------------------------------------------
 
     var screen by mutableStateOf(AppScreen.HOME)
         private set
+
+    /**
+     * Which full-screen page is open over home.
+     *
+     * Owned here rather than inside `HomeScreen` so Escape - handled by the
+     * window, not by the screen - can close whichever one is showing. The same
+     * state is what Android's back gesture hooks into, which is why it is
+     * hoisted on both shells rather than only the one that needed it first.
+     */
+    var homeOverlay by mutableStateOf(HomeOverlay.NONE)
 
     /**
      * Opens the editor on [edition], converting the open document if it is
@@ -179,9 +222,19 @@ class AppState(initial: GuiProject) {
 
     // -- Appearance --------------------------------------------------------
 
-    var themeMode by mutableStateOf(ThemeMode.SYSTEM)
-    var backdropEnabled by mutableStateOf(true)
-    var backdropMotion by mutableStateOf(true)
+    /**
+     * Everything the settings screen owns, in one object.
+     *
+     * The individual accessors below are reads of this rather than fields of
+     * their own, so the settings screen and the editor's older appearance
+     * panel cannot end up holding two different opinions about the theme.
+     */
+    var appearance by mutableStateOf(AppearanceSettings())
+        private set
+
+    val themeMode: ThemeMode get() = appearance.theme
+    val backdropEnabled: Boolean get() = appearance.backdropEnabled
+    val backdropMotion: Boolean get() = appearance.backdropMoves
 
     /**
      * Whether the chrome is currently painted dark.
@@ -190,27 +243,57 @@ class AppState(initial: GuiProject) {
      * [ThemeMode.SYSTEM] resolves to dark here - which is what this app has
      * always looked like, and therefore the least surprising default.
      */
-    val darkChrome: Boolean get() = themeMode.isDark(systemIsDark = true)
+    val darkChrome: Boolean get() = themeMode.isDark(systemIsDark)
+
+    /**
+     * What the host reports for "is the desktop in dark mode".
+     *
+     * There is no portable answer, so this is a constant rather than a probe -
+     * but it is named and exposed rather than being a bare `true` at the two
+     * call sites, because the settings screen has to resolve "Match the
+     * system" the same way the theme does, and two independent `true`s is one
+     * more than it takes to get out of step.
+     */
+    val systemIsDark: Boolean get() = true
+
+    /** Applies and persists a whole settings object. */
+    fun applyAppearance(next: AppearanceSettings) {
+        appearance = next
+        persistPreferences()
+    }
 
     fun cycleTheme() {
-        themeMode = when (themeMode) {
-            ThemeMode.SYSTEM -> ThemeMode.DARK
-            ThemeMode.DARK -> ThemeMode.LIGHT
-            ThemeMode.LIGHT -> ThemeMode.SYSTEM
-        }
-        persistPreferences()
+        applyAppearance(
+            appearance.copy(
+                theme = when (themeMode) {
+                    ThemeMode.SYSTEM -> ThemeMode.DARK
+                    ThemeMode.DARK -> ThemeMode.LIGHT
+                    ThemeMode.LIGHT -> ThemeMode.SYSTEM
+                },
+            ),
+        )
         status = "Theme: ${themeMode.displayName}."
     }
 
-    fun setTheme(mode: ThemeMode) {
-        themeMode = mode
-        persistPreferences()
-    }
+    fun setTheme(mode: ThemeMode) = applyAppearance(appearance.copy(theme = mode))
 
+    /**
+     * The editor's two-state backdrop toggle, mapped onto the three-state
+     * motion setting.
+     *
+     * Turning drift off means "less motion" rather than "no motion", so it
+     * lands on REDUCED and leaves transitions alone; turning it back on
+     * restores FULL. Somebody who chose OFF outright in settings and then
+     * flicks this switch is asking for motion back, so FULL is the right
+     * answer there too.
+     */
     fun setBackdrop(enabled: Boolean, motion: Boolean = backdropMotion) {
-        backdropEnabled = enabled
-        backdropMotion = motion
-        persistPreferences()
+        applyAppearance(
+            appearance.copy(
+                backdropEnabled = enabled,
+                motion = if (motion) MotionLevel.FULL else MotionLevel.REDUCED,
+            ),
+        )
     }
 
     /** Provider for the AWT frame the file dialogs should parent to. */
@@ -241,9 +324,8 @@ class AppState(initial: GuiProject) {
         controller.setSettings(loaded.editorSettings)
         loaded.codeTarget?.let { id -> CodeTarget.entries.firstOrNull { it.name == id }?.let { codeTarget = it } }
         loaded.exportTarget?.let { id -> ExportTarget.entries.firstOrNull { it.name == id }?.let { exportTarget = it } }
-        themeMode = loaded.theme
-        backdropEnabled = loaded.backdropEnabled
-        backdropMotion = loaded.backdropMotion
+        appearance = loaded.appearance
+        if (AppNotice.isUnread(loaded.dismissedNoticeId)) postNotice(AppNotice.current)
     }
 
     /** Reads the prefab and texture libraries. Called once, before the first frame. */
@@ -276,9 +358,15 @@ class AppState(initial: GuiProject) {
             codeTarget = codeTarget.name,
             exportTarget = exportTarget.name,
             showWelcomeOnStart = showWelcomeOnStart,
-            themeMode = themeMode.name,
-            backdropEnabled = backdropEnabled,
-            backdropMotion = backdropMotion,
+            themeMode = appearance.theme.name,
+            chromeTheme = appearance.chromeTheme.name,
+            motionLevel = appearance.motion.name,
+            backdropEnabled = appearance.backdropEnabled,
+            // Kept in step with the motion level so a file written by 1.6.0
+            // and read back by 1.5.0 still behaves, rather than losing the
+            // choice entirely on a downgrade.
+            backdropMotion = appearance.motion.allowsLoops,
+            profileName = appearance.profileName,
             editorSettings = controller.current.settings,
         )
         Workspace.savePreferences(preferences)
@@ -290,7 +378,7 @@ class AppState(initial: GuiProject) {
             append("  -  ")
             append(controller.current.edition.displayName)
             currentFile?.let { append("  -  ").append(it.name) }
-            append("  |  Minecraft GUI Designer")
+            append("  |  ").append(Branding.NAME)
         }
 
     // -- Guarding unsaved work ---------------------------------------------

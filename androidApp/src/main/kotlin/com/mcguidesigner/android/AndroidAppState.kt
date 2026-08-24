@@ -32,6 +32,12 @@ import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.render.createAnimatedTextureFromFrames
 import com.mcguidesigner.styles.render.createTextureAsset
+import com.mcguidesigner.styles.home.HomeOverlay
+import com.mcguidesigner.styles.notice.AppNotice
+import com.mcguidesigner.styles.notice.Notice
+import com.mcguidesigner.styles.notice.Notices
+import com.mcguidesigner.styles.settings.AppearanceSettings
+import com.mcguidesigner.styles.theme.MotionLevel
 import com.mcguidesigner.styles.theme.ThemeMode
 
 /**
@@ -183,31 +189,79 @@ class AndroidAppState(initial: GuiProject) {
 
     // -- Appearance --------------------------------------------------------
 
-    var themeMode by mutableStateOf(ThemeMode.SYSTEM)
-        private set
-    var backdropEnabled by mutableStateOf(true)
-        private set
-    var backdropMotion by mutableStateOf(true)
+    /**
+     * Everything the settings screen owns, in one object.
+     *
+     * The accessors below read this rather than shadowing it, so the settings
+     * screen and the editor's older appearance sheet cannot end up holding two
+     * different opinions about the theme.
+     */
+    var appearance by mutableStateOf(AppearanceSettings())
         private set
 
+    val themeMode: ThemeMode get() = appearance.theme
+    val backdropEnabled: Boolean get() = appearance.backdropEnabled
+    val backdropMotion: Boolean get() = appearance.backdropMoves
+
+    /**
+     * Which full-screen page is open over home.
+     *
+     * Owned here so the system back gesture can close it - a `BackHandler` can
+     * only live in the shell, and state kept inside `HomeScreen` would leave
+     * back either doing nothing or dropping straight out of the app.
+     */
+    var homeOverlay by mutableStateOf(HomeOverlay.NONE)
+
     fun applySettings(settings: AndroidPreferences.Settings) {
-        themeMode = settings.themeMode
-        backdropEnabled = settings.backdropEnabled
-        backdropMotion = settings.backdropMotion
+        appearance = settings.appearance
+        dismissedNoticeId = settings.dismissedNoticeId
         controller.setSettings(settings.editor)
+        if (AppNotice.isUnread(dismissedNoticeId)) postNotice(AppNotice.current)
     }
 
     private fun settings() = AndroidPreferences.Settings(
-        themeMode = themeMode,
-        backdropEnabled = backdropEnabled,
-        backdropMotion = backdropMotion,
+        appearance = appearance,
+        dismissedNoticeId = dismissedNoticeId,
         editor = controller.current.settings,
     )
 
-    fun setTheme(context: Context, mode: ThemeMode) {
-        themeMode = mode
+    // -- Notifications -----------------------------------------------------
+
+    /**
+     * What the notification panel is showing. Empty means there is no panel.
+     *
+     * This is also where transient messages land now. They used to float up
+     * from the bottom of the screen as a snackbar while the panel sat at the
+     * top saying something else - two notification systems disagreeing in two
+     * corners. One panel, one place to look.
+     */
+    var notices by mutableStateOf(emptyList<Notice>())
+        private set
+
+    private var dismissedNoticeId: String? = null
+
+    fun postNotice(notice: Notice) {
+        notices = Notices.post(notices, notice)
+    }
+
+    fun dismissNotice(context: Context, notice: Notice) {
+        notices = Notices.dismiss(notices, notice.id)
+        // Only the release note is remembered as read. A status message is a
+        // receipt, and recording that one was seen would be recording noise.
+        if (notice.id == AppNotice.current.id) {
+            dismissedNoticeId = notice.id
+            AndroidPreferences.save(context, settings())
+        }
+    }
+
+    /** Applies and persists a whole settings object. */
+    fun applyAppearance(context: Context, next: AppearanceSettings) {
+        appearance = next
         AndroidPreferences.save(context, settings())
     }
+
+    fun setTheme(context: Context, mode: ThemeMode) =
+        applyAppearance(context, appearance.copy(theme = mode))
 
     /**
      * System -> dark -> light -> system, the same order the desktop cycles in.
@@ -228,10 +282,19 @@ class AndroidAppState(initial: GuiProject) {
         status = "Theme: ${themeMode.displayName}."
     }
 
+    /**
+     * The editor sheet's two-state backdrop toggle, mapped onto the three-state
+     * motion setting. Off means "less motion", not "none", so it lands on
+     * REDUCED and leaves transitions alone.
+     */
     fun setBackdrop(context: Context, enabled: Boolean, motion: Boolean = backdropMotion) {
-        backdropEnabled = enabled
-        backdropMotion = motion
-        AndroidPreferences.save(context, settings())
+        applyAppearance(
+            context,
+            appearance.copy(
+                backdropEnabled = enabled,
+                motion = if (motion) MotionLevel.FULL else MotionLevel.REDUCED,
+            ),
+        )
     }
 
     // -- Editor settings ---------------------------------------------------

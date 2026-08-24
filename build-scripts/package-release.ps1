@@ -34,9 +34,9 @@ if (-not $Version) {
 
 $stage = Join-Path $root 'dist\stage'
 $out = Join-Path $root 'dist'
-$zipName = "minecraft-gui-designer-$Version-windows.zip"
+$zipName = "surface-studio-$Version-windows.zip"
 
-Write-Host "==> Minecraft GUI Designer $Version"
+Write-Host "==> Surface Studio $Version"
 
 if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
 foreach ($dir in 'desktop', 'android', 'docs', 'templates') {
@@ -94,7 +94,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $manifest = @(
-    "Minecraft GUI Designer $Version",
+    "Surface Studio $Version",
     "Built on $((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm:ss')) UTC from Windows",
     '',
     'Contents:',

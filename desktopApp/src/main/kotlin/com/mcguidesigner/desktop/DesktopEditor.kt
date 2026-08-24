@@ -92,7 +92,6 @@ import com.mcguidesigner.desktop.widgets.ToolbarSeparator
 import com.mcguidesigner.desktop.widgets.WithTooltip
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
 import com.mcguidesigner.styles.layout.LocalAdaptive
-import com.mcguidesigner.styles.notice.AppNotice
 import com.mcguidesigner.styles.notice.NoticeStrip
 import com.mcguidesigner.styles.render.rememberTextureCache
 import com.mcguidesigner.styles.theme.DesignerBackdrop
@@ -155,12 +154,16 @@ fun DesktopEditor(
                 // that row existed: it is the one strip that is about the app
                 // rather than about the document.
                 NoticeStrip(
-                    notice = AppNotice.current,
+                    notices = app.notices,
                     expanded = app.noticeExpanded,
                     onExpandedChange = { app.noticeExpanded = it },
+                    onDismiss = app::dismissNotice,
                     metrics = metrics,
                 )
-                Divider(color = palette.chromeBorder)
+                // Only when the panel is actually there. A divider under a
+                // strip that is not showing is a stray line across the top of
+                // the toolbar.
+                if (app.notices.isNotEmpty()) Divider(color = palette.chromeBorder)
                 EditorToolbar(app, controller, state, metrics)
                 Divider(color = palette.chromeBorder)
 

@@ -47,6 +47,15 @@ val LocalTouchMode = staticCompositionLocalOf { false }
 /** True when the chrome is currently painted dark. Read by decorative layers. */
 val LocalDarkChrome = staticCompositionLocalOf { true }
 
+/**
+ * The chrome recolouring in force.
+ *
+ * Provided as well as applied because the home screen paints its own chrome
+ * outside [DesignerTheme] - it has no edition yet, so it cannot ask a skin for
+ * a palette - and still has to agree with the editor about which theme is on.
+ */
+val LocalChromeTheme = staticCompositionLocalOf { ChromeTheme.DEFAULT }
+
 /** How long the chrome takes to cross-fade when the edition or theme changes. */
 const val CHROME_TRANSITION_MILLIS = 420
 
@@ -67,12 +76,13 @@ fun DesignerTheme(
     edition: Edition,
     touchMode: Boolean = false,
     dark: Boolean = true,
-    animate: Boolean = true,
+    chromeTheme: ChromeTheme = ChromeTheme.DEFAULT,
+    motion: MotionLevel = MotionLevel.FULL,
     content: @Composable () -> Unit,
 ) {
     val skin = SkinRegistry.forEdition(edition)
-    val target = skin.paletteFor(dark)
-    val palette = if (animate) rememberAnimatedChrome(target) else target
+    val target = skin.paletteFor(dark, chromeTheme)
+    val palette = if (motion.animates) rememberAnimatedChrome(target, motion) else target
 
     val colorScheme = if (dark) {
         darkColorScheme(
@@ -148,6 +158,8 @@ fun DesignerTheme(
         LocalSkinPalette provides palette,
         LocalTouchMode provides touchMode,
         LocalDarkChrome provides dark,
+        LocalChromeTheme provides chromeTheme,
+        LocalMotion provides motion,
     ) {
         MaterialTheme(colorScheme = colorScheme, typography = typography, content = content)
     }
@@ -161,8 +173,11 @@ fun DesignerTheme(
  * through colours the game never uses.
  */
 @Composable
-private fun rememberAnimatedChrome(target: SkinPalette): SkinPalette {
-    val spec = tween<Color>(durationMillis = CHROME_TRANSITION_MILLIS, easing = LinearOutSlowInEasing)
+private fun rememberAnimatedChrome(target: SkinPalette, motion: MotionLevel): SkinPalette {
+    val spec = tween<Color>(
+        durationMillis = motion.duration(CHROME_TRANSITION_MILLIS),
+        easing = LinearOutSlowInEasing,
+    )
 
     val background by animateColorAsState(target.chromeBackground, spec, label = "chromeBackground")
     val panel by animateColorAsState(target.chromePanel, spec, label = "chromePanel")

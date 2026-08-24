@@ -84,8 +84,10 @@ android {
                 keyAlias = "mcgui-dev"
                 keyPassword = "mcguidev"
             }
-            // Both signature schemes: v1 for older devices, v2/v3 for modern
-            // ones (and v2+ is mandatory from Android 11 for targetSdk 30+).
+            // v2 and v3. v1 (JAR signing) is left on for completeness but the
+            // build correctly declines to produce it: minSdk is 26, every
+            // device that can install this verifies v2+, and a v1 signature
+            // would only add size and a second thing to get wrong.
             enableV1Signing = true
             enableV2Signing = true
             enableV3Signing = true

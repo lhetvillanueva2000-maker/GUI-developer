@@ -5,6 +5,8 @@ import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.serialization.LoadResult
 import com.mcguidesigner.core.serialization.ProjectSerializer
+import com.mcguidesigner.styles.settings.AppearanceSettings
+import com.mcguidesigner.styles.theme.ChromeTheme
 import com.mcguidesigner.styles.theme.ThemeMode
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -38,11 +40,37 @@ data class DesktopPreferences(
     val autosaveEnabled: Boolean = true,
     /** [ThemeMode] name; anything unrecognised falls back to following the OS. */
     val themeMode: String = ThemeMode.SYSTEM.name,
+    /** [ChromeTheme] name; anything unrecognised falls back to the edition's own. */
+    val chromeTheme: String = ChromeTheme.DEFAULT.name,
+    /**
+     * [MotionLevel] name, or null on a file written before 1.6.0.
+     *
+     * Nullable on purpose: a defaulted value cannot be told apart from one
+     * somebody chose, and the difference matters exactly once - on upgrade,
+     * where [backdropMotion] is the only record of what they wanted. See
+     * [AppearanceSettings.fromStored].
+     */
+    val motionLevel: String? = null,
     /** Wallpaper behind the editor. Purely decorative, so trivially disabled. */
     val backdropEnabled: Boolean = true,
-    /** Whether the wallpaper drifts. Separate from [backdropEnabled] because
-     *  wanting the artwork and not wanting motion is a common, reasonable pair. */
+    /**
+     * Whether the wallpaper drifts.
+     *
+     * Superseded by [motionLevel] in 1.6.0 and kept written for two reasons:
+     * it is what an older build reads if someone downgrades, and it is what
+     * the upgrade path reads to work out what a pre-1.6.0 user had chosen.
+     */
     val backdropMotion: Boolean = true,
+    /** Local display name. Never sent anywhere; there is nowhere to send it. */
+    val profileName: String = "",
+    /**
+     * The id of the last release note that was dismissed.
+     *
+     * Stored as the note's id rather than a boolean so shipping a new version
+     * shows its note again with no extra bookkeeping: the id contains the
+     * version, so it simply stops matching.
+     */
+    val dismissedNoticeId: String? = null,
     /**
      * Editor behaviour from the Editor Settings dialog.
      *
@@ -57,6 +85,17 @@ data class DesktopPreferences(
         get() = Edition.entries.firstOrNull { it.name == lastEdition } ?: Edition.JAVA
 
     val theme: ThemeMode get() = ThemeMode.fromName(themeMode)
+
+    /** Everything the settings screen owns, rebuilt from what was on disk. */
+    val appearance: AppearanceSettings
+        get() = AppearanceSettings.fromStored(
+            themeMode = themeMode,
+            chromeTheme = chromeTheme,
+            storedMotion = motionLevel,
+            backdropEnabled = backdropEnabled,
+            legacyBackdropMotion = backdropMotion,
+            profileName = profileName,
+        )
 
     /** Recent entries that still exist on disk, newest first. */
     fun existingRecents(): List<File> = recentFiles.map(::File).filter { it.isFile }
@@ -118,6 +157,11 @@ object Workspace {
                 System.getenv("XDG_CONFIG_HOME")?.takeIf { it.isNotBlank() }?.let(::File)
                     ?: File(home, ".config")
         }
+        // Deliberately NOT renamed alongside the app in 1.6.0. This folder is
+        // where every existing install's preferences, recent files and crash
+        // recovery snapshot already live; pointing at a new one would silently
+        // orphan all of it. A stale folder name is a cosmetic cost, and losing
+        // somebody's unsaved work to a rename is not a trade worth making.
         File(base, "MinecraftGuiDesigner").also { runCatching { it.mkdirs() } }
     }
 

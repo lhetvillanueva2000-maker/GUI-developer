@@ -70,10 +70,10 @@ compose.desktop {
                 TargetFormat.Deb,
             )
 
-            packageName = "MinecraftGuiDesigner"
+            packageName = "SurfaceStudio"
             packageVersion = project.version.toString()
-            description = "Visual GUI designer for Minecraft Java and Bedrock Edition"
-            vendor = "Minecraft GUI Designer"
+            description = "Design game and app interfaces, visually"
+            vendor = "Surface Studio"
             copyright = "Released under the MIT License"
 
             // Only the modules the app actually needs, so the bundled runtime
@@ -88,26 +88,32 @@ compose.desktop {
 
             windows {
                 iconFile.set(rootProject.file("assets/icon/app-icon.ico"))
-                menuGroup = "Minecraft GUI Designer"
+                menuGroup = "Surface Studio"
                 dirChooser = true
                 perUserInstall = true
                 shortcut = true
                 // A stable UUID is required for Windows upgrade installs to
                 // replace the previous version rather than install alongside it.
+                //
+                // Deliberately unchanged across the 1.6.0 rename: the UpgradeCode
+                // is what tells Windows this *is* the previous product, so keeping
+                // it is what lets "Surface Studio" replace an existing
+                // "MinecraftGuiDesigner" install instead of sitting next to it in
+                // Add/Remove Programs forever.
                 upgradeUuid = "0f2b7c1e-6b1a-4c53-9a3e-2f5b8d41c7a6"
             }
 
             linux {
                 iconFile.set(rootProject.file("assets/icon/icon-512.png"))
-                packageName = "minecraft-gui-designer"
+                packageName = "surface-studio"
                 debMaintainer = "noreply@example.com"
                 appCategory = "Graphics"
             }
 
             macOS {
                 bundleID = "com.mcguidesigner.desktop"
-                dockName = "MC GUI Designer"
-                packageName = "MinecraftGuiDesigner"
+                dockName = "Surface Studio"
+                packageName = "SurfaceStudio"
                 // jpackage wants an .icns, which only macOS tooling can build.
                 // `build-scripts/make-icns.sh` produces it during the macOS CI
                 // job; when it has not run (any non-Mac build, or a local Mac
