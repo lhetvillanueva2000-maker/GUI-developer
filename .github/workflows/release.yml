@@ -382,10 +382,8 @@ jobs:
           Each desktop package embeds its own Java runtime, so nothing has to be installed
           first — which is also why they are ~90-110 MB each.
 
-          > **Upgrading on Android:** this build is signed with a different key from 1.5.0
-          > and earlier, and Android refuses an update whose signature changed. Uninstall
-          > the old app first, then install this one. Every release after this upgrades
-          > normally. On Windows, macOS and Linux it is a normal install over the top.
+          Upgrading is a normal install over the top on every platform, including
+          Android — this build carries the same signing key as 1.5.0.
 
           ---
 
@@ -443,10 +441,20 @@ jobs:
           phone in both orientations and a tablet gets the layout its window can carry in
           each.
 
-          ### A signed Android build
+          ### Release signing is wired up, but not switched on yet
 
-          The APK and the App Bundle are signed with a real upload key rather than the
-          repository's development key. See the upgrade note above.
+          The build now takes a real upload key from the repository's
+          \`ANDROID_KEYSTORE_*\` secrets when they are set. They are not set for this
+          release, so this APK and App Bundle carry the same development key every
+          previous release used.
+
+          That key is committed to the repository, so it is not a secret and this build
+          should not be treated as one you published. It is signed enough to install and
+          to upgrade cleanly over 1.5.0, and no further.
+
+          **When the real key is switched on, one release will not upgrade in place.**
+          Android refuses an update whose signature changed, so that build has to be
+          installed over an uninstall. Every release after it upgrades normally again.
 
           ### Fixes
 
