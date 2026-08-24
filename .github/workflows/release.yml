@@ -471,9 +471,9 @@ jobs:
             "144p" gave you a 1080px image, because 0.13x floors to 1x and the label was
             kept anyway.
           - **Most children of a hand-written Bedrock screen were silently dropped.**
-            JSON UI writes a child reference as `alias@namespace.template`, and only the
-            part before the `@` was being looked up — so any aliased child, which is to
-            say most of them, resolved to nothing.
+            JSON UI writes a child reference as \`alias@namespace.template\`, and only
+            the part before the \`@\` was being looked up — so any aliased child, which
+            is to say most of them, resolved to nothing.
           - **A screen with no root panel imported with every element in it twice.**
           - **A page that merely mentioned a project's own key was misread** as a project
             document and reported as broken.
