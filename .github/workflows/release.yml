@@ -419,64 +419,55 @@ jobs:
 
           ## What's new in $VERSION
 
-          ### Export the design as a picture
+          ### Resize handles follow the angle
 
-          **Image (PNG)** now sits in the export list beside the resource packs, on the
-          desktop and on the phone. Sizes run from 144p to 2160p, or any whole multiple
-          of the canvas.
+          Turn an element and its handles now sit on the corners it actually has,
+          drawn at the same angle, rather than staying square to the screen however
+          far round it had gone. Dragging one resizes along the element's *own* axes
+          — on a quarter turn, the handle on the right points down the screen, so a
+          downward drag makes it wider — and the corner opposite the one you are
+          dragging stays where it looks like it is instead of sliding away.
 
-          Pixel art only survives whole-number scaling — a 176x166 screen at exactly 720
-          pixels tall means multiplying by 4.337, which lands source pixels between
-          destination pixels and blurs them. So each familiar name snaps to the nearest
-          whole multiple and shows you the size you actually get. A name that cannot be
-          honoured is simply not offered, rather than being attached to a picture that is
-          nothing like it.
+          ### Any angle you like
 
-          There is also a **Background** choice: the canvas backdrop, as the editor draws
-          it, or fully transparent for laying a screen over a screenshot of the game. The
-          preview shows the difference over a chequerboard.
+          A round knob sits above the selection. Drag it and the element follows your
+          pointer exactly; hold **Shift** to snap to 15°, and on a touchscreen it
+          snaps on its own since there is no modifier key to ask with. The inspector
+          has a **Rotation** field that takes any whole angle from 0 to 359, with the
+          useful ones a click away. The 90° buttons are still there.
 
-          ### Import a screen
+          ### Rotation applies to everything now
 
-          Bedrock JSON UI, an HTML page, or an SVG drawing from any tool that writes one.
-          A Bedrock screen this app exported comes back as exactly the elements it was;
-          anything else is mapped to the nearest match.
+          It used to be applied by exactly one renderer, so it was quietly a
+          shapes-only feature: turning a button did nothing on the canvas while the
+          exports emitted a rotation anyway. Rotation is now one transform applied
+          once, for every element of both editions — on the canvas, in the picture
+          export, and in all five code exports.
 
-          Because these readers translate between formats that do not agree about what a
-          layout is, **an import shows you what it found before it lands** — a picture of
-          the result, the element count, and everything it could not read. It then opens
-          in a **new tab**, so the document you already had open is never touched.
+          ### Colours to pick from
 
-          ### The move pad, rebuilt
+          Every colour field has a palette under it:
 
-          The middle is now *only* up, down, left and right, with a hole where the fifth
-          button used to be — that centre is the space a thumb crosses on the way to all
-          four, and anything living there gets pressed by accident.
+          - **Minecraft** — panel, slot and button greys, tooltip purple, dirt, oak,
+            stone, deepslate, XP green and health red, measured off the real widgets.
+            Getting these right by eye is close to impossible, and a panel four greys
+            off looks wrong without looking *obviously* wrong.
+          - **Greys** — a neutral ramp from white to black.
+          - **Colours** — fourteen hues at three lightnesses each.
 
-          The step moved to **one bar underneath**: touch it anywhere and that position
-          *is* the value, the way a slider works, so every step from 1 to 128 is one touch
-          away instead of a long push. Tap it to come home to 1. The scale is exponential,
-          so 1, 2, 4, 8, 16, 32, 64 and 128 are evenly spaced rather than the values you
-          actually use sharing the first few millimetres.
-
-          Drag the grip on the pad's inner corner to **resize the whole pad**. The right
-          size for a thumb control is a property of the thumb, not of the screen.
+          Picking a swatch keeps the alpha you already set. The hex field still takes
+          anything at all.
 
           ### Fixes
 
-          - **Image exports could run the app out of memory.** Nothing bounded the pixel
-            count, and 32x of a 1920x1080 canvas asks for two billion pixels at eight
-            bytes each. Sizes are now capped by a real budget.
-          - **A named height could produce nothing like itself.** On a 1080-tall canvas,
-            "144p" gave you a 1080px image, because 0.13x floors to 1x and the label was
-            kept anyway.
-          - **Most children of a hand-written Bedrock screen were silently dropped.**
-            JSON UI writes a child reference as \`alias@namespace.template\`, and only
-            the part before the \`@\` was being looked up — so any aliased child, which
-            is to say most of them, resolved to nothing.
-          - **A screen with no root panel imported with every element in it twice.**
-          - **A page that merely mentioned a project's own key was misread** as a project
-            document and reported as broken.
+          - **A turned element exported square to SVG.** The rotate transform was
+            written inside the custom-shape branch of the generator, so everything
+            else came out flat.
+          - **The same, in CSS.** The rotation line lived inside the shape-only rules.
+          - **A turned element came back straight from a Bedrock round trip.** The
+            angle was written only for shapes, and the importer never read it at all.
+          - **Shapes turned twice as far as anything else** once rotation moved to
+            the shared path, and their labels stayed upright while the shape leaned.
 
           ---
 

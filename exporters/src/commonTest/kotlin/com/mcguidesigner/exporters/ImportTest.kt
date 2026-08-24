@@ -7,7 +7,9 @@ import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.GuiElement
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.IntRect
+import com.mcguidesigner.core.model.IntValue
 import com.mcguidesigner.core.model.StringValue
+import com.mcguidesigner.core.model.int
 import com.mcguidesigner.core.model.string
 import com.mcguidesigner.core.model.walkAll
 import kotlin.test.Test
@@ -431,5 +433,36 @@ class ImportTest {
         val project = assertNotNull(DesignImporter.import("screen.json", json).project)
         assertEquals(1, project.elements.size, "only the outer panel is a root")
         assertEquals(2, project.elements.walkAll().count(), "two controls, not three")
+    }
+
+    @Test
+    fun `an angle survives a round trip through the Bedrock pack`() {
+        // The exporter wrote the angle only for custom shapes and the importer
+        // never read it at all, so anything turned came back square - which is
+        // the one thing a round trip is supposed to guarantee.
+        val turned = sample.copy(
+            elements = sample.elements.map { element ->
+                if (element.type == ElementCatalog.BUTTON_NORMAL) {
+                    element.copy(props = element.props + ("rotation" to IntValue(137)))
+                } else {
+                    element
+                }
+            },
+        )
+
+        val json = CodeGenerator.generate(turned, CodeTarget.BEDROCK_JSON).source
+        val project = assertNotNull(DesignImporter.import("screen.json", json).project)
+
+        val button = project.elements.walkAll().single { it.type == ElementCatalog.BUTTON_NORMAL }
+        assertEquals(137, button.props.int("rotation"))
+    }
+
+    @Test
+    fun `an unturned element does not gain a rotation on the way back`() {
+        val json = CodeGenerator.generate(sample, CodeTarget.BEDROCK_JSON).source
+        val project = assertNotNull(DesignImporter.import("screen.json", json).project)
+        project.elements.walkAll().forEach { element ->
+            assertEquals(0, element.props.int("rotation"), "${element.name} came back turned")
+        }
     }
 }

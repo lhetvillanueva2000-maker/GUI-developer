@@ -74,6 +74,7 @@ import com.mcguidesigner.core.model.IntRect
 import com.mcguidesigner.core.model.IntValue
 import com.mcguidesigner.core.model.ListValue
 import com.mcguidesigner.core.model.PropValue
+import com.mcguidesigner.core.model.Rotation
 import com.mcguidesigner.core.model.StringValue
 import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.model.TextureValue
@@ -82,6 +83,7 @@ import com.mcguidesigner.core.validation.Severity
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.canvas.GuiPreview
+import com.mcguidesigner.styles.editor.SwatchGrid
 import com.mcguidesigner.styles.export.ImageExportPanel
 import com.mcguidesigner.styles.export.ImportPreviewPanel
 import com.mcguidesigner.styles.render.TextureCache
@@ -925,6 +927,39 @@ private fun ArrangeSheet(controller: EditorController, state: EditorState) {
             }
         }
 
+        if (enabled) {
+            val current = controller.currentRotation()
+            Text(
+                "Now at $current°. Drag the knob above the element on the canvas for " +
+                    "any angle in between, or pick one here.",
+                style = MaterialTheme.typography.labelSmall,
+                color = palette.chromeTextMuted,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            FlowRow(
+                Modifier.fillMaxWidth().padding(top = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Rotation.PRESETS.forEach { preset ->
+                    val selected = current == preset
+                    Box(
+                        Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (selected) palette.accentMuted else palette.chromePanelAlt)
+                            .clickable { controller.setRotation(preset, coalesceKey = null) }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                    ) {
+                        Text(
+                            "$preset°",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (selected) palette.chromeText else palette.chromeTextMuted,
+                        )
+                    }
+                }
+            }
+        }
+
         SheetSection("Align")
         // With one element selected these align it inside its container; with
         // several, to each other. That is the behaviour every design tool has,
@@ -1165,6 +1200,13 @@ private fun MobileColorField(value: ColorValue, onChange: (ColorValue) -> Unit) 
             onChange(ColorValue((value.argb and 0xFFFFFF) or (a shl 24)))
         },
         modifier = Modifier.fillMaxWidth(),
+    )
+    SwatchGrid(
+        selected = value.argb,
+        onPick = { onChange(ColorValue(it)) },
+        modifier = Modifier.fillMaxWidth(),
+        // Bigger than the desktop's, because this one is hit with a fingertip.
+        swatchSize = 30.dp,
     )
 }
 

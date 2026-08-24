@@ -14,6 +14,7 @@ import com.mcguidesigner.core.model.IntValue
 import com.mcguidesigner.core.model.ListValue
 import com.mcguidesigner.core.model.StringValue
 import com.mcguidesigner.core.model.TextureValue
+import com.mcguidesigner.core.model.int
 import com.mcguidesigner.core.model.string
 import com.mcguidesigner.core.model.stringList
 import com.mcguidesigner.core.model.walkAll
@@ -272,6 +273,11 @@ object BedrockEditionExporter {
         out[controlName(element)] = buildJsonObject {
             put("type", controlType(element.type))
             put("\$designer_type", element.type)
+            // Rotation is a transform every element has, so it is written for
+            // every element. It used to be emitted only in the custom-shape
+            // branch, which meant a turned button survived a round trip through
+            // the Bedrock pack facing the wrong way.
+            element.props.int("rotation", 0).takeIf { it != 0 }?.let { put("\$designer_rotation", it) }
             putJsonArray("size") { add(element.bounds.width); add(element.bounds.height) }
             putJsonArray("offset") { add(element.bounds.x); add(element.bounds.y) }
             put("anchor_from", bedrockAnchor(element.anchor))
@@ -391,7 +397,6 @@ object BedrockEditionExporter {
                 // re-import rebuild the real shape.
                 put("\$designer_shape", props.string("shape", "rectangle"))
                 put("\$designer_sides", (props["sides"] as? IntValue)?.value ?: 6)
-                put("\$designer_rotation", (props["rotation"] as? IntValue)?.value ?: 0)
                 put("alpha", (props["opacity"] as? FloatValue)?.value?.toDouble() ?: 1.0)
                 (props["fillColor"] as? ColorValue)?.let {
                     put("color", json.parseToJsonElement(ExportUtil.bedrockColor(it.argb)))

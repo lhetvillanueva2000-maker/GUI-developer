@@ -3,6 +3,9 @@ package com.mcguidesigner.styles.render
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.rotate
+import com.mcguidesigner.core.model.Rotation
+import com.mcguidesigner.core.model.int
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import com.mcguidesigner.core.model.Edition
@@ -107,7 +110,33 @@ interface TextureResolver {
 
 /** Convenience so callers can write `skin.draw(scope, ctx)`. */
 fun EditionSkin.draw(scope: DrawScope, context: ElementRenderContext) {
-    with(this) { with(scope) { drawElement(context) } }
+    with(scope) { drawTurned(this@draw, context) }
+}
+
+/**
+ * Draws [context] through [skin], turned by its own `rotation` property.
+ *
+ * The transform lives here rather than inside each skin's `drawElement` for
+ * two reasons. It is the same for every element and both editions, so two
+ * skins implementing it is two chances to disagree; and it used to live in
+ * exactly one renderer - the custom-shape one - which meant rotation was
+ * silently a shape-only feature even though the property is readable on
+ * anything and every code exporter already emitted it. Turning a button did
+ * nothing on the canvas and something in the export, which is the worst of
+ * both.
+ *
+ * The label turns with the element, which the shape renderer used not to do.
+ * A sign held at an angle has writing at an angle.
+ */
+fun DrawScope.drawTurned(skin: EditionSkin, context: ElementRenderContext) {
+    val degrees = Rotation.normalise(context.props.int("rotation", 0))
+    if (degrees == 0) {
+        with(skin) { drawElement(context) }
+        return
+    }
+    rotate(degrees.toFloat(), pivot = context.rect.center) {
+        with(skin) { drawElement(context) }
+    }
 }
 
 fun EditionSkin.drawBackdropOn(scope: DrawScope, rect: Rect, project: GuiProject, scale: Float) {

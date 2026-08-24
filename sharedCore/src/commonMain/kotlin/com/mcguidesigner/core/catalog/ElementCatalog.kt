@@ -596,7 +596,14 @@ object ElementCatalog {
                 floatProp("opacity", "Opacity", 1f, 0f, 1f),
                 colorProp("tint", "Tint", 0xFFFFFFFF),
                 colorProp("placeholderColor", "Empty-slot colour", 0xFF404040),
-                intProp("rotation", "Rotation", 0, min = 0, max = 270, group = PropGroup.LAYOUT, help = "Multiples of 90 degrees."),
+                intProp(
+                    "rotation", "Rotation", 0, min = 0, max = 359, group = PropGroup.LAYOUT,
+                    // Was capped at 270 and described as multiples of ninety,
+                    // which stopped being true the moment the canvas grew a
+                    // rotation knob - and the renderer and every exporter had
+                    // always accepted any angle.
+                    help = "Any angle, 0 to 359.",
+                ),
             ),
         ),
 

@@ -82,22 +82,18 @@ object AppNotice {
      */
     val current = Notice(
         id = "whatsnew-${Branding.VERSION}",
-        headline = "${Branding.NAME} ${Branding.VERSION} — export a picture, import a screen",
+        headline = "${Branding.NAME} ${Branding.VERSION} — any angle, and colours to pick from",
         points = listOf(
-            "Export the design as a PNG, at 144p through 2160p or any whole " +
-                "multiple. Pixel art only survives whole-number scaling, so each " +
-                "name snaps to the nearest one and shows you the size you really get.",
-            "Choose a transparent background, for laying a screen over a " +
-                "screenshot of the game.",
-            "Import a Bedrock JSON UI screen, an HTML page or an SVG drawing. " +
-                "Every import shows what it found - and what it could not read - " +
-                "before it lands, and opens in a new tab so nothing you have open " +
-                "is touched.",
-            "The move pad is four arrows and nothing in the middle of them. The " +
-                "step is one bar underneath: touch it anywhere and that position " +
-                "is the value, tap it to come back to 1.",
-            "Drag the grip on the pad's inner corner to resize it. The right size " +
-                "for a thumb control is a property of the thumb.",
+            "Resize handles now sit on a turned element's own corners and drag " +
+                "along its own axes. They used to stay square to the screen " +
+                "however far round the element had gone.",
+            "Turn anything to any angle: drag the knob above the selection, or " +
+                "type a number into the Rotation field. Hold Shift to snap to 15°.",
+            "Rotation now works on every element rather than only on shapes — on " +
+                "the canvas, in the picture export, and in all five code exports.",
+            "Every colour field has a palette under it: vanilla Minecraft greys " +
+                "and browns, a neutral ramp, and fourteen hues at three " +
+                "lightnesses. The hex field still takes anything.",
         ),
     )
 

@@ -8,6 +8,8 @@ import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.GuiElement
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.IntRect
+import com.mcguidesigner.core.model.Rotation
+import com.mcguidesigner.core.model.IntValue
 import com.mcguidesigner.core.model.PropValue
 import com.mcguidesigner.core.model.StringValue
 import com.mcguidesigner.core.util.Ids
@@ -273,6 +275,13 @@ object BedrockUiImporter {
     }
 
     private fun propsFor(control: JsonObject, type: String): Map<String, PropValue> = buildMap {
+        // Read for every element, not only shapes. The exporter writes it for
+        // every element, and an importer that only looked at shapes would
+        // quietly straighten everything else on the way back in.
+        (control["\$designer_rotation"] as? JsonPrimitive)?.intOrNull
+            ?.takeIf { it != 0 }
+            ?.let { put("rotation", IntValue(Rotation.normalise(it))) }
+
         bedrockColor(control)?.let { argb ->
             // A label's colour is its text; everything else's is its fill.
             val key = if (type == ElementCatalog.TEXT_LABEL) "textColor" else "background"

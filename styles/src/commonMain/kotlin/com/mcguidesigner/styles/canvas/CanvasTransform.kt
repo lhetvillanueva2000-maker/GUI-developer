@@ -6,7 +6,9 @@ import androidx.compose.ui.geometry.Size
 import com.mcguidesigner.core.model.IntPoint
 import com.mcguidesigner.core.model.IntRect
 import com.mcguidesigner.core.model.IntSize
+import com.mcguidesigner.core.model.PointF
 import com.mcguidesigner.core.model.ResizeHandle
+import com.mcguidesigner.core.model.Rotation
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
@@ -61,24 +63,59 @@ data class CanvasTransform(
      * [handleSize] is in *view* pixels because a resize handle has to stay
      * grabbable at every zoom level - scaling it with the canvas would make it
      * invisible when zoomed out and enormous when zoomed in.
+     *
+     * [rotation] turns the eight positions about the element's centre, so a
+     * turned element's handles sit on the corners it actually has rather than
+     * on the corners of the box that would contain it. The handle *boxes*
+     * themselves stay square to the screen: they are the target you have to
+     * hit, and a hit target that is easy to grab beats one that is drawn at a
+     * pleasing angle. The handles are *drawn* turned - see the canvas - so this
+     * is only the hit geometry.
      */
-    fun handles(selection: IntRect, handleSize: Float): Map<ResizeHandle, Rect> {
-        val r = toView(selection)
+    fun handles(selection: IntRect, handleSize: Float, rotation: Int = 0): Map<ResizeHandle, Rect> {
         val h = handleSize / 2f
-        fun box(x: Float, y: Float) = Rect(x - h, y - h, x + h, y + h)
-        return mapOf(
-            ResizeHandle.TOP_LEFT to box(r.left, r.top),
-            ResizeHandle.TOP to box(r.center.x, r.top),
-            ResizeHandle.TOP_RIGHT to box(r.right, r.top),
-            ResizeHandle.LEFT to box(r.left, r.center.y),
-            ResizeHandle.RIGHT to box(r.right, r.center.y),
-            ResizeHandle.BOTTOM_LEFT to box(r.left, r.bottom),
-            ResizeHandle.BOTTOM to box(r.center.x, r.bottom),
-            ResizeHandle.BOTTOM_RIGHT to box(r.right, r.bottom),
-        )
+        return Rotation.handleCentres(selection, rotation).mapValues { (_, point) ->
+            val view = toView(point.x, point.y)
+            Rect(view.x - h, view.y - h, view.x + h, view.y + h)
+        }
     }
 
     /** Which handle, if any, is under [point]. */
-    fun handleAt(selection: IntRect, point: Offset, handleSize: Float): ResizeHandle? =
-        handles(selection, handleSize).entries.firstOrNull { it.value.contains(point) }?.key
+    fun handleAt(
+        selection: IntRect,
+        point: Offset,
+        handleSize: Float,
+        rotation: Int = 0,
+    ): ResizeHandle? =
+        handles(selection, handleSize, rotation).entries
+            .firstOrNull { it.value.contains(point) }
+            ?.key
+
+    /**
+     * Where the rotation knob sits, in view space.
+     *
+     * Above the element's top edge and turned with it, so it always points out
+     * of the same side however far round the element has gone - a knob that
+     * jumped to a different edge partway through a turn would be impossible to
+     * follow.
+     */
+    fun rotationKnob(selection: IntRect, rotation: Int, distance: Float): Offset {
+        val centre = Rotation.centreOf(selection)
+        val top = Rotation.rotate(
+            PointF(centre.x, selection.y.toFloat()),
+            centre,
+            rotation.toFloat(),
+        )
+        val view = toView(top.x, top.y)
+        val pivot = toView(centre.x, centre.y)
+
+        // Pushed out along the same direction in *view* space, so the gap is a
+        // constant number of screen pixels rather than shrinking as you zoom
+        // out and the element gets smaller.
+        val dx = view.x - pivot.x
+        val dy = view.y - pivot.y
+        val length = kotlin.math.sqrt(dx * dx + dy * dy)
+        if (length < 0.01f) return Offset(view.x, view.y - distance)
+        return Offset(view.x + dx / length * distance, view.y + dy / length * distance)
+    }
 }

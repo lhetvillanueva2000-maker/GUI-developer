@@ -409,6 +409,12 @@ object CodeGenerator {
         if (element.type == ElementCatalog.SHAPE_CUSTOM) {
             appendShapeRules(sb, element)
         }
+        // Every element, not only shapes. This lived inside the shape rules,
+        // so a turned button exported square while the canvas showed it
+        // turned - and CSS is the export people check first.
+        element.props.int("rotation", 0).let {
+            if (it != 0) sb.appendLine("  transform: rotate(${it}deg);")
+        }
         sb.appendLine("}")
 
         // The keyframes have to sit outside the rule block.
@@ -497,7 +503,6 @@ object CodeGenerator {
             sb.appendLine("  box-sizing: border-box;")
         }
 
-        element.props.int("rotation", 0).let { if (it != 0) sb.appendLine("  transform: rotate(${it}deg);") }
     }
 
     /**
@@ -694,6 +699,21 @@ object CodeGenerator {
     }
 
     private fun appendSvgElement(sb: StringBuilder, element: GuiElement, rect: IntRect) {
+        // Rotation wraps the whole element, whatever it is. It used to be
+        // written only inside the custom-shape branch below, so a turned button
+        // came out of SVG square while CSS, React, SwiftUI and Android XML - all
+        // of which read it off any element - came out turned.
+        val rotation = element.props.int("rotation", 0)
+        if (rotation != 0) {
+            sb.appendLine(
+                "    <g transform=\"rotate($rotation ${rect.centerX} ${rect.centerY})\">",
+            )
+        }
+        appendSvgBody(sb, element, rect)
+        if (rotation != 0) sb.appendLine("    </g>")
+    }
+
+    private fun appendSvgBody(sb: StringBuilder, element: GuiElement, rect: IntRect) {
         val opacity = element.props.float("opacity", 1f).coerceIn(0f, 1f)
         val label = displayText(element)
 
@@ -703,14 +723,11 @@ object CodeGenerator {
             val fill = if (fillMode == "none") "none" else ExportUtil.hex(element.props.color("fillColor", 0xFF56B84B))
             val stroke = ExportUtil.hex(element.props.color("strokeColor", 0xFF000000))
             val strokeWidth = element.props.int("strokeWidth", 1)
-            val rotation = element.props.int("rotation", 0)
-            val transform = if (rotation == 0) {
-                ""
-            } else {
-                " transform=\"rotate($rotation ${rect.centerX} ${rect.centerY})\""
-            }
+            // No transform here: the wrapping <g> in appendSvgElement turns
+            // every element, and turning the shape again here would turn it
+            // twice as far as anything else on the canvas.
             val paint = "fill=\"$fill\" stroke=\"$stroke\" stroke-width=\"$strokeWidth\" " +
-                "opacity=\"${trim(opacity)}\"$transform"
+                "opacity=\"${trim(opacity)}\""
 
             when (kind) {
                 ShapeKind.ELLIPSE -> sb.appendLine(

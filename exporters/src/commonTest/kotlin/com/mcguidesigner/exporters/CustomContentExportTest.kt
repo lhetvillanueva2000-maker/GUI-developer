@@ -2,6 +2,7 @@ package com.mcguidesigner.exporters
 
 import com.mcguidesigner.core.catalog.ElementCatalog
 import com.mcguidesigner.core.model.ColorValue
+import com.mcguidesigner.core.model.CanvasSpec
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.EnumValue
 import com.mcguidesigner.core.model.GuiElement
@@ -314,5 +315,43 @@ class CustomContentExportTest {
         }
         assertTrue(paths.any { it.contains("/java-edition/") })
         assertTrue(paths.any { it.contains("/bedrock-edition/") })
+    }
+
+    @Test
+    fun `a turned button is turned in every code export, not only a shape`() {
+        // Rotation used to be applied by exactly one renderer and, in SVG, by
+        // exactly one branch of one generator - so turning a button showed up
+        // in CSS and React and vanished from the vector export. Now that the
+        // canvas turns everything, every target has to agree with it.
+        val project = GuiProject(
+            id = "proj_turn",
+            name = "Turned",
+            edition = Edition.JAVA,
+            canvas = CanvasSpec(width = 100, height = 60),
+            elements = listOf(
+                GuiElement(
+                    id = "el_btn",
+                    type = ElementCatalog.BUTTON_NORMAL,
+                    name = "Tilted",
+                    bounds = IntRect(10, 10, 40, 20),
+                    props = mapOf("rotation" to IntValue(37), "label" to StringValue("Go")),
+                ),
+            ),
+        )
+
+        val svg = CodeGenerator.generate(project, CodeTarget.SVG).source
+        assertTrue("rotate(37" in svg, "the SVG export dropped the rotation:\n$svg")
+
+        val css = CodeGenerator.generate(project, CodeTarget.HTML_CSS).source
+        assertTrue("rotate(37deg)" in css, "the HTML export dropped the rotation")
+
+        val react = CodeGenerator.generate(project, CodeTarget.REACT_JSX).source
+        assertTrue("rotate(37deg)" in react, "the React export dropped the rotation")
+
+        val swift = CodeGenerator.generate(project, CodeTarget.SWIFTUI).source
+        assertTrue("degrees(37)" in swift, "the SwiftUI export dropped the rotation")
+
+        val xml = CodeGenerator.generate(project, CodeTarget.ANDROID_XML).source
+        assertTrue("android:rotation=\"37\"" in xml, "the Android XML export dropped the rotation")
     }
 }

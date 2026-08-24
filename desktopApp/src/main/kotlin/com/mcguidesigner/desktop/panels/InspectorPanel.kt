@@ -1,4 +1,7 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
+)
 
 package com.mcguidesigner.desktop.panels
 
@@ -10,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +52,9 @@ import com.mcguidesigner.core.model.Anchor
 import com.mcguidesigner.core.model.BoolValue
 import com.mcguidesigner.core.model.CanvasBackdrop
 import com.mcguidesigner.core.model.ColorValue
+import com.mcguidesigner.styles.editor.SwatchGrid
+import com.mcguidesigner.core.model.int
+import com.mcguidesigner.core.model.Rotation
 import com.mcguidesigner.core.model.EnumValue
 import com.mcguidesigner.core.model.FloatValue
 import com.mcguidesigner.core.model.GuiElement
@@ -197,6 +205,61 @@ private fun TransformEditors(controller: EditorController, element: GuiElement) 
         display = { Anchor.valueOf(it).displayName },
         modifier = Modifier.padding(top = 8.dp),
     ) { controller.setAnchor(element.id, Anchor.valueOf(it)) }
+
+    // Rotation sits here, with position and size, rather than among the widget
+    // properties. It is a transform every element has - the exporters have
+    // always read it off any element - and it used to be declared only by
+    // shapes, so turning a button was possible from the toolbar and then
+    // invisible and uneditable in the panel that is supposed to show you what
+    // an element is.
+    RotationEditor(
+        degrees = element.props.int("rotation", 0),
+        modifier = Modifier.padding(top = 8.dp),
+    ) { controller.setRotation(it, coalesceKey = null) }
+}
+
+/** Any whole angle, with the useful ones a click away. */
+@Composable
+private fun RotationEditor(degrees: Int, modifier: Modifier = Modifier, onChange: (Int) -> Unit) {
+    val palette = LocalSkinPalette.current
+    Column(modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NumberField("Rotation", Rotation.normalise(degrees), Modifier.weight(1f), min = 0, max = 359) {
+                onChange(it)
+            }
+            TextButton(onClick = { onChange(Rotation.normalise(degrees - 15)) }) { Text("−15°") }
+            TextButton(onClick = { onChange(Rotation.normalise(degrees + 15)) }) { Text("+15°") }
+        }
+        Text(
+            "Any angle from 0 to 359. Drag the knob above the element on the canvas " +
+                "to set it by eye; hold Shift while dragging to snap to 15°.",
+            style = MaterialTheme.typography.labelSmall,
+            color = palette.chromeTextMuted,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+        FlowRow(
+            Modifier.fillMaxWidth().padding(top = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Rotation.PRESETS.forEach { preset ->
+                val selected = Rotation.normalise(degrees) == preset
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (selected) palette.accentMuted else palette.chromePanelAlt)
+                        .clickable { onChange(preset) }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        "$preset°",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (selected) palette.chromeText else palette.chromeTextMuted,
+                    )
+                }
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -362,6 +425,11 @@ private fun ColorEditor(value: ColorValue, onChange: (ColorValue) -> Unit) {
             modifier = Modifier.weight(1f).height(24.dp).padding(start = 8.dp),
         )
     }
+    SwatchGrid(
+        selected = value.argb,
+        onPick = { onChange(ColorValue(it)) },
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable

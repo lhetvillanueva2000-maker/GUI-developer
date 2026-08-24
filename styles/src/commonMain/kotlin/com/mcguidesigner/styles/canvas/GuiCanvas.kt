@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -32,7 +33,10 @@ import com.mcguidesigner.core.model.GuiElement
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.InteractionState
 import com.mcguidesigner.core.model.IntRect
+import com.mcguidesigner.core.model.PointF
+import com.mcguidesigner.core.model.Rotation
 import com.mcguidesigner.core.model.bool
+import com.mcguidesigner.core.model.int
 import com.mcguidesigner.core.model.texture
 import com.mcguidesigner.core.model.walkAll
 import com.mcguidesigner.core.model.TargetForm
@@ -499,28 +503,36 @@ private fun DrawScope.drawSelectionChrome(
 ) {
     val bounds = state.absoluteBounds
 
+    // Every outline follows its element's own angle. Drawing a turned element
+    // inside a square-to-the-world box was the single most misleading thing the
+    // canvas did: it said the element was one shape while the renderer, the
+    // exports and the eye all said another.
+    fun angleOf(id: String): Int =
+        Rotation.normalise(state.project.element(id)?.props?.int("rotation", 0) ?: 0)
+
     state.hoveredId
         ?.takeIf { it !in state.selection }
-        ?.let { bounds[it] }
-        ?.let { rect ->
-            val view = transform.toView(rect)
-            drawRect(
+        ?.let { id -> bounds[id]?.let { id to it } }
+        ?.let { (id, rect) ->
+            drawOutline(
+                transform = transform,
+                rect = rect,
+                degrees = angleOf(id),
                 color = chrome.selection.copy(alpha = 0.5f),
-                topLeft = view.topLeft,
-                size = view.size,
-                style = Stroke(width = 1f),
+                width = 1f,
             )
         }
 
     state.selection.forEach { id ->
         val rect = bounds[id] ?: return@forEach
-        val view = transform.toView(rect)
-        drawRect(chrome.selectionFill, topLeft = view.topLeft, size = view.size)
-        drawRect(
+        val degrees = angleOf(id)
+        drawOutline(
+            transform = transform,
+            rect = rect,
+            degrees = degrees,
             color = chrome.selection,
-            topLeft = view.topLeft,
-            size = view.size,
-            style = Stroke(width = if (id == state.primarySelection) 2f else 1f),
+            width = if (id == state.primarySelection) 2f else 1f,
+            fill = chrome.selectionFill,
         )
     }
 
@@ -533,15 +545,58 @@ private fun DrawScope.drawSelectionChrome(
     val definition = com.mcguidesigner.core.catalog.ElementCatalog[element.type]
     if (definition?.resizable != true) return
     val rect = bounds[primary] ?: return
+    val degrees = angleOf(primary)
 
-    transform.handles(rect, handleSize).forEach { (_, handle) ->
-        drawRect(chrome.chromeBackground, topLeft = handle.topLeft, size = handle.size)
-        drawRect(
-            color = chrome.selection,
-            topLeft = handle.topLeft,
-            size = handle.size,
-            style = Stroke(width = 1.5f),
-        )
+    // The knob first, so its stalk passes behind the handles rather than over
+    // them.
+    val knob = transform.rotationKnob(rect, degrees, ROTATION_KNOB_DISTANCE)
+    val topCentre = Rotation.rotate(
+        PointF(Rotation.centreOf(rect).x, rect.y.toFloat()),
+        Rotation.centreOf(rect),
+        degrees.toFloat(),
+    ).let { transform.toView(it.x, it.y) }
+
+    drawLine(chrome.selection, start = topCentre, end = knob, strokeWidth = 1f)
+    drawCircle(chrome.chromeBackground, radius = handleSize * 0.6f, center = knob)
+    drawCircle(chrome.selection, radius = handleSize * 0.6f, center = knob, style = Stroke(width = 1.5f))
+
+    transform.handles(rect, handleSize, degrees).forEach { (_, handle) ->
+        // Drawn turned even though the hit box is square: the handle is a
+        // little picture of the corner it grabs, and a corner that stays
+        // upright on a turned element looks like a mistake.
+        rotate(degrees.toFloat(), pivot = handle.center) {
+            drawRect(chrome.chromeBackground, topLeft = handle.topLeft, size = handle.size)
+            drawRect(
+                color = chrome.selection,
+                topLeft = handle.topLeft,
+                size = handle.size,
+                style = Stroke(width = 1.5f),
+            )
+        }
+    }
+}
+
+/** View-space gap between an element's top edge and its rotation knob. */
+const val ROTATION_KNOB_DISTANCE = 26f
+
+/** One selection outline, turned to match its element. */
+private fun DrawScope.drawOutline(
+    transform: CanvasTransform,
+    rect: com.mcguidesigner.core.model.IntRect,
+    degrees: Int,
+    color: androidx.compose.ui.graphics.Color,
+    width: Float,
+    fill: androidx.compose.ui.graphics.Color? = null,
+) {
+    val view = transform.toView(rect)
+    if (degrees == 0) {
+        fill?.let { drawRect(it, topLeft = view.topLeft, size = view.size) }
+        drawRect(color = color, topLeft = view.topLeft, size = view.size, style = Stroke(width = width))
+        return
+    }
+    rotate(degrees.toFloat(), pivot = view.center) {
+        fill?.let { drawRect(it, topLeft = view.topLeft, size = view.size) }
+        drawRect(color = color, topLeft = view.topLeft, size = view.size, style = Stroke(width = width))
     }
 }
 

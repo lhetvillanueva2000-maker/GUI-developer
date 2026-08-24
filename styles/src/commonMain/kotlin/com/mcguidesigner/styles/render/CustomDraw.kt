@@ -44,14 +44,12 @@ fun DrawScope.drawCustomShape(ctx: ElementRenderContext) {
     if (rect.width <= 0f || rect.height <= 0f) return
 
     val kind = ShapeKind.fromId(ctx.props.string("shape", ShapeKind.RECTANGLE.id))
-    val rotation = ctx.props.int("rotation", 0).toFloat()
 
-    // Rotating the whole draw rather than the points keeps the outline maths
-    // in unrotated 0..1 space, where every shape is easy to reason about.
-    rotate(degrees = rotation, pivot = rect.center) {
-        drawShapeBody(ctx, kind, rect)
-    }
-
+    // Deliberately does *not* rotate. Rotation is applied once, for every
+    // element of both editions, in `drawTurned` - doing it here as well turned
+    // shapes twice as far as anything else, and left their labels upright while
+    // the shape beneath them leaned over.
+    drawShapeBody(ctx, kind, rect)
     drawAlignedLabel(ctx, ctx.props.string("label", ""), rect)
 }
 

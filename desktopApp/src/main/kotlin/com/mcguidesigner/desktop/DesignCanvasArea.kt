@@ -36,9 +36,13 @@ import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.editor.EditorTool
 import com.mcguidesigner.core.editor.SnapResult
 import com.mcguidesigner.core.model.IntPoint
+import com.mcguidesigner.core.model.int
+import com.mcguidesigner.core.model.Rotation
+import com.mcguidesigner.core.model.PointF
 import com.mcguidesigner.core.model.ResizeHandle
 import com.mcguidesigner.styles.canvas.CanvasRuler
 import com.mcguidesigner.styles.canvas.CanvasTransform
+import com.mcguidesigner.styles.canvas.ROTATION_KNOB_DISTANCE
 import com.mcguidesigner.styles.canvas.GuiCanvas
 import com.mcguidesigner.styles.render.TextureCache
 import com.mcguidesigner.styles.theme.LocalSkinPalette
@@ -47,7 +51,16 @@ import java.awt.Cursor
 private const val RULER_THICKNESS = 18
 
 /** What the current mouse drag is doing. */
-private enum class DragMode { NONE, MOVE, RESIZE, MARQUEE, PAN, GUIDE }
+private enum class DragMode { NONE, MOVE, RESIZE, ROTATE, MARQUEE, PAN, GUIDE }
+
+/**
+ * How close a click has to land to the rotation knob to grab it.
+ *
+ * Generous relative to the drawn circle, because the knob is the smallest
+ * target on the canvas and missing it selects whatever is behind it instead -
+ * which on a busy layout is the element you were trying to turn.
+ */
+private const val KNOB_GRAB_RADIUS = 14f
 
 /**
  * The design surface plus its desktop input handling.
@@ -231,6 +244,26 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.canvasGe
                             controller.resizeBy(id, handle, delta.x, delta.y)
                         }
 
+                        DragMode.ROTATE -> {
+                            val bounds = state.primarySelection?.let { state.absoluteBounds[it] }
+                            if (bounds != null) {
+                                // The angle is read from where the pointer *is*
+                                // rather than accumulated from how far it has
+                                // moved, so a long drag cannot drift away from
+                                // the cursor.
+                                val centre = Rotation.centreOf(bounds)
+                                val view = transform.toView(centre.x, centre.y)
+                                val raw = Rotation.angleTo(
+                                    PointF(view.x, view.y),
+                                    PointF(change.position.x, change.position.y),
+                                )
+                                // Shift is the usual "let me hit the round
+                                // numbers" modifier; without it every angle in
+                                // between stays reachable.
+                                controller.setRotation(if (shift) Rotation.snap(raw) else raw)
+                            }
+                        }
+
                         DragMode.MARQUEE -> {
                             val point = transform.toCanvas(change.position)
                             controller.updateMarquee(point.x, point.y)
@@ -297,10 +330,24 @@ private fun beginSelectionGesture(
     shift: Boolean,
     onHandle: (ResizeHandle?) -> Unit,
 ): DragMode {
-    // 1. Resize handles win over everything, including elements on top.
+    // 1. The rotation knob and the resize handles win over everything,
+    // including elements drawn on top of them - they are small, deliberate
+    // targets, and losing one to whatever happens to be underneath it makes
+    // them unusable exactly when the layout is busy.
     val primaryBounds = state.primarySelection?.let { state.absoluteBounds[it] }
     if (primaryBounds != null && state.selection.size == 1) {
-        val handle = transform.handleAt(primaryBounds, viewPoint, 11f)
+        val degrees = state.primarySelection
+            ?.let { state.project.element(it) }
+            ?.props?.int("rotation", 0)
+            ?: 0
+
+        val knob = transform.rotationKnob(primaryBounds, degrees, ROTATION_KNOB_DISTANCE)
+        if ((viewPoint - knob).getDistance() <= KNOB_GRAB_RADIUS) {
+            onHandle(null)
+            return DragMode.ROTATE
+        }
+
+        val handle = transform.handleAt(primaryBounds, viewPoint, 11f, degrees)
         if (handle != null) {
             onHandle(handle)
             controller.beginResize(state.primarySelection!!, handle)

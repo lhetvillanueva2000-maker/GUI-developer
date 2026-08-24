@@ -128,26 +128,27 @@ fun DrawScope.drawProject(
         project.elements.walkAll().forEach { element ->
             if (!element.visible) return@forEach
             val rect = bounds[element.id] ?: return@forEach
-            with(skin) {
-                drawElement(
-                    ElementRenderContext(
-                        element = element,
-                        rect = androidx.compose.ui.geometry.Rect(
-                            left = rect.x.toFloat(),
-                            top = rect.y.toFloat(),
-                            right = (rect.x + rect.width).toFloat(),
-                            bottom = (rect.y + rect.height).toFloat(),
-                        ),
-                        scale = 1f,
-                        state = InteractionState.NORMAL,
-                        project = project,
-                        textures = textures,
-                        textMeasurer = measurer,
-                        form = project.canvas.targetForm,
-                        selected = false,
+            // Through `drawTurned`, like the canvas, so an exported picture and
+            // the editor cannot disagree about which way an element faces.
+            drawTurned(
+                skin,
+                ElementRenderContext(
+                    element = element,
+                    rect = androidx.compose.ui.geometry.Rect(
+                        left = rect.x.toFloat(),
+                        top = rect.y.toFloat(),
+                        right = (rect.x + rect.width).toFloat(),
+                        bottom = (rect.y + rect.height).toFloat(),
                     ),
-                )
-            }
+                    scale = 1f,
+                    state = InteractionState.NORMAL,
+                    project = project,
+                    textures = textures,
+                    textMeasurer = measurer,
+                    form = project.canvas.targetForm,
+                    selected = false,
+                ),
+            )
         }
     }
 }

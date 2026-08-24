@@ -20,6 +20,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.mcguidesigner.core.model.PointF
+import com.mcguidesigner.core.model.Rotation
+import com.mcguidesigner.core.model.int
+import com.mcguidesigner.styles.canvas.ROTATION_KNOB_DISTANCE
 import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.editor.SnapResult
@@ -32,7 +36,7 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 
 /** Touch-drag states. */
-private enum class TouchMode { IDLE, PENDING, MOVE, RESIZE, PAN, TRANSFORM }
+private enum class TouchMode { IDLE, PENDING, MOVE, RESIZE, ROTATE, PAN, TRANSFORM }
 
 /** How far a finger may travel before a press stops counting as a tap. */
 private const val TAP_SLOP_DP = 8f
@@ -203,10 +207,28 @@ private suspend fun PointerInputScope.touchGestureLoop(
                         continue
                     }
 
-                    // Handles win, and they are thumb-sized on touch.
+                    // The knob and the handles win, and both are thumb-sized
+                    // on touch.
                     val primaryBounds = state.primarySelection?.let { state.absoluteBounds[it] }
                     if (primaryBounds != null && state.selection.size == 1) {
-                        val handle = transform.handleAt(primaryBounds, change.position, handleSize * 1.6f)
+                        val degrees = state.primarySelection
+                            ?.let { state.project.element(it) }
+                            ?.props?.int("rotation", 0)
+                            ?: 0
+
+                        val knob = transform.rotationKnob(primaryBounds, degrees, ROTATION_KNOB_DISTANCE)
+                        if ((change.position - knob).getDistance() <= handleSize * 1.4f) {
+                            mode = TouchMode.ROTATE
+                            change.consume()
+                            continue
+                        }
+
+                        val handle = transform.handleAt(
+                            primaryBounds,
+                            change.position,
+                            handleSize * 1.6f,
+                            degrees,
+                        )
                         if (handle != null) {
                             activeHandle = handle
                             controller.beginResize(state.primarySelection!!, handle)
@@ -258,6 +280,27 @@ private suspend fun PointerInputScope.touchGestureLoop(
                             onSnapFeedback(controller.dragSelectionTo(delta.x, delta.y))
                         }
 
+                        TouchMode.ROTATE -> {
+                            val bounds = state.primarySelection?.let { state.absoluteBounds[it] }
+                            if (bounds != null) {
+                                // Where the finger *is* is the angle, rather
+                                // than an accumulation of how far it has moved -
+                                // so a long drag around the element cannot
+                                // drift away from the fingertip.
+                                val centre = Rotation.centreOf(bounds)
+                                val view = transform.toView(centre.x, centre.y)
+                                val raw = Rotation.angleTo(
+                                    PointF(view.x, view.y),
+                                    PointF(change.position.x, change.position.y),
+                                )
+                                // Snapped on touch, where there is no modifier
+                                // key to ask for it and no hope of hitting a
+                                // round number by hand. Anything more than four
+                                // degrees off a landmark is still kept exactly.
+                                controller.setRotation(Rotation.snap(raw))
+                            }
+                        }
+
                         TouchMode.RESIZE -> activeHandle?.let { handle ->
                             val id = state.primarySelection ?: return@let
                             val delta = transform.deltaToCanvas(total.x, total.y)
@@ -281,7 +324,7 @@ private suspend fun PointerInputScope.touchGestureLoop(
                             }
                         }
 
-                        TouchMode.MOVE, TouchMode.RESIZE -> controller.endGesture()
+                        TouchMode.MOVE, TouchMode.RESIZE, TouchMode.ROTATE -> controller.endGesture()
 
                         else -> Unit
                     }

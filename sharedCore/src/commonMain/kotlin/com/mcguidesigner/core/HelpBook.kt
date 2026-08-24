@@ -107,7 +107,24 @@ object HelpBook {
                     "",
                     "Drag the grip on the pad's inner corner. Reset it from Editor Settings.",
                 ),
-                HelpEntry("Rotate", "", "The rotate buttons in the toolbar, or the Rotation property."),
+                HelpEntry(
+                    "Rotate by 90°",
+                    "",
+                    "The rotate buttons in the toolbar, or on the Arrange sheet.",
+                ),
+                HelpEntry(
+                    "Rotate to any angle",
+                    "",
+                    "Drag the round knob above the selection. Hold Shift while dragging to " +
+                        "snap to 15°; on a touchscreen it snaps on its own. The Rotation " +
+                        "field in the inspector takes any whole angle from 0 to 359.",
+                ),
+                HelpEntry(
+                    "Resize something turned",
+                    "",
+                    "The handles sit on the element's own corners and the drag follows its " +
+                        "own axes, so a turned element resizes the way it looks like it should.",
+                ),
                 HelpEntry("Bring forward", "Ctrl+]"),
                 HelpEntry("Send backward", "Ctrl+["),
                 HelpEntry("Bring to front", "Ctrl+Shift+]"),
@@ -143,6 +160,13 @@ object HelpBook {
             listOf(
                 HelpEntry("Components", "F1", "The gallery: every component with a live preview."),
                 HelpEntry("Shapes", "", "Rectangles through to stars, each with fill, outline and rotation."),
+                HelpEntry(
+                    "Colours",
+                    "",
+                    "Every colour field has a palette under it: vanilla Minecraft greys and " +
+                        "browns measured off the real widgets, a neutral ramp, and fourteen " +
+                        "hues at three lightnesses. The hex field still takes anything.",
+                ),
                 HelpEntry("Custom elements", "", "Any type name and any key=value properties, passed through to every export."),
                 HelpEntry("Prefabs", "", "A saved selection, reusable in any later project."),
                 HelpEntry("Texture library", "", "Everything imported, de-duplicated by content and kept across projects."),

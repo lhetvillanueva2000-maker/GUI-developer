@@ -19,6 +19,7 @@ import com.mcguidesigner.core.model.IntValue
 import com.mcguidesigner.core.model.PropValue
 import com.mcguidesigner.core.model.int
 import com.mcguidesigner.core.model.ResizeHandle
+import com.mcguidesigner.core.model.Rotation
 import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.model.TextureAsset
 import com.mcguidesigner.core.model.absoluteBoundsMap
@@ -501,11 +502,21 @@ class EditorController(initial: GuiProject) {
             ?.startBounds
             ?: element.bounds
 
+        // A turned element's handles point somewhere other than the compass
+        // directions the resize maths knows about: on a quarter turn, the
+        // handle marked RIGHT is at the bottom of the screen, so a downward
+        // drag has to read as "wider". Undoing the rotation on the delta is
+        // what makes that true, and it is a no-op at zero degrees.
+        val angle = Rotation.normalise(element.props.int("rotation", 0))
+        val local = Rotation.toLocalDelta(dx.toFloat(), dy.toFloat(), angle)
+        val localDx = local.x.roundToInt()
+        val localDy = local.y.roundToInt()
+
         val proposed = Snapping.applyResize(
             start = start,
             handle = handle,
-            dx = dx,
-            dy = dy,
+            dx = localDx,
+            dy = localDy,
             minSize = definition.minSize,
             maxSize = definition.maxSize,
             keepAspect = definition.keepAspect,
@@ -530,13 +541,17 @@ class EditorController(initial: GuiProject) {
         val snapped = Snapping.applyResize(
             start = start,
             handle = handle,
-            dx = dx + snap.dx,
-            dy = dy + snap.dy,
+            dx = localDx + snap.dx,
+            dy = localDy + snap.dy,
             minSize = definition.minSize,
             maxSize = definition.maxSize,
             keepAspect = definition.keepAspect,
         )
-        setBounds(id, snapped, coalesceKey)
+
+        // The resize pinned the opposite corner in the element's own frame,
+        // which is not where that corner is on screen once it has been turned.
+        // Without this the element slides sideways as it is dragged.
+        setBounds(id, Rotation.anchorAfterResize(start, snapped, handle, angle), coalesceKey)
     }
 
     /** Begins a resize gesture, capturing the starting rectangle. */
@@ -818,15 +833,6 @@ class EditorController(initial: GuiProject) {
     }
 
     /**
-     * 0..359, whichever way and however far the angle has been turned.
-     *
-     * Kotlin's `%` keeps the sign of the left operand, so -90 % 360 is -90,
-     * not 270 - which is why this is a named function with a test rather than
-     * an inline modulo somebody would write once and get wrong.
-     */
-    private fun normaliseAngle(degrees: Int): Int = ((degrees % 360) + 360) % 360
-
-    /**
      * Turns every selected element by [degrees].
      *
      * Relative rather than absolute, and wrapped into 0..359 rather than left
@@ -846,13 +852,53 @@ class EditorController(initial: GuiProject) {
             st.copy(
                 project = st.project.withElements(
                     st.project.elements.updateAll(st.selection) { element ->
-                        val next = normaliseAngle(element.props.int("rotation", 0) + degrees)
+                        val next = Rotation.normalise(element.props.int("rotation", 0) + degrees)
                         element.withProp("rotation", IntValue(next))
                     },
                 ),
             )
         }
         history.breakCoalescing()
+    }
+
+    /**
+     * Turns every selected element to exactly [degrees].
+     *
+     * Absolute where [rotateSelection] is relative, because the two are driven
+     * by different things: the buttons step by ninety, while the on-canvas knob
+     * and the angle field both know the angle they want. Feeding an absolute
+     * angle through the relative path would mean every caller computing a
+     * difference against a value it has to read back first, which is how a
+     * dragged knob ends up drifting away from the pointer.
+     *
+     * [coalesceKey] keeps a whole drag as one undo step rather than one per
+     * frame; pass null for a single deliberate change.
+     */
+    fun setRotation(degrees: Int, coalesceKey: String? = "rotate") {
+        val s = _state.value
+        if (s.selection.isEmpty()) return
+        val next = Rotation.normalise(degrees)
+        val unchanged = s.selection.all { id ->
+            s.project.element(id)?.props?.int("rotation", 0) == next
+        }
+        if (unchanged) return
+
+        edit("Rotate to $next°", coalesceKey) { st ->
+            st.copy(
+                project = st.project.withElements(
+                    st.project.elements.updateAll(st.selection) { element ->
+                        element.withProp("rotation", IntValue(next))
+                    },
+                ),
+            )
+        }
+    }
+
+    /** The angle of the primary selection, for a field that has to show one. */
+    fun currentRotation(): Int {
+        val s = _state.value
+        val id = s.primarySelection ?: return 0
+        return Rotation.normalise(s.project.element(id)?.props?.int("rotation", 0) ?: 0)
     }
 
     /** Applies one property value to every selected element that supports it. */
