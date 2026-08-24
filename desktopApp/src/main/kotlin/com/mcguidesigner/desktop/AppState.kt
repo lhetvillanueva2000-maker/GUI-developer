@@ -33,6 +33,7 @@ import com.mcguidesigner.desktop.io.PackImport
 import com.mcguidesigner.desktop.io.Workspace
 import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.DesignImporter
+import com.mcguidesigner.exporters.ImportOutcome
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.render.createAnimatedTextureFromFrames
@@ -62,6 +63,7 @@ enum class ActiveDialog {
     TEMPLATES,
     EXPORT,
     IMAGE_EXPORT,
+    IMPORT_PREVIEW,
     PROJECT_SETTINGS,
     ABOUT,
     SHORTCUTS,
@@ -653,6 +655,17 @@ class AppState(initial: GuiProject) {
      * and see what changed - and an import that quietly overwrote the open
      * screen would make that comparison impossible and lose the screen.
      */
+    /**
+     * An import that has been read but not yet accepted.
+     *
+     * Held rather than applied because these readers translate between formats
+     * that disagree about what a layout is, and the caveats matter *before* the
+     * decision. See `ImportPreviewPanel`.
+     */
+    var pendingImport by mutableStateOf<ImportOutcome?>(null)
+        private set
+
+    /** Reads a design out of something that is not a project document. */
     fun importDesign() {
         val file = DesktopFileIO.openImportDialog(frameProvider()) ?: return
         val content = runCatching { file.readText() }.getOrElse {
@@ -665,8 +678,8 @@ class AppState(initial: GuiProject) {
             content = content,
             edition = controller.current.edition,
         )
-        val project = outcome.project
-        if (project == null) {
+
+        if (outcome.project == null) {
             postNotice(
                 Notice(
                     id = "import",
@@ -678,6 +691,21 @@ class AppState(initial: GuiProject) {
             return
         }
 
+        pendingImport = outcome
+        dialog = ActiveDialog.IMPORT_PREVIEW
+    }
+
+    /**
+     * Accepts the previewed import, into a *new tab*.
+     *
+     * Never over the open document: an import is nearly always a comparison -
+     * bring the hand-edited file back and see what changed - and overwriting
+     * the canvas would make that comparison impossible and lose the screen.
+     */
+    fun confirmImport() {
+        val project = pendingImport?.project ?: return
+        pendingImport = null
+
         tabs.add(DocumentTab(project))
         activeTab = tabs.lastIndex
         // The imported document is not the file it came from: saving must not
@@ -685,17 +713,12 @@ class AppState(initial: GuiProject) {
         currentFile = null
         dialog = ActiveDialog.NONE
         screen = AppScreen.EDITOR
+        status = "Imported ${project.elements.size} element(s)."
+    }
 
-        status = "Imported ${project.elements.size} element(s) from ${file.name}."
-        if (outcome.notes.isNotEmpty()) {
-            postNotice(
-                Notice(
-                    id = "import",
-                    headline = "Imported ${file.name} as ${outcome.format?.displayName ?: "a design"}",
-                    points = outcome.notes,
-                ),
-            )
-        }
+    fun cancelImport() {
+        pendingImport = null
+        dialog = ActiveDialog.NONE
     }
 
     /** Returns true when the document was actually written. */

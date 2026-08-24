@@ -71,16 +71,33 @@ object BedrockUiImporter {
         val notes = mutableListOf<String>()
         val generic = mutableSetOf<String>()
 
-        // Prefer the declared tree; fall back to "everything that is not
-        // scaffolding" for a file that does not have one.
+        // Prefer the declared tree; fall back to "every control nothing else
+        // claims as a child" for a file that does not have one.
+        //
+        // The claimed-child filter is the whole point of the fallback. Without
+        // it, a screen whose controls are all reachable from somewhere would
+        // come back with every nested control *also* sitting at the top level -
+        // one design, every element in it twice.
         val roots = screenContent?.let { childrenOf(it, definitions) }
             ?.takeIf { it.isNotEmpty() }
-            ?: definitions
-                .filterKeys { it != "screen_content" && it != "screen" }
-                .filterValues { it.containsKey("type") }
-                .values
-                .toList()
-                .also { if (it.isNotEmpty()) notes += "No screen_content panel found; read every control as top level." }
+            ?: run {
+                val claimed = definitions.values.flatMap { control ->
+                    (control["controls"] as? JsonArray).orEmpty().mapNotNull { entry ->
+                        (entry as? JsonObject)?.entries?.firstOrNull()?.key?.substringBefore('@')
+                    }
+                }.toSet()
+
+                definitions
+                    .filterKeys { it != "screen_content" && it != "screen" && it !in claimed }
+                    .filterValues { it.containsKey("type") }
+                    .values
+                    .toList()
+                    .also {
+                        if (it.isNotEmpty()) {
+                            notes += "No screen_content panel found; read the unclaimed controls as top level."
+                        }
+                    }
+            }
 
         val elements = roots.mapNotNull { control ->
             toElement(control, definitions, generic)

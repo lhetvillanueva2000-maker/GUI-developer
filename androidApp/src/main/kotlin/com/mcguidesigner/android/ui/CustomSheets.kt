@@ -1,7 +1,8 @@
 package com.mcguidesigner.android.ui
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -60,7 +64,6 @@ import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.styles.theme.LocalMotion
 import com.mcguidesigner.styles.theme.LocalSkinPalette
 import com.mcguidesigner.styles.theme.spec
-import kotlin.math.abs
 
 /**
  * The phone's "＋ Custom" sheet, the editor settings sheet, the delete
@@ -164,7 +167,7 @@ fun EditorSettingsSheet(app: AndroidAppState) {
             StepRow(
                 label = "Step",
                 help = "How far one tap of a move arrow shifts the selection. " +
-                    "Also the number in the middle of the pad - drag it to change this.",
+                    "This is the bar under the move pad; touch it anywhere to set it.",
                 value = draft.nudgeStep,
                 onChange = { commit(draft.copy(nudgeStep = it)) },
             )
@@ -232,7 +235,7 @@ fun EditorSettingsSheet(app: AndroidAppState) {
                     Column(Modifier.weight(1f)) {
                         Text("Move pad size", style = MaterialTheme.typography.labelMedium)
                         Text(
-                            "Drag the small grip on the pad's inner corner. " +
+                            "Drag the grip on the pad's inner corner. " +
                                 "Currently ${(NudgePad.clampScale(draft.nudgePadScale) * 100).toInt()}%.",
                             style = MaterialTheme.typography.labelSmall,
                             color = LocalSkinPalette.current.chromeTextMuted,
@@ -450,19 +453,23 @@ fun ConfirmDeleteSheet(app: AndroidAppState, state: EditorState) {
 // ---------------------------------------------------------------------------
 
 /**
- * Four arrows that move the selection, floating over the canvas.
+ * The move pad: four arrows over the canvas, and one bar under them.
  *
- * On a phone this matters more than on the desktop: a one-pixel drag on a
+ * On a phone this matters more than on the desktop - a one-pixel drag on a
  * touchscreen is not a thing anyone can do reliably, so without these the
  * finest adjustment available is whatever a fingertip can manage.
  *
- * The pad is deliberately *only* the four directions and one number. It used
- * to carry a big/small toggle in the centre and a "Step size" button beneath
- * it, which meant three controls answering one question - how far does this
- * move - and two of the three answers lived in a settings sheet somewhere
- * else. Now the centre is the step: drag it to change it, tap it to come back
- * to one. The corner handle changes how big the whole thing is drawn, because
- * the right size for a thumb control is a property of the thumb.
+ * The layout is the design. **The middle is only up, down, left and right**,
+ * with a hole where a fifth button would be: everything that has ever lived in
+ * the centre of this cross was something people pressed by accident while
+ * reaching for an arrow. **Under the middle is one control** - the step - and
+ * it is a bar you touch at the value you want rather than a number you nudge
+ * towards it. Before, that one question ("how far does this move?") had three
+ * answers: a toggle in the centre, and two numbers in a settings sheet on
+ * another screen.
+ *
+ * The grip on the inner corner resizes the whole thing, because the right size
+ * for a thumb control is a property of the thumb.
  */
 @Composable
 fun MobileNudgePad(
@@ -478,67 +485,60 @@ fun MobileNudgePad(
     val scale = NudgePad.clampScale(settings.nudgePadScale)
     val key = NudgePad.keyDp(scale).dp
     val gap = NudgePad.gapDp(scale).dp
+    val crossWidth = key * 3 + gap * 2
 
-    // Both gestures accumulate in dp so a slow drag and a flick covering the
-    // same distance do the same thing. Reset when the gesture starts, not when
-    // it ends, so an interrupted drag cannot leak into the next one.
     var resizeFrom by remember { mutableStateOf(scale) }
     var resizeDrag by remember { mutableStateOf(0f) }
-    var stepFrom by remember { mutableStateOf(settings.nudgeStep) }
-    var stepDrag by remember { mutableStateOf(0f) }
     var adjusting by remember { mutableStateOf(false) }
 
-    val padScale by animateFloatAsState(
-        targetValue = if (adjusting) 1.04f else 1f,
+    val lift by animateFloatAsState(
+        targetValue = if (adjusting) 1.03f else 1f,
         animationSpec = motion.spec(140),
         label = "nudge-pad-lift",
     )
 
     Surface(
-        modifier = modifier.scale(padScale),
+        modifier = modifier.scale(lift),
         color = palette.chromePanel.copy(alpha = 0.94f),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Box {
             Column(
-                Modifier.padding(6.dp),
+                Modifier.padding(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(gap),
             ) {
                 PadKey("▲", key) { controller.nudgeSelection(0, -1) }
                 Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                     PadKey("◀", key) { controller.nudgeSelection(-1, 0) }
-                    StepKey(
-                        step = settings.nudgeStep,
-                        size = key,
-                        active = adjusting,
-                        onTap = { controller.updateSettings { it.copy(nudgeStep = NudgePad.HOME_STEP) } },
-                        onLongPress = onOpenSettings,
-                        onDragStart = {
-                            stepFrom = settings.nudgeStep
-                            stepDrag = 0f
-                            adjusting = true
-                        },
-                        onDrag = { deltaPx ->
-                            stepDrag += with(density) { deltaPx.toDp().value }
-                            controller.updateSettings {
-                                it.copy(nudgeStep = NudgePad.stepAfterDrag(stepFrom, stepDrag))
-                            }
-                        },
-                        onDragEnd = { adjusting = false },
-                    )
+                    // The hole in the middle of the cross. Deliberately not a
+                    // button: it is the space your thumb crosses on the way to
+                    // every one of the four, and anything here gets hit.
+                    Spacer(Modifier.size(key))
                     PadKey("▶", key) { controller.nudgeSelection(1, 0) }
                 }
                 PadKey("▼", key) { controller.nudgeSelection(0, 1) }
+
+                Spacer(Modifier.height(gap + 3.dp))
+
+                StepBar(
+                    step = settings.nudgeStep,
+                    width = crossWidth,
+                    height = (key.value * 0.62f).dp,
+                    onStep = { controller.updateSettings { current -> current.copy(nudgeStep = it) } },
+                    onOpenSettings = onOpenSettings,
+                    onAdjustingChange = { adjusting = it },
+                )
             }
 
             // The handle sits on the corner pointing *into* the canvas, so it
-            // is never the corner pressed against the screen edge - which is
-            // the one a thumb cannot reach past.
+            // is never the corner pressed against the screen edge - the one a
+            // thumb cannot reach past.
             ResizeHandle(
                 modifier = Modifier.align(
                     if (settings.nudgePadCorner.isRight) Alignment.TopStart else Alignment.TopEnd,
                 ),
+                mirrored = !settings.nudgePadCorner.isRight,
                 onDragStart = {
                     resizeFrom = NudgePad.clampScale(settings.nudgePadScale)
                     resizeDrag = 0f
@@ -547,8 +547,8 @@ fun MobileNudgePad(
                 onDrag = { deltaPx ->
                     // Dragging away from the anchored corner enlarges, whichever
                     // corner that is; the handle is mirrored, so the sign is too.
-                    val towards = if (settings.nudgePadCorner.isRight) -deltaPx else deltaPx
-                    resizeDrag += with(density) { towards.toDp().value }
+                    val outwards = if (settings.nudgePadCorner.isRight) -deltaPx else deltaPx
+                    resizeDrag += with(density) { outwards.toDp().value }
                     controller.updateSettings {
                         it.copy(nudgePadScale = NudgePad.scaleAfterDrag(resizeFrom, resizeDrag))
                     }
@@ -566,7 +566,7 @@ private fun PadKey(glyph: String, size: Dp, onClick: () -> Unit) {
     val motion = LocalMotion.current
     var pressed by remember { mutableStateOf(false) }
     val press by animateFloatAsState(
-        targetValue = if (pressed) 0.9f else 1f,
+        targetValue = if (pressed) 0.88f else 1f,
         animationSpec = motion.spec(90),
         label = "pad-key-press",
     )
@@ -581,8 +581,8 @@ private fun PadKey(glyph: String, size: Dp, onClick: () -> Unit) {
                 detectTapGestures(
                     onPress = {
                         pressed = true
-                        // Held rather than fired-and-forgotten so the key stays
-                        // pressed for as long as the finger is on it, including
+                        // Held rather than fired-and-forgotten, so the key stays
+                        // lit for as long as the finger is on it - including
                         // when the gesture is cancelled by a scroll elsewhere.
                         tryAwaitRelease()
                         pressed = false
@@ -597,74 +597,120 @@ private fun PadKey(glyph: String, size: Dp, onClick: () -> Unit) {
 }
 
 /**
- * The centre: one number, which is how far a key moves things.
+ * The one control under the cross: how far an arrow moves things.
  *
- * Drag right or up for more, left or down for less; tap to come home to 1.
- * Both axes rather than one because the pad can sit in any corner and a thumb
- * has an easier direction in each.
+ * Touch it anywhere and that position *is* the value - a slider, not a nudger.
+ * Getting from 1 to 16 on a relative control is a long push, and a short push
+ * back undoes an amount you cannot see; here every value in the range is one
+ * touch away. The scale is exponential, so 1, 2, 4, 8, 16, 32, 64 and 128 are
+ * evenly spread instead of 1-to-8 sharing the first few millimetres.
+ *
+ * A tap without a drag returns to 1, which is where this control spends most
+ * of its life. A long press opens the settings, for the numbers this bar does
+ * not own.
  */
 @Composable
-private fun StepKey(
+private fun StepBar(
     step: Int,
-    size: Dp,
-    active: Boolean,
-    onTap: () -> Unit,
-    onLongPress: () -> Unit,
-    onDragStart: () -> Unit,
-    onDrag: (Float) -> Unit,
-    onDragEnd: () -> Unit,
+    width: Dp,
+    height: Dp,
+    onStep: (Int) -> Unit,
+    onOpenSettings: () -> Unit,
+    onAdjustingChange: (Boolean) -> Unit,
 ) {
     val palette = LocalSkinPalette.current
     val motion = LocalMotion.current
-    val background by animateColorAsState(
-        targetValue = if (active) palette.accentMuted else palette.chromePanelAlt,
-        animationSpec = motion.spec(140),
-        label = "step-key-background",
+    var dragging by remember { mutableStateOf(false) }
+
+    // Animated so the fill glides when the value is set from the settings
+    // sheet, and tracks the finger one-to-one while dragging.
+    val fill by animateFloatAsState(
+        targetValue = NudgePad.fractionForStep(step),
+        animationSpec = if (dragging) snap() else motion.spec(180),
+        label = "step-bar-fill",
     )
 
     Box(
         Modifier
-            .size(size)
-            .clip(RoundedCornerShape(size / 4))
-            .background(background)
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = { onTap() }, onLongPress = { onLongPress() })
+            .size(width, height)
+            .clip(RoundedCornerShape(height / 2))
+            .background(palette.chromePanelAlt)
+            .pointerInput(width) {
+                detectTapGestures(
+                    onLongPress = { onOpenSettings() },
+                    onTap = { onStep(NudgePad.HOME_STEP) },
+                )
             }
-            .pointerInput(Unit) {
+            .pointerInput(width) {
+                // Positional: the value comes from where the finger *is*, not
+                // from how far it has travelled, so the first touch already
+                // sets it.
                 detectDragGestures(
-                    onDragStart = { onDragStart() },
-                    onDragEnd = { onDragEnd() },
-                    onDragCancel = { onDragEnd() },
-                ) { change, dragAmount ->
+                    onDragStart = { offset ->
+                        dragging = true
+                        onAdjustingChange(true)
+                        onStep(NudgePad.stepAtFraction(offset.x / size.width.toFloat()))
+                    },
+                    onDragEnd = { dragging = false; onAdjustingChange(false) },
+                    onDragCancel = { dragging = false; onAdjustingChange(false) },
+                ) { change, _ ->
                     change.consume()
-                    // Right and up both mean "more". Whichever axis moved
-                    // further this frame is the one being used.
-                    val delta = if (abs(dragAmount.x) >= abs(dragAmount.y)) {
-                        dragAmount.x
-                    } else {
-                        -dragAmount.y
-                    }
-                    onDrag(delta)
+                    onStep(NudgePad.stepAtFraction(change.position.x / size.width.toFloat()))
                 }
             },
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.CenterStart,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                "$step",
-                style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Monospace),
-                fontWeight = if (NudgePad.isLandmark(step)) FontWeight.Bold else FontWeight.Normal,
-                color = if (active) palette.chromeText else palette.chromeTextMuted,
+        Box(
+            Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(fill.coerceIn(0f, 1f))
+                .clip(RoundedCornerShape(height / 2))
+                .background(palette.accentMuted),
+        )
+
+        // The landmarks, drawn on top of the fill: 1 at the left end, then a
+        // vanilla container's 8px grid and a 16px texture tile.
+        NudgePad.LANDMARKS.forEach { landmark ->
+            Box(
+                Modifier
+                    .padding(start = width * NudgePad.fractionForStep(landmark))
+                    .size(2.dp, height / 3)
+                    .background(palette.chromeTextMuted.copy(alpha = 0.45f)),
             )
-            Text("px", style = MaterialTheme.typography.labelSmall, color = palette.chromeTextMuted)
+        }
+
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "step",
+                style = MaterialTheme.typography.labelSmall,
+                color = palette.chromeTextMuted,
+            )
+            Text(
+                "$step px",
+                style = MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.Monospace),
+                fontWeight = if (NudgePad.isLandmark(step)) FontWeight.Bold else FontWeight.Normal,
+                color = palette.chromeText,
+            )
         }
     }
 }
 
-/** The little grip that resizes the whole pad. */
+/**
+ * The grip that resizes the whole pad.
+ *
+ * Three diagonal strokes rather than a dot: a dot reads as another button, and
+ * this is the one thing on the pad that must not be pressed by mistake. The
+ * touch target is 28dp around a 12dp mark, because the mark has to stay small
+ * and the target has to be hittable.
+ */
 @Composable
 private fun ResizeHandle(
     modifier: Modifier,
+    mirrored: Boolean,
     onDragStart: () -> Unit,
     onDrag: (Float) -> Unit,
     onDragEnd: () -> Unit,
@@ -672,10 +718,8 @@ private fun ResizeHandle(
     val palette = LocalSkinPalette.current
     Box(
         modifier
-            // A 24dp target around an 8dp mark: the mark has to be small enough
-            // not to look like another button, and the target big enough to hit.
-            .size(24.dp)
-            .pointerInput(Unit) {
+            .size(28.dp)
+            .pointerInput(mirrored) {
                 detectDragGestures(
                     onDragStart = { onDragStart() },
                     onDragEnd = { onDragEnd() },
@@ -687,14 +731,27 @@ private fun ResizeHandle(
             },
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            Modifier
-                .size(8.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(palette.chromeTextMuted.copy(alpha = 0.5f)),
-        )
+        Canvas(Modifier.size(12.dp)) {
+            val stroke = palette.chromeTextMuted.copy(alpha = 0.55f)
+            val step = size.width / 3f
+            repeat(3) { index ->
+                val offset = step * (index + 0.5f)
+                // Mirrored so the strokes always lean the way the pad grows.
+                if (mirrored) {
+                    drawLine(stroke, Offset(0f, offset), Offset(offset, 0f), strokeWidth = 1.5f)
+                } else {
+                    drawLine(
+                        stroke,
+                        Offset(size.width - offset, 0f),
+                        Offset(size.width, offset),
+                        strokeWidth = 1.5f,
+                    )
+                }
+            }
+        }
     }
 }
+
 
 // ---------------------------------------------------------------------------
 // Local copies of the sheet chrome

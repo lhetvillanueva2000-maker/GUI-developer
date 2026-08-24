@@ -48,7 +48,55 @@ class ImageExportTest {
     @Test
     fun `the scale is capped so nobody asks for a gigapixel by accident`() {
         assertTrue(ImageExport.scaleForHeight(1, 100_000) <= ImageExport.MAX_SCALE)
-        assertEquals(ImageExport.MAX_SCALE, ImageExport.sizeAt(chest, 9999).scale)
+        assertEquals(ImageExport.maxScaleFor(chest), ImageExport.sizeAt(chest, 9999).scale)
+    }
+
+    @Test
+    fun `no offered size can exhaust memory`() {
+        // Rendering costs eight bytes a pixel at peak - an IntArray of the
+        // image and a bitmap of it - so an uncapped multiple is not a big file,
+        // it is an out-of-memory crash. A 4K canvas at 32x is two billion
+        // pixels.
+        listOf(
+            chest,
+            CanvasSpec(width = 1920, height = 1080),
+            CanvasSpec(width = 3840, height = 2160),
+        ).forEach { canvas ->
+            ImageExport.optionsFor(canvas).forEach { size ->
+                assertTrue(
+                    size.pixels <= ImageExport.MAX_PIXELS,
+                    "${size.label} of ${canvas.width}x${canvas.height} is ${size.pixels} pixels",
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `a canvas too big to enlarge is still offered at its own size`() {
+        // Better than an empty list, which would read as "this canvas cannot
+        // be exported at all".
+        val huge = CanvasSpec(width = 8000, height = 6000)
+        val options = ImageExport.optionsFor(huge)
+        assertTrue(options.isNotEmpty())
+        assertEquals(1, options.first().scale)
+    }
+
+    @Test
+    fun `a name that cannot be honoured is dropped rather than relabelled`() {
+        // Clamping 2160p down to a multiple that fits would put "2160p" on a
+        // row that is nothing like 2160 tall - the one thing this list exists
+        // to prevent.
+        val big = CanvasSpec(width = 1920, height = 1080)
+        ImageExport.optionsFor(big).forEach { size ->
+            if (size.label.endsWith("p")) {
+                val asked = size.label.dropLast(1).toInt()
+                val got = size.height
+                assertTrue(
+                    kotlin.math.abs(got - asked) <= asked / 2,
+                    "${size.label} came out ${got}px tall",
+                )
+            }
+        }
     }
 
     @Test

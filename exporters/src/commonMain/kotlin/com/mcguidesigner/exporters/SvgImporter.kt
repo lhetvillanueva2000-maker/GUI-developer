@@ -49,6 +49,10 @@ object SvgImporter {
         // be two things to move every time.
         val pendingText = mutableListOf<Pair<IntRect, TextRun>>()
 
+        // Indices of elements whose name came from an `id` the author wrote,
+        // which text attachment must not overwrite.
+        val authored = mutableSetOf<Int>()
+
         shapeTag.findAll(content).forEach { match ->
             val tagName = match.groupValues[1].lowercase()
             val attributes = attributes(match.groupValues[2])
@@ -65,10 +69,12 @@ object SvgImporter {
             }
 
             val rect = boundsFor(tagName, attributes) ?: return@forEach
+            val authoredName = attributes["id"]?.takeIf { it.isNotBlank() }?.replace('-', ' ')
+            if (authoredName != null) authored += elements.size
             elements += GuiElement(
                 id = Ids.prefixed("el"),
                 type = if (tagName == "rect") ElementCatalog.PANEL_FRAME else ElementCatalog.SHAPE_CUSTOM,
-                name = attributes["id"]?.takeIf { it.isNotBlank() }?.replace('-', ' ')
+                name = authoredName
                     ?: "${tagName.replaceFirstChar { it.uppercase() }} ${elements.size + 1}",
                 bounds = rect,
                 props = propsFor(tagName, attributes),
@@ -102,7 +108,11 @@ object SvgImporter {
             } else {
                 val (index, element) = host
                 elements[index] = element.copy(
-                    name = run.text.take(40),
+                    // Only renamed when the shape had nothing better. A drawing
+                    // tool writes `id="primary-cta"`, and replacing that with
+                    // the word printed on the button throws away the one piece
+                    // of naming the author actually chose.
+                    name = if (index in authored) element.name else run.text.take(40),
                     props = element.props + buildMap {
                         put(if (element.type == ElementCatalog.PANEL_FRAME) "label" else "text", StringValue(run.text))
                         run.color?.let { put("textColor", ColorValue(it)) }

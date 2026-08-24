@@ -86,44 +86,39 @@ data class ImportOutcome(
 object DesignImporter {
 
     /**
-     * The format [content] appears to be, or null.
+     * The formats worth trying for this file, likeliest first.
      *
-     * Ordered most-specific first: a project document is also valid JSON, and
-     * a Bedrock screen is also valid JSON, so whichever test is narrowest has
-     * to run before the ones that would also match.
+     * A list rather than one answer, because sniffing a format is a guess and
+     * this one used to guess badly: "is it a project?" was `content.contains
+     * ("\"formatVersion\"")`, which any HTML page that happened to mention the
+     * word would pass, and the file would then fail to import as the one thing
+     * it definitely was not.
+     *
+     * Returning candidates lets a wrong guess correct itself - [import] tries
+     * each in turn and keeps the first that actually parses - so the cost of a
+     * near-miss is a wasted parse rather than a failed import.
      */
-    fun detect(fileName: String, content: String): ImportFormat? {
+    fun candidatesFor(fileName: String, content: String): List<ImportFormat> {
         val trimmed = content.trimStart()
         val extension = fileName.substringAfterLast('.', "").lowercase()
 
         return when {
-            // Our own document names itself in its first few hundred bytes.
-            trimmed.startsWith("{") && content.contains("\"formatVersion\"") -> ImportFormat.PROJECT
-            trimmed.startsWith("{") && looksLikeBedrockUi(content) -> ImportFormat.BEDROCK_JSON_UI
-            trimmed.startsWith("<") && trimmed.contains("<svg", ignoreCase = true) -> ImportFormat.SVG
-            trimmed.startsWith("<") -> ImportFormat.HTML
-            extension == "mcgui" -> ImportFormat.PROJECT
-            extension == "svg" -> ImportFormat.SVG
-            extension == "html" || extension == "htm" -> ImportFormat.HTML
-            extension == "json" -> ImportFormat.BEDROCK_JSON_UI
-            else -> null
+            trimmed.startsWith("{") -> listOf(ImportFormat.PROJECT, ImportFormat.BEDROCK_JSON_UI)
+            trimmed.startsWith("<") && trimmed.contains("<svg", ignoreCase = true) ->
+                listOf(ImportFormat.SVG, ImportFormat.HTML)
+
+            trimmed.startsWith("<") -> listOf(ImportFormat.HTML, ImportFormat.SVG)
+            extension == "mcgui" -> listOf(ImportFormat.PROJECT)
+            extension == "svg" -> listOf(ImportFormat.SVG)
+            extension == "html" || extension == "htm" -> listOf(ImportFormat.HTML)
+            extension == "json" -> listOf(ImportFormat.PROJECT, ImportFormat.BEDROCK_JSON_UI)
+            else -> emptyList()
         }
     }
 
-    /**
-     * A Bedrock screen has controls, and a control is an object with a `type`.
-     *
-     * Checked as text rather than by parsing, because this runs on files that
-     * may not be JSON at all and the answer only decides which parser to try.
-     */
-    private fun looksLikeBedrockUi(content: String): Boolean =
-        content.contains("\"type\"") &&
-            (
-                content.contains("\"controls\"") ||
-                    content.contains("\"anchor_from\"") ||
-                    content.contains("\"stack_panel\"") ||
-                    content.contains("\"$")
-                )
+    /** The likeliest format, for a caller that only wants to label a file. */
+    fun detect(fileName: String, content: String): ImportFormat? =
+        candidatesFor(fileName, content).firstOrNull()
 
     /**
      * Reads [content] into a project.
@@ -131,6 +126,11 @@ object DesignImporter {
      * [edition] is the edition to give the result when the format itself does
      * not say - HTML and SVG have no opinion about Minecraft editions, and a
      * screen imported while the Java editor is open should be a Java screen.
+     *
+     * When several formats are plausible, each is tried until one produces a
+     * project. If none does, the *first* candidate's failure is the one
+     * reported: it is the likeliest reading of the file, so its complaint is
+     * the one most likely to describe what is actually wrong.
      */
     fun import(
         fileName: String,
@@ -138,15 +138,30 @@ object DesignImporter {
         edition: Edition = Edition.JAVA,
         name: String = fileName.substringAfterLast('/').substringBeforeLast('.'),
     ): ImportOutcome {
-        val format = detect(fileName, content)
-            ?: return ImportOutcome.failed(null, "Could not tell what sort of file this is.")
-
-        return when (format) {
-            ImportFormat.PROJECT -> importProject(content)
-            ImportFormat.BEDROCK_JSON_UI -> BedrockUiImporter.read(content, name)
-            ImportFormat.HTML -> HtmlImporter.read(content, name, edition)
-            ImportFormat.SVG -> SvgImporter.read(content, name, edition)
+        val candidates = candidatesFor(fileName, content)
+        if (candidates.isEmpty()) {
+            return ImportOutcome.failed(null, "Could not tell what sort of file this is.")
         }
+
+        var firstFailure: ImportOutcome? = null
+        candidates.forEach { format ->
+            val outcome = readAs(format, content, name, edition)
+            if (outcome.succeeded) return outcome
+            if (firstFailure == null) firstFailure = outcome
+        }
+        return firstFailure ?: ImportOutcome.failed(null, "Nothing could be read from this file.")
+    }
+
+    private fun readAs(
+        format: ImportFormat,
+        content: String,
+        name: String,
+        edition: Edition,
+    ): ImportOutcome = when (format) {
+        ImportFormat.PROJECT -> importProject(content)
+        ImportFormat.BEDROCK_JSON_UI -> BedrockUiImporter.read(content, name)
+        ImportFormat.HTML -> HtmlImporter.read(content, name, edition)
+        ImportFormat.SVG -> SvgImporter.read(content, name, edition)
     }
 
     private fun importProject(content: String): ImportOutcome =

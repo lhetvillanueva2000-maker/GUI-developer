@@ -83,6 +83,7 @@ import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.canvas.GuiPreview
 import com.mcguidesigner.styles.export.ImageExportPanel
+import com.mcguidesigner.styles.export.ImportPreviewPanel
 import com.mcguidesigner.styles.render.TextureCache
 import com.mcguidesigner.styles.theme.ErrorRed
 import com.mcguidesigner.styles.theme.InfoBlue
@@ -130,6 +131,7 @@ fun MobileSheets(
                 MobileSheet.ISSUES -> IssuesSheet(controller, state)
                 MobileSheet.EXPORT -> ExportSheet(app, state, onExport)
                 MobileSheet.IMAGE_EXPORT -> ImageExportSheet(app, state, textures, onSaveImage)
+                MobileSheet.IMPORT_PREVIEW -> ImportPreviewSheet(app, textures)
                 MobileSheet.PROJECT -> ProjectSheet(controller, state)
                 MobileSheet.CANVAS -> CanvasSheet(controller, state)
                 MobileSheet.PREFABS -> PrefabsSheet(app, state)
@@ -665,6 +667,28 @@ private fun ExportSheet(app: AndroidAppState, state: EditorState, onExport: (Exp
             }
         }
 
+        // In the list rather than under the button: a picture of the screen is
+        // the export people reach for most, and it was the one thing here that
+        // needed to be found before it could be chosen.
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(palette.chromePanelAlt)
+                .clickable { app.sheet = MobileSheet.IMAGE_EXPORT }
+                .padding(14.dp),
+        ) {
+            Column {
+                Text("Image (PNG)", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "A picture of the design, at any size",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = palette.chromeTextMuted,
+                )
+            }
+        }
+
         if (target == ExportTarget.CODE) {
             MobileCodeTargetPicker(
                 edition = state.edition,
@@ -711,11 +735,6 @@ private fun ExportSheet(app: AndroidAppState, state: EditorState, onExport: (Exp
             modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
         ) { Text("Export as .zip") }
 
-        TextButton(
-            onClick = { app.sheet = MobileSheet.IMAGE_EXPORT },
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-        ) { Text("Export as an image instead…") }
-
         Box(Modifier.height(24.dp))
     }
 }
@@ -746,6 +765,38 @@ private fun ImageExportSheet(
             textures = textures,
             onSave = onSaveImage,
             onCancel = { app.sheet = MobileSheet.EXPORT },
+        )
+        Box(Modifier.height(24.dp))
+    }
+}
+
+/**
+ * What an import found, before it is allowed in.
+ *
+ * The phone shows the same panel the desktop does, for the same reason: these
+ * readers translate between formats that disagree about what a layout is, and
+ * "twelve of the nineteen elements came across" is something to know before
+ * deciding rather than after.
+ */
+@Composable
+private fun ImportPreviewSheet(app: AndroidAppState, textures: TextureCache) {
+    val outcome = app.pendingImport ?: return
+    val project = outcome.project ?: return
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
+    ) {
+        SheetTitle("Import", "Check this over before it lands")
+        ImportPreviewPanel(
+            project = project,
+            formatName = outcome.format?.displayName ?: "a design",
+            notes = outcome.notes,
+            textures = textures,
+            onImport = { app.confirmImport() },
+            onCancel = { app.cancelImport() },
         )
         Box(Modifier.height(24.dp))
     }

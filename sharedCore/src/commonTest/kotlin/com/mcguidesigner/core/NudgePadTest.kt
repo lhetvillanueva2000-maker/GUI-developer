@@ -4,9 +4,82 @@ import com.mcguidesigner.core.editor.EditorSettings
 import com.mcguidesigner.core.editor.NudgePad
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class NudgePadTest {
+
+    // -- The step bar ------------------------------------------------------
+
+    @Test
+    fun `the ends of the bar are the ends of the range`() {
+        assertEquals(EditorSettings.MIN_STEP, NudgePad.stepAtFraction(0f))
+        assertEquals(EditorSettings.MAX_STEP, NudgePad.stepAtFraction(1f))
+    }
+
+    @Test
+    fun `a finger past either end does not leave the range`() {
+        assertEquals(EditorSettings.MIN_STEP, NudgePad.stepAtFraction(-3f))
+        assertEquals(EditorSettings.MAX_STEP, NudgePad.stepAtFraction(9f))
+    }
+
+    @Test
+    fun `every doubling is the same distance along the bar`() {
+        // The reason the scale is exponential: on a linear bar, 1 through 8 -
+        // the values actually used - would share the first six percent of it.
+        val gaps = listOf(1, 2, 4, 8, 16, 32, 64, 128)
+            .map { NudgePad.fractionForStep(it) }
+            .zipWithNext { a, b -> b - a }
+
+        gaps.forEach { gap ->
+            assertEquals(1f / 7f, gap, 0.001f, "each doubling should be a seventh of the bar")
+        }
+    }
+
+    @Test
+    fun `a position and a step name each other`() {
+        // Not float equality: a position is continuous and a step is a whole
+        // number, so the promise is that going out and back lands on the same
+        // step, not on the same float.
+        listOf(1, 2, 3, 5, 8, 16, 33, 64, 128).forEach { step ->
+            assertEquals(step, NudgePad.stepAtFraction(NudgePad.fractionForStep(step)), "for $step")
+        }
+    }
+
+    @Test
+    fun `the bar rises all the way along`() {
+        // A scale that plateaus would have stretches of bar that do nothing,
+        // which reads as the control being broken.
+        var previous = 0
+        var rises = 0
+        (0..100).forEach { index ->
+            val step = NudgePad.stepAtFraction(index / 100f)
+            assertTrue(step >= previous, "the bar went backwards at $index%")
+            if (step > previous) rises++
+            previous = step
+        }
+        assertTrue(rises > 30, "expected the value to keep climbing, only changed $rises times")
+    }
+
+    @Test
+    fun `a corrupt position reads as home rather than as nothing`() {
+        assertEquals(NudgePad.HOME_STEP, NudgePad.stepAtFraction(Float.NaN))
+    }
+
+    @Test
+    fun `home is one`() {
+        assertEquals(1, NudgePad.HOME_STEP)
+        assertTrue(NudgePad.isLandmark(NudgePad.HOME_STEP))
+    }
+
+    @Test
+    fun `landmarks are the sizes people are aiming for`() {
+        assertTrue(NudgePad.isLandmark(8), "a vanilla Java container's grid")
+        assertTrue(NudgePad.isLandmark(16), "one texture tile")
+        assertTrue(!NudgePad.isLandmark(7))
+        assertEquals(8, NudgePad.nearestLandmark(9))
+        assertNull(NudgePad.nearestLandmark(12), "12 is not near anything worth naming")
+    }
 
     // -- Resizing ----------------------------------------------------------
 
@@ -17,7 +90,7 @@ class NudgePadTest {
         // this wrong is the classic resize bug: the control creeps a little
         // every time you touch it.
         val start = 1f
-        assertEquals(start, NudgePad.scaleAfterDrag(NudgePad.scaleAfterDrag(start, 90f), -90f))
+        assertEquals(start, NudgePad.scaleAfterDrag(NudgePad.scaleAfterDrag(start, 60f), -60f))
     }
 
     @Test
@@ -50,50 +123,5 @@ class NudgePadTest {
         listOf(0.7f, 1f, 1.5f, 2f).forEach { scale ->
             assertEquals(ratio, NudgePad.keyDp(scale) / NudgePad.gapDp(scale), 0.001f, "at $scale")
         }
-    }
-
-    // -- The centre step control -------------------------------------------
-
-    @Test
-    fun `dragging the centre back to where it started restores the step`() {
-        val start = 4
-        assertEquals(start, NudgePad.stepAfterDrag(NudgePad.stepAfterDrag(start, 60f), -60f))
-    }
-
-    @Test
-    fun `the step never leaves its supported range`() {
-        assertEquals(EditorSettings.MAX_STEP, NudgePad.stepAfterDrag(1, 100_000f))
-        assertEquals(EditorSettings.MIN_STEP, NudgePad.stepAfterDrag(64, -100_000f))
-        assertTrue(NudgePad.stepAfterDrag(1, -50f) >= 1, "a step of zero would make the arrows do nothing")
-    }
-
-    @Test
-    fun `a small drag does not change the step at all`() {
-        // Otherwise a tap that wobbles by two pixels changes the number, and
-        // tapping is how you reset it.
-        assertEquals(5, NudgePad.stepAfterDrag(5, 2f))
-        assertEquals(5, NudgePad.stepAfterDrag(5, -2f))
-    }
-
-    @Test
-    fun `the drag distance for a step is the inverse of the step for a distance`() {
-        listOf(1, 3, 8, 16, 64).forEach { target ->
-            assertEquals(target, NudgePad.stepAfterDrag(1, NudgePad.dragDpFor(1, target)), "for $target")
-        }
-    }
-
-    @Test
-    fun `home is one`() {
-        assertEquals(1, NudgePad.HOME_STEP)
-        assertTrue(NudgePad.isLandmark(NudgePad.HOME_STEP))
-    }
-
-    @Test
-    fun `landmarks are the sizes people are aiming for`() {
-        assertTrue(NudgePad.isLandmark(8), "a vanilla Java container's grid")
-        assertTrue(NudgePad.isLandmark(16), "one texture tile")
-        assertTrue(!NudgePad.isLandmark(7))
-        assertEquals(8, NudgePad.nearestLandmark(9))
-        assertEquals(null, NudgePad.nearestLandmark(12), "12 is not near anything worth naming")
     }
 }

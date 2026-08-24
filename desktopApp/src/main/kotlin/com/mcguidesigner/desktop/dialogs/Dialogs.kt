@@ -49,6 +49,7 @@ import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.export.ImageExportPanel
+import com.mcguidesigner.styles.export.ImportPreviewPanel
 import com.mcguidesigner.styles.render.rememberTextureCache
 import com.mcguidesigner.styles.theme.ErrorRed
 import com.mcguidesigner.styles.theme.LocalSkinPalette
@@ -146,12 +147,30 @@ fun TemplateGalleryDialog(app: AppState) {
     )
 }
 
+/**
+ * Everything this design can be turned into, in one list.
+ *
+ * The image sits in that list rather than behind a button beside it. It was a
+ * sub-button in the first cut of this, which put the *most* asked-for export -
+ * a picture of the screen, to show somebody - one level below the resource
+ * packs. Being in the list means it is found by the same look that finds the
+ * others; what it does *not* mean is that `ExportManager` produces it, because
+ * an image has to be drawn by a live composition rather than computed from the
+ * document. So it is a row here and a different body below, and the exporter
+ * pipeline never learns about it.
+ */
 @Composable
-fun ExportDialog(app: AppState, state: EditorState) {
+fun ExportDialog(app: AppState, state: EditorState, startWithImage: Boolean = false) {
     val palette = LocalSkinPalette.current
     var target by remember { mutableStateOf(app.exportTarget) }
-    val bundle = remember(state.project, target, app.codeTarget) {
-        ExportManager.export(state.project, target, app.codeTarget)
+    var imageMode by remember { mutableStateOf(startWithImage) }
+    val textures = rememberTextureCache(state.project)
+
+    // Only computed for the file-producing targets: building a whole export
+    // bundle to show a tree nobody is looking at is wasted work on every
+    // keystroke in the image panel.
+    val bundle = remember(state.project, target, app.codeTarget, imageMode) {
+        if (imageMode) null else ExportManager.export(state.project, target, app.codeTarget)
     }
     val available = remember(state.edition) { ExportManager.availableTargets(state.edition) }
 
@@ -159,19 +178,19 @@ fun ExportDialog(app: AppState, state: EditorState) {
         onDismissRequest = { app.dialog = ActiveDialog.NONE },
         title = { Text("Export") },
         text = {
-            Column(Modifier.width(580.dp).heightIn(max = 620.dp).verticalScroll(rememberScrollState())) {
+            Column(Modifier.width(580.dp).heightIn(max = 640.dp).verticalScroll(rememberScrollState())) {
                 Text("What are you exporting to?", style = MaterialTheme.typography.labelMedium)
                 Box(Modifier.height(6.dp))
 
                 available.distinct().forEach { candidate ->
-                    val selected = candidate == target
+                    val selected = !imageMode && candidate == target
                     Row(
                         Modifier
                             .fillMaxWidth()
                             .padding(vertical = 3.dp)
                             .clip(RoundedCornerShape(6.dp))
                             .background(if (selected) palette.accentMuted else palette.chromePanelAlt)
-                            .clickable { target = candidate }
+                            .clickable { target = candidate; imageMode = false }
                             .padding(10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -188,6 +207,38 @@ fun ExportDialog(app: AppState, state: EditorState) {
                     }
                 }
 
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (imageMode) palette.accentMuted else palette.chromePanelAlt)
+                        .clickable { imageMode = true }
+                        .padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Image (PNG)", style = MaterialTheme.typography.labelLarge)
+                        Text(
+                            "A picture of the design, at any size",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = palette.chromeTextMuted,
+                        )
+                    }
+                }
+
+                if (imageMode) {
+                    Box(Modifier.height(14.dp))
+                    Divider(color = palette.chromeBorder)
+                    Box(Modifier.height(14.dp))
+                    ImageExportPanel(
+                        project = state.project,
+                        textures = textures,
+                        onSave = { fileName, bytes -> app.saveImage(fileName, bytes) },
+                    )
+                    return@Column
+                }
+
                 if (target == ExportTarget.CODE) {
                     Box(Modifier.height(14.dp))
                     CodeTargetPicker(
@@ -197,12 +248,16 @@ fun ExportDialog(app: AppState, state: EditorState) {
                     )
                 }
 
+                // Never null here: `bundle` is only null in image mode, which
+                // returned above.
+                val files = bundle ?: return@Column
+
                 Box(Modifier.height(12.dp))
                 Divider(color = palette.chromeBorder)
                 Box(Modifier.height(8.dp))
 
                 Text(
-                    "${bundle.fileCount} file(s), about ${bundle.totalBytes / 1024} KB",
+                    "${files.fileCount} file(s), about ${files.totalBytes / 1024} KB",
                     style = MaterialTheme.typography.labelMedium,
                 )
                 Box(
@@ -215,19 +270,19 @@ fun ExportDialog(app: AppState, state: EditorState) {
                         .padding(8.dp),
                 ) {
                     Text(
-                        bundle.tree(),
+                        files.tree(),
                         style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
                         color = palette.chromeTextMuted,
                     )
                 }
 
-                if (bundle.warnings.isNotEmpty()) {
+                if (files.warnings.isNotEmpty()) {
                     Box(Modifier.height(10.dp))
                     Text(
-                        "${bundle.warnings.count { it.severity == Severity.ERROR }} error(s), " +
-                            "${bundle.warnings.count { it.severity == Severity.WARNING }} warning(s)",
+                        "${files.warnings.count { it.severity == Severity.ERROR }} error(s), " +
+                            "${files.warnings.count { it.severity == Severity.WARNING }} warning(s)",
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (bundle.hasBlockingErrors) ErrorRed else WarningAmber,
+                        color = if (files.hasBlockingErrors) ErrorRed else WarningAmber,
                     )
                     Column(
                         Modifier
@@ -235,7 +290,7 @@ fun ExportDialog(app: AppState, state: EditorState) {
                             .heightIn(max = 130.dp)
                             .verticalScroll(rememberScrollState()),
                     ) {
-                        bundle.warnings.take(30).forEach { issue ->
+                        files.warnings.take(30).forEach { issue ->
                             Text(
                                 "• ${issue.message}",
                                 style = MaterialTheme.typography.labelSmall,
@@ -251,51 +306,23 @@ fun ExportDialog(app: AppState, state: EditorState) {
             }
         },
         confirmButton = {
-            Row {
-                TextButton(onClick = { app.dialog = ActiveDialog.IMAGE_EXPORT }) { Text("Image…") }
-                TextButton(onClick = {
-                    app.exportTarget = target
-                    app.runExport(target, asZip = false)
-                }) { Text("Export to folder") }
-                TextButton(onClick = {
-                    app.exportTarget = target
-                    app.runExport(target, asZip = true)
-                }) { Text("Export as ZIP") }
+            // The image panel carries its own Save button, because only it
+            // knows when the bytes have finished rendering.
+            if (!imageMode) {
+                Row {
+                    TextButton(onClick = {
+                        app.exportTarget = target
+                        app.runExport(target, asZip = false)
+                    }) { Text("Export to folder") }
+                    TextButton(onClick = {
+                        app.exportTarget = target
+                        app.runExport(target, asZip = true)
+                    }) { Text("Export as ZIP") }
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = { app.dialog = ActiveDialog.NONE }) { Text("Cancel") }
-        },
-    )
-}
-
-/**
- * Renders the design to a PNG at a chosen size.
- *
- * Its own dialog rather than another [ExportTarget], because the image is the
- * only export that cannot be produced by `ExportManager`: everything else is
- * text or bytes computed from the document, and this one has to be *drawn*,
- * which needs a live composition. Pretending otherwise would mean an export
- * target that the shared pipeline silently returns nothing for.
- */
-@Composable
-fun ImageExportDialog(app: AppState, state: EditorState) {
-    val textures = rememberTextureCache(state.project)
-
-    AlertDialog(
-        onDismissRequest = { app.dialog = ActiveDialog.NONE },
-        title = { Text("Export as image") },
-        text = {
-            ImageExportPanel(
-                project = state.project,
-                textures = textures,
-                onSave = { fileName, bytes -> app.saveImage(fileName, bytes) },
-                modifier = Modifier.width(520.dp).heightIn(max = 640.dp).verticalScroll(rememberScrollState()),
-            )
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = { app.dialog = ActiveDialog.NONE }) { Text("Close") }
+            TextButton(onClick = { app.dialog = ActiveDialog.NONE }) { Text(if (imageMode) "Close" else "Cancel") }
         },
     )
 }
@@ -502,5 +529,39 @@ fun ShortcutsDialog(app: AppState) {
             }
         },
         confirmButton = { TextButton(onClick = { app.dialog = ActiveDialog.NONE }) { Text("Close") } },
+    )
+}
+
+/**
+ * What an import found, before it is allowed in.
+ *
+ * Its own dialog rather than a step inside the export one, because import and
+ * export are opposite directions and sharing a window would make each of them
+ * harder to find.
+ */
+@Composable
+fun ImportPreviewDialog(app: AppState) {
+    val outcome = app.pendingImport ?: return
+    val project = outcome.project ?: return
+    val textures = rememberTextureCache(project)
+
+    AlertDialog(
+        onDismissRequest = { app.cancelImport() },
+        title = { Text("Import") },
+        text = {
+            ImportPreviewPanel(
+                project = project,
+                formatName = outcome.format?.displayName ?: "a design",
+                notes = outcome.notes,
+                textures = textures,
+                onImport = { app.confirmImport() },
+                onCancel = { app.cancelImport() },
+                modifier = Modifier.width(520.dp).heightIn(max = 640.dp).verticalScroll(rememberScrollState()),
+            )
+        },
+        // The panel carries its own buttons: the import decision and the notes
+        // that inform it belong in one column, not split across a dialog's
+        // body and its footer.
+        confirmButton = {},
     )
 }

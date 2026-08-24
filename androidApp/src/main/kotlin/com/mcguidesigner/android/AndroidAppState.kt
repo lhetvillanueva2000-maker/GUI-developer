@@ -32,6 +32,7 @@ import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.DesignImporter
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ImportFormat
+import com.mcguidesigner.exporters.ImportOutcome
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.render.createAnimatedTextureFromFrames
 import com.mcguidesigner.styles.render.createTextureAsset
@@ -71,6 +72,7 @@ enum class MobileSheet {
     ISSUES,
     EXPORT,
     IMAGE_EXPORT,
+    IMPORT_PREVIEW,
     PROJECT,
     CANVAS,
     PREFABS,
@@ -185,6 +187,16 @@ class AndroidAppState(initial: GuiProject) {
 
     /** Set while an export is pending a "create document" result from SAF. */
     var pendingExportTarget: ExportTarget? = null
+
+    /**
+     * An import that has been read but not yet accepted.
+     *
+     * Held rather than applied because these readers translate between formats
+     * that disagree about what a layout is, and the caveats matter *before* the
+     * decision rather than as a notification afterwards.
+     */
+    var pendingImport by mutableStateOf<ImportOutcome?>(null)
+        private set
 
     /**
      * A rendered PNG waiting for somewhere to go.
@@ -573,32 +585,28 @@ class AndroidAppState(initial: GuiProject) {
                     return@fold
                 }
 
-                controller = freshController(project)
-                section = MobileSection.DESIGN
-                sheet = MobileSheet.NONE
-
                 if (outcome.format == ImportFormat.PROJECT) {
-                    // Only a project document is the file it came from; saving
-                    // an imported design must not write over the JSON or HTML
-                    // it was read out of.
+                    // A project document is the file it came from, opens
+                    // straight into the front tab, and needs no preview -
+                    // nothing was translated, so there is nothing to warn about.
+                    controller = freshController(project)
                     documentUri = uri
                     documentName = displayName
                     AndroidFileIO.persistPermission(context, uri, writable = true)
+                    section = MobileSection.DESIGN
+                    sheet = MobileSheet.NONE
                     status = "Opened ${displayName ?: "project"}."
+                    if (outcome.notes.isNotEmpty()) {
+                        postNotice(
+                            Notice(id = "import", headline = "Opened with notes", points = outcome.notes),
+                        )
+                    }
                 } else {
-                    documentUri = null
-                    documentName = null
-                    status = "Imported ${project.elements.size} element(s) from ${displayName ?: "the file"}."
-                }
-
-                if (outcome.notes.isNotEmpty()) {
-                    postNotice(
-                        Notice(
-                            id = "import",
-                            headline = "Imported as ${outcome.format?.displayName ?: "a design"}",
-                            points = outcome.notes,
-                        ),
-                    )
+                    // Everything else was translated between formats that do
+                    // not agree about what a layout is, so it gets looked at
+                    // before it lands. See `ImportPreviewPanel`.
+                    pendingImport = outcome
+                    sheet = MobileSheet.IMPORT_PREVIEW
                 }
             },
             onFailure = { status = "Could not open: ${it.message}" },
@@ -856,6 +864,34 @@ class AndroidAppState(initial: GuiProject) {
     fun exportFileName(target: ExportTarget): String {
         val bundle = ExportManager.export(controller.project, target, codeTarget)
         return "${bundle.rootName}.zip"
+    }
+
+    /**
+     * Accepts the previewed import, into a *new tab*.
+     *
+     * Never over the open document - matching the desktop, and for the same
+     * reason: an import is a comparison, and overwriting the canvas destroys
+     * the thing being compared against.
+     */
+    fun confirmImport() {
+        val project = pendingImport?.project ?: return
+        pendingImport = null
+
+        tabs.add(AndroidDocumentTab(project))
+        activeTab = tabs.lastIndex
+        // Not the file it came from: saving must not write a project document
+        // over somebody's hand-edited JSON.
+        documentUri = null
+        documentName = null
+        section = MobileSection.DESIGN
+        sheet = MobileSheet.NONE
+        screen = AppScreen.EDITOR
+        status = "Imported ${project.elements.size} element(s)."
+    }
+
+    fun cancelImport() {
+        pendingImport = null
+        sheet = MobileSheet.NONE
     }
 
     /** Writes the PNG held by [pendingImageBytes] to the document just created. */

@@ -1,22 +1,33 @@
 package com.mcguidesigner.core.editor
 
 import kotlin.math.abs
+import kotlin.math.ln
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 /**
  * The move pad's arithmetic, with no Compose in it.
  *
- * Everything here is a pure function of a gesture and the current settings,
- * which is the only reason any of it can be checked: a drag that resizes a
- * control and a drag that changes a number are exactly the sort of thing that
- * feels right on the developer's device, is unusable on somebody else's, and
- * cannot be argued about without the numbers written down somewhere.
+ * The pad is two things stacked, and keeping them separate is the whole point
+ * of the layout:
  *
- * The pad itself is four arrows and one centre control. It used to be four
- * arrows, a centre that toggled between two step sizes, and a button
- * underneath that opened a settings sheet to change what those two sizes were -
- * three different ways to answer "how far does this move", two of which were
- * not on the pad. Now the centre *is* the step: one number, dragged.
+ *  - **The middle is only the four directions.** Up, down, left, right, and a
+ *    hole where a fifth button would be. Nothing else lives in the cross,
+ *    because everything else that ever lived there was something you pressed by
+ *    accident while reaching for an arrow.
+ *  - **Under it is one control**, and that control is the step. One bar, one
+ *    number, one gesture.
+ *
+ * The step bar is *positional* rather than a relative drag: where your finger
+ * is along the bar is the value, the way a slider works. A relative drag means
+ * getting from 1 to 16 is a long push and a short one undoes an unknown amount
+ * of it; a position means every value in the range is one touch away, which is
+ * what "easily controlled" has to mean on a control this small.
+ *
+ * The scale is exponential, so 1, 2, 4, 8, 16, 32, 64 and 128 land at even
+ * intervals along the bar. A linear scale would give the whole left half to
+ * 1-64 territory nobody wants and squeeze 1 through 8 - the values actually
+ * used - into the first few millimetres.
  */
 object NudgePad {
 
@@ -26,21 +37,61 @@ object NudgePad {
     /** Gap between keys at scale 1.0, in dp. */
     const val BASE_GAP_DP = 3f
 
-    /** How far the resize handle must be dragged to double the pad, in dp. */
-    private const val RESIZE_TRAVEL_DP = 180f
-
-    /** How far the centre must be dragged to change the step by one, in dp. */
-    private const val STEP_TRAVEL_DP = 20f
+    /** How far the resize handle travels to take the pad from end to end, in dp. */
+    private const val RESIZE_TRAVEL_DP = 150f
 
     /**
-     * The value the centre returns to.
+     * The value the bar returns to when tapped.
      *
      * One pixel, because the pad exists for the adjustment a fingertip cannot
-     * make, and that adjustment is nearly always one pixel. Tapping the centre
-     * comes back here from wherever a drag left it, so getting lost at 37 is
-     * always one tap from fixed.
+     * make and that adjustment is nearly always one pixel. Tapping comes back
+     * here from wherever a drag left it, so being lost at 37 is one tap from
+     * fixed.
      */
     const val HOME_STEP = 1
+
+    /** Sizes worth marking on the bar, and the reason each is worth marking. */
+    val LANDMARKS = listOf(1, 8, 16)
+
+    // -- The step bar ------------------------------------------------------
+
+    /**
+     * The step at [fraction] along the bar, where 0 is the left end.
+     *
+     * `2^(f * log2(MAX))`, so the ends are exactly [EditorSettings.MIN_STEP]
+     * and [EditorSettings.MAX_STEP] and each doubling is the same distance.
+     */
+    fun stepAtFraction(fraction: Float): Int {
+        if (fraction.isNaN()) return HOME_STEP
+        val clamped = fraction.coerceIn(0f, 1f)
+        val exponent = clamped * log2(EditorSettings.MAX_STEP.toFloat())
+        return 2f.pow(exponent).roundToInt().coerceIn(EditorSettings.MIN_STEP, EditorSettings.MAX_STEP)
+    }
+
+    /**
+     * Where [step] sits along the bar.
+     *
+     * The inverse of [stepAtFraction] to within the rounding that turns a
+     * continuous position into a whole number of pixels - which is why the
+     * round trip is asserted as "lands on the same step", not "the same float".
+     */
+    fun fractionForStep(step: Int): Float {
+        val clamped = step.coerceIn(EditorSettings.MIN_STEP, EditorSettings.MAX_STEP)
+        return (log2(clamped.toFloat()) / log2(EditorSettings.MAX_STEP.toFloat())).coerceIn(0f, 1f)
+    }
+
+    private fun log2(value: Float): Float = ln(value) / ln(2f)
+
+    /**
+     * Whether [step] is one of the sizes worth calling out on the bar.
+     *
+     * 1 is home, 8 is a vanilla Java container's grid and 16 is one texture
+     * tile. Marked only - nothing snaps to them, because a bar that jumps past
+     * the number you wanted is worse than one that does not help you find it.
+     */
+    fun isLandmark(step: Int): Boolean = step in LANDMARKS
+
+    // -- Resizing ----------------------------------------------------------
 
     /** Key size in dp at [scale]. */
     fun keyDp(scale: Float): Float = BASE_KEY_DP * clampScale(scale)
@@ -60,50 +111,14 @@ object NudgePad {
      * raw gesture to that convention, because only it knows which corner the
      * pad is in.
      *
-     * Additive rather than multiplicative on purpose: a multiplicative drag
-     * moves fast at the big end and crawls at the small end, so the pad
-     * overshoots exactly where the fine control is wanted.
+     * Additive rather than multiplicative: a multiplicative drag moves fast at
+     * the big end and crawls at the small end, so the pad overshoots exactly
+     * where the fine control is wanted.
      */
     fun scaleAfterDrag(current: Float, dragDp: Float): Float =
         clampScale(clampScale(current) + dragDp / RESIZE_TRAVEL_DP)
 
-    /**
-     * The step after dragging the centre by [dragDp], right or up being more.
-     *
-     * Accumulating in dp rather than counting drag events, because a slow drag
-     * delivers many small deltas and a flick delivers a few large ones, and
-     * counting events makes the two mean different things.
-     */
-    fun stepAfterDrag(current: Int, dragDp: Float): Int {
-        val moved = (dragDp / STEP_TRAVEL_DP).roundToInt()
-        return (current + moved).coerceIn(EditorSettings.MIN_STEP, EditorSettings.MAX_STEP)
-    }
-
-    /**
-     * Drag distance in dp that [step] sits at, relative to [from].
-     *
-     * The inverse of [stepAfterDrag], so a shell can hold the *accumulated*
-     * gesture rather than re-deriving it and drifting by a pixel per frame.
-     */
-    fun dragDpFor(from: Int, step: Int): Float = (step - from) * STEP_TRAVEL_DP
-
-    /**
-     * Whether [step] is one of the sizes worth calling out.
-     *
-     * 1 is the home value, 8 is a vanilla Java container's grid and 16 is a
-     * texture tile, so those three are where somebody dragging is usually
-     * trying to land. Used only to mark them; nothing is snapped, because a pad
-     * that jumps past the number you wanted is worse than one that does not
-     * help you find it.
-     */
-    fun isLandmark(step: Int): Boolean = step == 1 || step == 8 || step == 16
-
-    /**
-     * The nearest landmark within [toleranceSteps], or null.
-     *
-     * Offered as a hint the shell can show while dragging; acting on it is the
-     * shell's choice, and the shipping pad does not.
-     */
-    fun nearestLandmark(step: Int, toleranceSteps: Int = 2): Int? =
-        listOf(1, 8, 16).filter { abs(it - step) <= toleranceSteps }.minByOrNull { abs(it - step) }
+    /** The nearest landmark within [tolerance] steps, or null. A hint, not a snap. */
+    fun nearestLandmark(step: Int, tolerance: Int = 2): Int? =
+        LANDMARKS.filter { abs(it - step) <= tolerance }.minByOrNull { abs(it - step) }
 }

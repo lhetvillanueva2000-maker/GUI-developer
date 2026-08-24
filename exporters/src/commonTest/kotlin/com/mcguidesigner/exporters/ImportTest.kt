@@ -52,16 +52,46 @@ class ImportTest {
 
     @Test
     fun `each format is recognised from its content, not its name`() {
-        // All three of these can arrive as ".json", and two of them do.
+        // Two of these arrive as ".json" and are told apart only by what is
+        // inside them. Asserted on the format the import *landed* on rather
+        // than on the first guess: sniffing is a guess, and the promise is
+        // that a wrong guess corrects itself before the user sees anything.
         val project = CodeGenerator.generate(sample, CodeTarget.PROJECT_JSON).source
         val bedrock = CodeGenerator.generate(sample, CodeTarget.BEDROCK_JSON).source
         val html = CodeGenerator.generate(sample, CodeTarget.HTML_CSS).source
         val svg = CodeGenerator.generate(sample, CodeTarget.SVG).source
 
-        assertEquals(ImportFormat.PROJECT, DesignImporter.detect("anything.json", project))
-        assertEquals(ImportFormat.BEDROCK_JSON_UI, DesignImporter.detect("anything.json", bedrock))
-        assertEquals(ImportFormat.HTML, DesignImporter.detect("anything.txt", html))
-        assertEquals(ImportFormat.SVG, DesignImporter.detect("anything.txt", svg))
+        assertEquals(ImportFormat.PROJECT, DesignImporter.import("anything.json", project).format)
+        assertEquals(ImportFormat.BEDROCK_JSON_UI, DesignImporter.import("anything.json", bedrock).format)
+        assertEquals(ImportFormat.HTML, DesignImporter.import("anything.txt", html).format)
+        assertEquals(ImportFormat.SVG, DesignImporter.import("anything.txt", svg).format)
+    }
+
+    @Test
+    fun `a page that merely mentions a project key is still read as a page`() {
+        // The first cut sniffed for the text "formatVersion" anywhere in the
+        // file, so a page that happened to mention it was read as a project
+        // document, failed to parse, and was reported as broken - when it was
+        // a perfectly good page.
+        val html = """
+            <html><head><style>
+              .real { left: 5px; top: 5px; width: 20px; height: 20px; }
+            </style></head><body>
+              <p>The "formatVersion" field is documented below.</p>
+              <div class="real"></div>
+            </body></html>
+        """.trimIndent()
+
+        val outcome = DesignImporter.import("docs.html", html)
+        assertEquals(ImportFormat.HTML, outcome.format)
+        assertNotNull(outcome.project, "notes: ${outcome.notes}")
+    }
+
+    @Test
+    fun `a json file that is neither project nor screen reports the likeliest problem`() {
+        val outcome = DesignImporter.import("data.json", """{ "totally": "unrelated" }""")
+        assertNull(outcome.project)
+        assertTrue(outcome.notes.isNotEmpty(), "a refusal has to say why")
     }
 
     @Test
@@ -292,5 +322,47 @@ class ImportTest {
         assertEquals(IntRect(185, 85, 30, 30), project.elements[1].bounds, "a circle becomes its bounding box")
         assertEquals("Play", project.elements[0].props.string("label"), "text lands on the shape beneath it")
         assertTrue(outcome.notes.any { it.contains("path") }, "what was dropped has to be said: ${outcome.notes}")
+    }
+
+    @Test
+    fun `a screen with no root panel does not come back with everything twice`() {
+        // The fallback for a file with no screen_content used to take every
+        // control that had a type - including the ones already nested inside
+        // another control, so a two-level screen imported as one design with
+        // every element in it twice.
+        val json = """
+            {
+              "namespace": "demo",
+              "outer": {
+                "type": "panel",
+                "size": [ 100, 60 ],
+                "offset": [ 0, 0 ],
+                "controls": [ { "inner@demo.inner": {} } ]
+              },
+              "inner": { "type": "button", "size": [ 40, 20 ], "offset": [ 4, 4 ] }
+            }
+        """.trimIndent()
+
+        val project = assertNotNull(DesignImporter.import("screen.json", json).project)
+        assertEquals(1, project.elements.size, "only the outer panel is a root")
+        assertEquals(1, project.elements[0].children.size)
+        assertEquals(2, project.elements.walkAll().count(), "two controls, not four")
+    }
+
+    @Test
+    fun `a name the author wrote survives the text drawn on top of it`() {
+        val svg = """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">
+              <rect id="primary-cta" x="10" y="10" width="80" height="24" fill="#3c3c3c"/>
+              <text x="20" y="26" fill="#ffffff">Play</text>
+              <rect x="10" y="50" width="80" height="24" fill="#3c3c3c"/>
+              <text x="20" y="66" fill="#ffffff">Quit</text>
+            </svg>
+        """.trimIndent()
+
+        val project = assertNotNull(DesignImporter.import("mock.svg", svg).project)
+        assertEquals("primary cta", project.elements[0].name, "an authored id outranks the label")
+        assertEquals("Play", project.elements[0].props.string("label"))
+        assertEquals("Quit", project.elements[1].name, "an unnamed shape takes the label")
     }
 }

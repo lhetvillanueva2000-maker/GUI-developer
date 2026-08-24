@@ -91,15 +91,21 @@ object HelpBook {
                 HelpEntry(
                     "Move pad",
                     "",
-                    "The four arrows on the canvas. Drag the number in the middle to " +
-                        "change the step, tap it to come back to 1, long press it for " +
-                        "the settings.",
+                    "Four arrows on the canvas, and nothing in the middle of them - " +
+                        "the centre is the space your thumb crosses to reach the four.",
+                ),
+                HelpEntry(
+                    "Change the step",
+                    "",
+                    "The bar under the pad. Touch it anywhere and that position is the " +
+                        "value; tap it to come back to 1; long press for the settings. " +
+                        "The scale is exponential, so 1, 2, 4, 8, 16, 32, 64 and 128 " +
+                        "are evenly spaced.",
                 ),
                 HelpEntry(
                     "Resize the move pad",
                     "",
-                    "Drag the small grip on the pad's inner corner. Reset it from " +
-                        "Editor Settings.",
+                    "Drag the grip on the pad's inner corner. Reset it from Editor Settings.",
                 ),
                 HelpEntry("Rotate", "", "The rotate buttons in the toolbar, or the Rotation property."),
                 HelpEntry("Bring forward", "Ctrl+]"),
@@ -154,9 +160,16 @@ object HelpBook {
                 HelpEntry(
                     "A PNG of the design",
                     "Ctrl+Shift+I",
-                    "At 144p through 2160p, or a whole multiple. Pixel art only " +
-                        "survives whole-number scaling, so each named height snaps to " +
-                        "the nearest one and shows what you actually get.",
+                    "In the export list, alongside the packs. 144p through 2160p or a " +
+                        "whole multiple; pixel art only survives whole-number scaling, " +
+                        "so each named height snaps to the nearest one and shows what " +
+                        "you actually get. A name that cannot be met is not offered.",
+                ),
+                HelpEntry(
+                    "A PNG with no background",
+                    "",
+                    "Set Background to Transparent in the image export, for laying the " +
+                        "screen over a screenshot of the game.",
                 ),
                 HelpEntry("Everything at once", "Ctrl+Shift+E", "Every format above into one folder."),
             ),
@@ -172,6 +185,13 @@ object HelpBook {
                     "Bedrock JSON UI, HTML + CSS, or SVG. Anything exported from here " +
                         "comes back with its own element types; anything else is mapped " +
                         "to the nearest match and the differences are listed.",
+                ),
+                HelpEntry(
+                    "Check an import before it lands",
+                    "",
+                    "Every import shows what it found - a picture, the element count " +
+                        "and what it could not read - and opens in a new tab only once " +
+                        "you accept it. Nothing you have open is ever overwritten.",
                 ),
                 HelpEntry("Import a resource pack", "", "Java and Bedrock packs, with the GUI art pre-selected."),
                 HelpEntry("Import textures", "", "Images and GIFs, straight into the library."),

@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.IntSize
+import com.mcguidesigner.core.image.ImageBackground
 import com.mcguidesigner.core.image.ImageSize
 import com.mcguidesigner.core.image.PngWriter
 import com.mcguidesigner.core.model.GuiProject
@@ -52,9 +53,10 @@ class ProjectImageRenderer internal constructor(
         skin: EditionSkin,
         textures: TextureResolver,
         size: ImageSize,
+        background: ImageBackground = ImageBackground.DEFAULT,
     ): ByteArray {
         layer.record(density, layoutDirection, IntSize(size.width, size.height)) {
-            drawProject(project, skin, textures, measurer, size.scale.toFloat())
+            drawProject(project, skin, textures, measurer, size.scale.toFloat(), background)
         }
         val bitmap = layer.toImageBitmap()
         val pixels = IntArray(size.width * size.height)
@@ -96,19 +98,24 @@ fun DrawScope.drawProject(
     textures: TextureResolver,
     measurer: TextMeasurer,
     scale: Float,
+    background: ImageBackground = ImageBackground.DEFAULT,
 ) {
     val bounds = project.absoluteBounds()
 
     scale(scale, pivot = Offset.Zero) {
         // The canvas colour first, so a design with transparent gaps exports
-        // over its own backdrop rather than over nothing.
-        drawRect(
-            androidx.compose.ui.graphics.Color(project.canvas.backdropColor.toInt()),
-            size = androidx.compose.ui.geometry.Size(
-                project.canvas.width.toFloat(),
-                project.canvas.height.toFloat(),
-            ),
-        )
+        // over its own backdrop rather than over nothing - unless the export
+        // was asked for with no backdrop at all, which is what makes a PNG you
+        // can lay over a screenshot of the game.
+        if (background == ImageBackground.CANVAS) {
+            drawRect(
+                androidx.compose.ui.graphics.Color(project.canvas.backdropColor.toInt()),
+                size = androidx.compose.ui.geometry.Size(
+                    project.canvas.width.toFloat(),
+                    project.canvas.height.toFloat(),
+                ),
+            )
+        }
 
         project.elements.walkAll().forEach { element ->
             if (!element.visible) return@forEach
