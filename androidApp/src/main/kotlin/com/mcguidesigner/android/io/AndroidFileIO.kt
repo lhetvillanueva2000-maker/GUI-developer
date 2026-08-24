@@ -20,6 +20,7 @@ object AndroidFileIO {
 
     const val PROJECT_MIME = "application/json"
     const val ZIP_MIME = "application/zip"
+    const val PNG_MIME = "image/png"
 
     val IMAGE_MIME_TYPES = arrayOf("image/png", "image/jpeg", "image/webp", "image/gif")
 
@@ -38,6 +39,11 @@ object AndroidFileIO {
         // the tail of the previous version behind.
         context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(text.encodeToByteArray()) }
             ?: error("Could not write to the selected document.")
+    }
+
+    fun writeBytes(context: Context, uri: Uri, bytes: ByteArray): Result<Unit> = runCatching {
+        context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
+            ?: error("Could not write to the selected file.")
     }
 
     /**

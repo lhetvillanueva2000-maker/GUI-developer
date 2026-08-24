@@ -34,6 +34,16 @@ import com.mcguidesigner.styles.theme.ThemeMode
 import java.awt.Frame
 import java.io.File
 
+/**
+ * Which of the app's two screens is showing.
+ *
+ * Home is where the edition is chosen, so it comes before the editor rather
+ * than being reachable from inside it. Moving between them never touches the
+ * document - the editor is still holding whatever was open - which is what
+ * makes going back cheap enough not to need an "are you sure".
+ */
+enum class AppScreen { HOME, EDITOR }
+
 /** Which auxiliary window is currently open. */
 enum class ActiveDialog {
     NONE,
@@ -94,6 +104,76 @@ class AppState(initial: GuiProject) {
     var status by mutableStateOf("Ready")
     var pendingExit by mutableStateOf(false)
 
+    /**
+     * Whether the what's-new strip is pulled down.
+     *
+     * Held by the shell rather than by the strip so it survives every
+     * recomposition of the editor around it, and so it stays open across a
+     * view-mode switch - closing itself the moment you looked at the canvas
+     * would make it feel broken.
+     */
+    var noticeExpanded by mutableStateOf(false)
+
+    // -- Navigation --------------------------------------------------------
+
+    var screen by mutableStateOf(AppScreen.HOME)
+        private set
+
+    /**
+     * Opens the editor on [edition], converting the open document if it is
+     * currently the other one.
+     *
+     * Converting rather than replacing: someone who opened the app, restored
+     * yesterday's session and then tapped the wrong card should not lose it.
+     * `switchEdition` already reports anything the target edition cannot
+     * express instead of dropping it silently.
+     */
+    fun openEditor(edition: Edition) {
+        if (controller.current.edition != edition) {
+            controller.switchEdition(edition)
+            status = "Now designing for ${edition.displayName}. " +
+                "The palette, the skin and the export format all followed."
+        }
+        screen = AppScreen.EDITOR
+        persistPreferences()
+    }
+
+    /** Back to the picker. The document stays loaded exactly as it is. */
+    fun goHome() {
+        screen = AppScreen.HOME
+    }
+
+    /**
+     * The line above home's heading.
+     *
+     * "New screen" is a promise, and it is only true on a fresh launch. Once
+     * there is a file open or an edit to lose, saying it anyway would suggest
+     * the cards are about to throw that away - which they are not.
+     */
+    val homeEyebrow: String
+        get() = when {
+            currentFile != null -> "CONTINUE  ·  ${currentFile?.name}"
+            controller.current.dirty -> "CONTINUE  ·  UNSAVED CHANGES"
+            else -> "NEW SCREEN"
+        }
+
+    /**
+     * Writes the donation QR wherever the user points the save dialog.
+     *
+     * The bytes are the file that shipped, copied straight through: the code
+     * someone saves is byte-for-byte the code the app displays.
+     */
+    fun saveDonationQr(bytes: ByteArray) {
+        val target = DesktopFileIO.saveFileDialog(
+            owner = frameProvider(),
+            title = "Save the donation QR code",
+            suggestedName = com.mcguidesigner.core.support.Donation.QR_FILE_NAME,
+        ) ?: return
+        runCatching { target.writeBytes(bytes) }.fold(
+            onSuccess = { status = "QR code saved to ${target.name}." },
+            onFailure = { status = "Could not save the QR code: ${it.message}" },
+        )
+    }
 
     val recentFiles = mutableStateListOf<File>()
 
@@ -291,6 +371,10 @@ class AppState(initial: GuiProject) {
 
     /** Adopts a document recovered from a previous session's snapshot. */
     fun adoptRecovery(recovery: Workspace.Recovery) {
+        // Past the picker: whatever was being worked on already chose an
+        // edition, and being asked to choose again before getting it back
+        // would be a strange way to hand someone their work.
+        screen = AppScreen.EDITOR
         controller = freshController(recovery.project)
         currentFile = recovery.originalFile?.takeIf { it.isFile }
         // Recovered work is by definition unsaved: it was never written to the
@@ -305,7 +389,9 @@ class AppState(initial: GuiProject) {
 
     fun discardRecovery() {
         Workspace.clearRecovery()
-        dialog = if (preferences.showWelcomeOnStart) ActiveDialog.WELCOME else ActiveDialog.NONE
+        // Straight to home rather than on to another dialog: the recovery
+        // prompt was covering the picker, and dismissing it should reveal it.
+        dialog = ActiveDialog.NONE
         status = "Discarded the recovered document."
     }
 

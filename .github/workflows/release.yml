@@ -346,84 +346,82 @@ jobs:
           Each desktop package embeds its own Java runtime, so nothing has to be installed
           first — which is also why they are ~90-110 MB each.
 
-          Upgrading from 1.3.0 is a normal install over the top on every platform.
+          Upgrading from 1.4.0 is a normal install over the top on every platform.
 
           ---
 
           ## What's new in $VERSION
 
-          This one is mostly a bug-fix release, and the bug it is named for is a bad one:
-          **elements stopped being drawn once you panned or zoomed far enough.** If you hit
-          that, it was not your project — it was the editor, and it is fixed.
+          The app opens somewhere new. Java and Bedrock are no longer two tabs inside
+          the editor — they are two cards on a home screen, and you pick one before the
+          editor exists.
 
-          ### Fixed: the canvas losing its contents when you pan or zoom
+          ### A home screen
 
-          Four separate faults, all in the same area:
+          Each card is a real container from its own edition, holding real slots and a
+          real button, drawn entirely from that edition's palette. Java comes out flat,
+          square and hard-edged; Bedrock comes out soft-cornered with a 2px
+          light-over-dark border. They are deliberately not reconciled with each other,
+          because the difference between them is the thing being chosen.
 
-          - **Elements vanished when their parent scrolled off screen.** The canvas skipped
-            anything outside the viewport — and skipped its children with it. A button
-            sitting in full view was not drawn because the panel it belongs to had scrolled
-            past the edge. Every element is now tested on its own, and a container leaving
-            the screen no longer takes its contents with it.
-          - **The canvas painted outside its own area.** Compose does not clip a canvas to
-            its bounds, so at a high zoom the design bled over the docks, the toolbar and
-            the rulers. Both the canvas and the rulers are now clipped to where they
-            belong.
-          - **You could lose the canvas off the edge of the screen.** Panning was
-            unbounded, so one enthusiastic drag left an empty workspace and no way back
-            except Reset. At least a fifth of the canvas now always stays on screen.
-          - **Zoom ignored where you were pointing.** Ctrl+wheel and pinch both zoomed
-            about the centre of the view, so zooming in on a detail walked it off screen.
-            Both now hold the point under the pointer — or under the middle of a pinch —
-            exactly where it is.
+          Home has no edition of its own, so it wears the chrome of whichever card you
+          are hovering — the whole shell repaints as you move between them, and the app
+          changes identity before you commit to anything. The backdrop is drawn in code
+          rather than loaded, so it retints with it.
 
-          The culling rules are now covered by tests that assert what the canvas actually
-          paints at a given pan and zoom, so this particular failure cannot come back
-          unnoticed.
+          **J**, **B** and **T** open Java, open Bedrock and cycle the theme.
 
-          ### Fixed: the desktop window at smaller sizes
+          ### The edition tabs have left the editor
 
-          - The toolbar overflowed below roughly 1200px and quietly pushed the zoom
-            controls and the Design / Preview / Code switcher off its right-hand edge.
-            Those are now pinned and always reachable; the tool buttons take the scroll.
-          - Both docks stayed open in a 900px window, leaving a 240px canvas. Docks now
-            open only if what is left over is still workable.
-          - The inspector no longer disappears when a window is too narrow to dock it — it
-            slides over the canvas instead.
+          The header reports which edition you are in instead of offering to change it,
+          and the arrow at its top left goes back to the picker. Nothing about the open
+          document is lost on the way there or back — picking the other edition converts
+          what you have rather than replacing it, and reports anything the new edition
+          cannot express.
 
-          ### A layout for each of phone, tablet and desktop
+          | | |
+          | --- | --- |
+          | **Desktop** | Arrow at the top left, or **Escape** |
+          | **Tablet** | Arrow in the tool row |
+          | **Phone** | The system back gesture |
 
-          One design system, three deliberate layouts rather than one stretched three ways:
+          Escape unwinds one step at a time, the same order Android's back gesture uses:
+          it cancels an armed placement first, then clears a selection, and only leaves
+          the editor when there is nothing left inside it to dismiss.
 
-          | Width | Navigation | Inspector | Toolbar |
-          | --- | --- | --- | --- |
-          | **Phone**, under 600dp | Bottom bar | Sheet, or a drawer over the canvas | Tools scroll; zoom and view switcher pinned |
-          | **Tablet**, 600–839dp | Navigation rail | **Docked beside the canvas** | Adds guides and rulers |
-          | **Desktop**, 840dp and up | Rail or menu bar | Docked, with the toolbox beside it | Adds the align cluster when all eight fit |
+          ### A what's-new strip
 
-          The tablet layout is the real addition: the properties panel sits next to the
-          canvas instead of covering it, so a value can be dragged while the thing it
-          changes is still visible. Selecting an element switches that panel to Properties
-          on its own.
+          Where the edition tabs used to be. Collapsed it is one line; pull it down and
+          it lists the detail. On a phone that is a downward swipe anywhere on the strip;
+          on a desktop it is the chevron on the right. Both work everywhere — a gesture
+          nobody can see is not an affordance, and a small target is not a good one for a
+          thumb.
 
-          Everything sheds in a fixed order as a window narrows — widest block first — and
-          comes back as it widens. Nothing overlaps and nothing falls off an edge.
+          ### Support moved to home
 
-          ### Support the designer
+          The hand-and-heart mark now sits at the top right of the home screen, and that
+          is its only home. It still carries the InstaPay / QR Ph code, the same details
+          as copyable text, and the list of every app that can pay it. Press and hold the
+          code — or use the button — to save it.
 
-          A new page, reached from the hand-and-heart mark in the top bar (Help ▸ Support
-          the Designer on desktop, the foot of the rail on a tablet). It carries an
-          InstaPay / QR Ph code that around sixty wallets and banks across the region can
-          pay, the same details as plain text for anyone who would rather type them, and a
-          collapsible list of every app that works with the code.
+          Still the whole of the app's monetisation: no ads, no paywall, no account, no
+          telemetry.
 
-          **Press and hold the code** — or use the button under it — to save it as a PNG.
+          ### Fixes
 
-          This is the whole of the app's monetisation. There are no ads, no paywall, no
-          account and no telemetry, and there will not be any. The page asks once and
-          stays out of the way.
+          - The welcome dialog no longer opens on startup. Home already asks which
+            edition you want, and two front doors in a row is one front door too many.
+            It is still on the Help menu.
+          - A session recovered after a crash, or restored after Android killed the
+            process, goes straight back to the editor instead of stopping at the picker.
+          - Four faults in the merged home-screen sources, found on the way in: the two
+            cards were fighting over which one repainted the shell, the card's hover was
+            wired to a source nothing was listening to, the keyboard shortcuts were
+            advertised on a node that never held focus, and the content column asked for
+            a full screen height underneath a bar that had already taken 56dp of it.
 
           ---
+
 
           ### First launch notes
 

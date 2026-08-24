@@ -34,6 +34,16 @@ import com.mcguidesigner.styles.render.createAnimatedTextureFromFrames
 import com.mcguidesigner.styles.render.createTextureAsset
 import com.mcguidesigner.styles.theme.ThemeMode
 
+/**
+ * Which of the app's two screens is showing.
+ *
+ * Home is where the edition is chosen, so it comes before the editor rather
+ * than being reachable from inside it. Moving between them never touches the
+ * document, which is what lets the back gesture reach home without an "are
+ * you sure" in the way.
+ */
+enum class AppScreen { HOME, EDITOR }
+
 /** Bottom-navigation destinations. Mobile navigation, not desktop docks. */
 enum class MobileSection(val title: String, val glyph: String) {
     DESIGN("Design", "◈"),
@@ -82,6 +92,18 @@ class AndroidAppState(initial: GuiProject) {
     var documentName by mutableStateOf<String?>(null)
         private set
 
+    var screen by mutableStateOf(AppScreen.HOME)
+        private set
+
+    /**
+     * Whether the what's-new strip is pulled down.
+     *
+     * Held here rather than inside the strip so it survives every
+     * recomposition of the editor around it, and so a rotation does not close
+     * something the reader had deliberately opened.
+     */
+    var noticeExpanded by mutableStateOf(false)
+
     var section by mutableStateOf(MobileSection.DESIGN)
     var sheet by mutableStateOf(MobileSheet.NONE)
     var codeTarget by mutableStateOf(CodeTarget.HTML_CSS)
@@ -90,6 +112,74 @@ class AndroidAppState(initial: GuiProject) {
 
     /** Set while an export is pending a "create document" result from SAF. */
     var pendingExportTarget: ExportTarget? = null
+
+    // -- Navigation --------------------------------------------------------
+
+    /**
+     * Opens the editor on [edition], converting the open document if it is
+     * currently the other one.
+     *
+     * Converting rather than replacing: someone who opened the app, had
+     * yesterday's session restored and then tapped the wrong card should not
+     * lose it. `switchEdition` reports anything the target edition cannot
+     * express instead of dropping it silently.
+     */
+    fun openEditor(edition: Edition) {
+        if (controller.current.edition != edition) {
+            controller.switchEdition(edition)
+            status = "Now designing for ${edition.displayName}."
+        }
+        screen = AppScreen.EDITOR
+    }
+
+    /**
+     * Straight into the editor, without going through the picker.
+     *
+     * For a session restored after a process kill: the edition was chosen
+     * before the app was killed, and asking again on the way back would look
+     * like the work had been lost.
+     */
+    fun resumeEditor() {
+        screen = AppScreen.EDITOR
+    }
+
+    /** Back to the picker. The document stays loaded exactly as it is. */
+    fun goHome() {
+        sheet = MobileSheet.NONE
+        screen = AppScreen.HOME
+    }
+
+    /**
+     * The line above home's heading.
+     *
+     * "New screen" is only true on a fresh launch; saying it over a document
+     * someone has already worked on would suggest the cards are about to throw
+     * that away, which they are not.
+     */
+    val homeEyebrow: String
+        get() = when {
+            documentName != null -> "CONTINUE  ·  ${documentName}"
+            controller.current.dirty -> "CONTINUE  ·  UNSAVED CHANGES"
+            else -> "NEW SCREEN"
+        }
+
+    // -- Support page ------------------------------------------------------
+
+    /** The QR bytes waiting on a "create document" result from SAF. */
+    var pendingQrBytes: ByteArray? = null
+
+    fun saveQrCode(context: Context, uri: Uri) {
+        val bytes = pendingQrBytes
+        pendingQrBytes = null
+        if (bytes == null) {
+            status = "Nothing to save - try holding the QR code again."
+            return
+        }
+        AndroidFileIO.writeBytes(context, uri, bytes).fold(
+            onSuccess = { status = "QR code saved." },
+            onFailure = { status = "Could not save the QR code: ${it.message}" },
+        )
+    }
 
     // -- Appearance --------------------------------------------------------
 
@@ -117,6 +207,25 @@ class AndroidAppState(initial: GuiProject) {
     fun setTheme(context: Context, mode: ThemeMode) {
         themeMode = mode
         AndroidPreferences.save(context, settings())
+    }
+
+    /**
+     * System -> dark -> light -> system, the same order the desktop cycles in.
+     *
+     * Three states rather than a flip, because "follow the system" is a real
+     * choice and a two-way toggle silently takes it away the first time it is
+     * pressed.
+     */
+    fun cycleTheme(context: Context) {
+        setTheme(
+            context,
+            when (themeMode) {
+                ThemeMode.SYSTEM -> ThemeMode.DARK
+                ThemeMode.DARK -> ThemeMode.LIGHT
+                ThemeMode.LIGHT -> ThemeMode.SYSTEM
+            },
+        )
+        status = "Theme: ${themeMode.displayName}."
     }
 
     fun setBackdrop(context: Context, enabled: Boolean, motion: Boolean = backdropMotion) {

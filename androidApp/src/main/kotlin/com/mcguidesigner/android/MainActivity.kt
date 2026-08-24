@@ -13,10 +13,13 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import com.mcguidesigner.android.io.AndroidPreferences
 import com.mcguidesigner.android.io.SessionStore
-import com.mcguidesigner.android.ui.AndroidEditor
+import com.mcguidesigner.android.ui.AndroidApp
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.templates.BuiltInTemplates
+import com.mcguidesigner.core.support.Donation
 import com.mcguidesigner.styles.render.decodeImageBitmap
+import com.mcguidesigner.styles.support.DonationQr
+import com.mcguidesigner.styles.support.LocalDonationQr
 import com.mcguidesigner.styles.theme.BackdropArtwork
 import com.mcguidesigner.styles.theme.DesignerBackdrop
 import com.mcguidesigner.styles.theme.DesignerTheme
@@ -45,11 +48,21 @@ class MainActivity : ComponentActivity() {
         // empty canvas is the single most damning thing a mobile editor can do.
         val restored = SessionStore.restore(this)
         appState = AndroidAppState(restored?.project ?: BuiltInTemplates.demo.instantiate())
-        restored?.let(appState::restoreSession)
+        restored?.let {
+            appState.restoreSession(it)
+            appState.resumeEditor()
+        }
         appState.applySettings(AndroidPreferences.load(this))
         appState.loadLibraries(this)
 
         val artwork = AssetBackdrops(this)
+        // Read once at startup rather than on every visit to the support page:
+        // it is a hundred and eighty kilobytes read from the APK, and the page
+        // should open instantly.
+        val donationQr = DonationQr.from(
+            runCatching { assets.open(Donation.QR_ASSET_NAME).use { it.readBytes() } }.getOrNull(),
+        )
+
         setContent {
             val state by appState.controller.state.collectAsState()
 
@@ -67,11 +80,13 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(
                     LocalBackdropArtwork provides artwork,
                     LocalBackdropMotion provides appState.backdropMotion,
+                    LocalDonationQr provides donationQr,
                 ) {
-                    AndroidEditor(
+                    AndroidApp(
                         app = appState,
                         controller = appState.controller,
                         state = state,
+                        dark = appState.themeMode.isDark(systemIsDark),
                     )
                 }
             }

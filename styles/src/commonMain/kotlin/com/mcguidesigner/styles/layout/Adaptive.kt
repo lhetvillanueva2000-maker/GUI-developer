@@ -115,6 +115,9 @@ data class AdaptiveMetrics(
      */
     val readingWidth: Dp,
 ) {
+    /** Shorthand for the question every adaptive layout asks first. */
+    val isCompact: Boolean get() = sizeClass.isCompact
+
     /** Bottom navigation is a phone pattern; anything wider gets the rail. */
     val usesBottomNav: Boolean get() = sizeClass.isCompact
 

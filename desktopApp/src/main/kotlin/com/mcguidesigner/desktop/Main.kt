@@ -1,5 +1,7 @@
 package com.mcguidesigner.desktop
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -38,6 +40,12 @@ import com.mcguidesigner.core.model.AlignMode
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.templates.BuiltInTemplates
 import com.mcguidesigner.exporters.ExportTarget
+import com.mcguidesigner.core.support.Donation
+import com.mcguidesigner.styles.home.HomeScreen
+import com.mcguidesigner.styles.layout.AdaptiveMetrics
+import com.mcguidesigner.styles.layout.LocalAdaptive
+import com.mcguidesigner.styles.support.DonationQr
+import com.mcguidesigner.styles.support.LocalDonationQr
 import com.mcguidesigner.styles.theme.BackdropArtwork
 import com.mcguidesigner.styles.theme.DesignerTheme
 import com.mcguidesigner.styles.theme.LocalBackdropArtwork
@@ -62,13 +70,12 @@ fun main() = application {
         AppState(BuiltInTemplates.demo.instantiate()).apply {
             applyPreferences(preferences)
             loadLibraries()
-            dialog = when {
-                // A leftover autosave means the last session was killed. That
-                // takes priority over everything else on screen.
-                recovery != null -> ActiveDialog.RECOVERY
-                preferences.showWelcomeOnStart -> ActiveDialog.WELCOME
-                else -> ActiveDialog.NONE
-            }
+            // A leftover autosave means the last session was killed, and that
+            // is the one thing worth interrupting the home screen for. The
+            // welcome dialog no longer opens on startup: home already asks
+            // which edition you want, and two front doors in a row is one
+            // front door too many. It is still on the Help menu.
+            dialog = if (recovery != null) ActiveDialog.RECOVERY else ActiveDialog.NONE
         }
     }
 
@@ -154,6 +161,8 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
     ) {
         LaunchedEffect(window) { appState.frameProvider = { window } }
 
+        val donationQr = rememberDonationQr()
+
         DesignerMenuBar(appState)
 
         DesignerTheme(
@@ -164,8 +173,32 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
             CompositionLocalProvider(
                 LocalBackdropArtwork provides if (appState.backdropEnabled) DesktopBackdrops else BackdropArtwork.None,
                 LocalBackdropMotion provides appState.backdropMotion,
+                LocalDonationQr provides donationQr,
             ) {
-                DesktopEditor(appState, controller, editorState, Modifier.fillMaxSize())
+                // Crossfade rather than a hard cut: home and the editor share
+                // a palette, and a swap with no transition reads as a repaint
+                // glitch rather than a navigation.
+                Crossfade(targetState = appState.screen, label = "screen") { screen ->
+                    when (screen) {
+                        AppScreen.HOME -> BoxWithConstraints(Modifier.fillMaxSize()) {
+                            val metrics = AdaptiveMetrics.of(maxWidth, maxHeight, touchMode = false)
+                            CompositionLocalProvider(LocalAdaptive provides metrics) {
+                                HomeScreen(
+                                    lastUsed = editorState.edition,
+                                    dark = appState.darkChrome,
+                                    eyebrow = appState.homeEyebrow,
+                                    onOpen = appState::openEditor,
+                                    onSaveQr = appState::saveDonationQr,
+                                    onToggleTheme = appState::cycleTheme,
+                                    onCopied = { appState.status = it },
+                                )
+                            }
+                        }
+
+                        AppScreen.EDITOR ->
+                            DesktopEditor(appState, controller, editorState, Modifier.fillMaxSize())
+                    }
+                }
             }
         }
     }
@@ -193,6 +226,21 @@ private object DesktopBackdrops : BackdropArtwork {
             }.getOrNull()
         }
     }
+}
+
+/**
+ * The donation QR, read off the classpath once per window.
+ *
+ * The build copies it there from `assets/donate`, the same file the Android
+ * build packages, so both apps show and hand out the identical code.
+ */
+@Composable
+private fun rememberDonationQr(): DonationQr? = remember {
+    DonationQr.from(
+        runCatching {
+            object {}.javaClass.getResourceAsStream("/${Donation.QR_ASSET_NAME}")?.use { it.readBytes() }
+        }.getOrNull(),
+    )
 }
 
 /** Settle time before window geometry changes are written to disk. */
@@ -264,7 +312,19 @@ private fun handleShortcut(app: AppState, key: Key, ctrl: Boolean, shift: Boolea
         ctrl && key == Key.LeftBracket -> { controller.sendBackward(); true }
 
         key == Key.Delete || key == Key.Backspace -> { app.requestDeleteSelection(); true }
-        key == Key.Escape -> { controller.clearSelection(); controller.armPlacement(null); true }
+        // Innermost first, the same order the Android back gesture uses: a
+        // press that cancels a placement must not also throw you out of the
+        // editor, and one with nothing left to cancel should.
+        key == Key.Escape -> {
+            val state = controller.current
+            when {
+                state.pendingPlacementType != null -> controller.armPlacement(null)
+                state.hasSelection -> controller.clearSelection()
+                app.dialog == ActiveDialog.NONE -> app.goHome()
+                else -> Unit
+            }
+            true
+        }
 
         key == Key.V && !ctrl -> { controller.setTool(EditorTool.SELECT); true }
         key == Key.H && !ctrl -> { controller.setTool(EditorTool.PAN); true }

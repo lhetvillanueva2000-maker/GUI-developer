@@ -59,6 +59,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mcguidesigner.android.AndroidAppState
+import com.mcguidesigner.android.AppScreen
 import com.mcguidesigner.android.MobileSection
 import com.mcguidesigner.android.MobileSheet
 import com.mcguidesigner.android.io.AndroidFileIO
@@ -71,8 +72,9 @@ import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
 import com.mcguidesigner.styles.layout.LocalAdaptive
 import com.mcguidesigner.styles.render.rememberTextureCache
+import com.mcguidesigner.styles.notice.AppNotice
+import com.mcguidesigner.styles.notice.NoticeStrip
 import com.mcguidesigner.styles.theme.DesignerBackdrop
-import com.mcguidesigner.styles.theme.EditionTabs
 import com.mcguidesigner.styles.theme.LocalSkinPalette
 import com.mcguidesigner.styles.theme.WarningAmber
 
@@ -192,7 +194,13 @@ fun AndroidEditor(
                             onImportPack = { packLauncher.launch(AndroidPackImport.PACK_MIME_TYPES) },
                             metrics = metrics,
                         )
-                        EditionStrip(app, controller, state, metrics)
+                        ToolStrip(app, state, metrics)
+                        NoticeStrip(
+                            notice = AppNotice.current,
+                            expanded = app.noticeExpanded,
+                            onExpandedChange = { app.noticeExpanded = it },
+                            metrics = metrics,
+                        )
                     }
                 },
                 bottomBar = {
@@ -315,14 +323,19 @@ fun AndroidEditor(
     // section, then offer to save. Only when there is nothing left to unwind
     // does back actually leave the app - and never silently on unsaved work.
     val activity = LocalContext.current as? Activity
-    BackHandler(enabled = true) {
+    // Gated on the screen so it can never race the host's own handler during
+    // the crossfade between home and here.
+    BackHandler(enabled = app.screen == AppScreen.EDITOR) {
         when {
             app.unsavedPrompt != null -> app.cancelUnsavedPrompt()
             app.sheet == MobileSheet.PACK_IMPORT -> app.closePack()
             app.sheet != MobileSheet.NONE -> app.sheet = MobileSheet.NONE
             state.hasSelection -> controller.clearSelection()
             app.section != MobileSection.DESIGN -> app.section = MobileSection.DESIGN
-            else -> app.guardUnsaved("leave the app") { activity?.finish() }
+            // Home is a screen behind this one, so back reaches it before it
+            // reaches the launcher. Nothing is discarded on the way - the
+            // document is still open when you come back in.
+            else -> app.goHome()
         }
     }
 }
@@ -385,17 +398,15 @@ private fun UnsavedChangesSheet(
 // ---------------------------------------------------------------------------
 
 /**
- * The edition switcher, directly under the title bar.
+ * The tool row directly under the title bar.
  *
- * Same reasoning as the desktop header: the edition decides the component set,
- * the skin, the validation rules and the export format, so it is permanently on
- * screen rather than buried in the overflow menu.  Everything below the strip
- * is whichever edition is lit.
+ * This is where the edition tabs used to be. The edition is chosen on the home
+ * screen now, so the row carries the shortcuts that were sharing it - and the
+ * space the tabs left is where the what's-new strip goes, immediately below.
  */
 @Composable
-private fun EditionStrip(
+private fun ToolStrip(
     app: AndroidAppState,
-    controller: EditorController,
     state: EditorState,
     metrics: AdaptiveMetrics,
 ) {
@@ -408,13 +419,16 @@ private fun EditionStrip(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        EditionTabs(
-            selected = state.edition,
-            onSelect = { edition ->
-                controller.switchEdition(edition)
-                app.status = "Now designing for ${edition.displayName}."
-            },
-            compact = metrics.sizeClass.isCompact,
+        // A tablet has a back control on screen; a phone uses the system
+        // gesture, which is always there and always in the same place.
+        if (!metrics.isCompact) {
+            TopBarAction("←") { app.goHome() }
+        }
+        Text(
+            state.edition.displayName,
+            style = MaterialTheme.typography.labelMedium,
+            color = palette.accent,
+            maxLines = 1,
             modifier = Modifier.weight(1f),
         )
         TopBarAction("⌗") { app.sheet = MobileSheet.ARRANGE }

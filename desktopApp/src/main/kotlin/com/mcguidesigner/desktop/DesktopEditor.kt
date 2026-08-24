@@ -12,8 +12,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -86,11 +89,13 @@ import com.mcguidesigner.desktop.widgets.IconToggle
 import com.mcguidesigner.desktop.widgets.NudgePad
 import com.mcguidesigner.desktop.widgets.ToolbarButton
 import com.mcguidesigner.desktop.widgets.ToolbarSeparator
+import com.mcguidesigner.desktop.widgets.WithTooltip
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
 import com.mcguidesigner.styles.layout.LocalAdaptive
+import com.mcguidesigner.styles.notice.AppNotice
+import com.mcguidesigner.styles.notice.NoticeStrip
 import com.mcguidesigner.styles.render.rememberTextureCache
 import com.mcguidesigner.styles.theme.DesignerBackdrop
-import com.mcguidesigner.styles.theme.EditionTabs
 import com.mcguidesigner.styles.theme.LocalSkinPalette
 import com.mcguidesigner.styles.theme.ThemeMode
 
@@ -146,6 +151,16 @@ fun DesktopEditor(
         ) {
             Column(Modifier.fillMaxSize()) {
                 EditionHeader(app, controller, state, metrics)
+                // Exactly where the edition tabs were, and for the same reason
+                // that row existed: it is the one strip that is about the app
+                // rather than about the document.
+                NoticeStrip(
+                    notice = AppNotice.current,
+                    expanded = app.noticeExpanded,
+                    onExpandedChange = { app.noticeExpanded = it },
+                    metrics = metrics,
+                )
+                Divider(color = palette.chromeBorder)
                 EditorToolbar(app, controller, state, metrics)
                 Divider(color = palette.chromeBorder)
 
@@ -297,11 +312,11 @@ private fun com.mcguidesigner.core.editor.NudgePadCorner.alignment(): Alignment 
 /**
  * The edition switcher, given the whole top strip of the app.
  *
- * Which edition you are in decides the component set, the skin, the validation
- * rules and the export pipeline, so it is the first thing on screen and always
- * visible - not a menu item you have to remember to check.  Switching keeps the
- * document and re-runs validation, so anything the new edition cannot express
- * is reported rather than silently dropped.
+ * The edition is chosen on the home screen now, so this bar reports it rather
+ * than offering it: which edition you are in still decides the component set,
+ * the skin, the validation rules and the export pipeline, and it is still the
+ * first thing on the row - but changing it means going back, which is what the
+ * arrow on the far left is for.
  */
 @Composable
 private fun EditionHeader(
@@ -318,16 +333,18 @@ private fun EditionHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(if (metrics.sizeClass.isExpanded) 14.dp else 8.dp),
         ) {
-            EditionTabs(
-                selected = state.edition,
-                onSelect = { edition ->
-                    controller.switchEdition(edition)
-                    app.status = "Now designing for ${edition.displayName}. " +
-                        "The palette, the skin and the export format all followed."
-                },
-                compact = !metrics.sizeClass.isExpanded,
-                modifier = Modifier.width(if (metrics.sizeClass.isExpanded) 420.dp else 240.dp),
+            // Hard left, where a back control belongs and where the pointer
+            // already is on its way out of the window.
+            BackButton { app.goHome() }
+
+            Text(
+                text = state.edition.displayName,
+                style = MaterialTheme.typography.labelMedium,
+                color = palette.accent,
+                maxLines = 1,
+                softWrap = false,
             )
+            Text("·", style = MaterialTheme.typography.labelMedium, color = palette.chromeTextMuted)
 
             Text(
                 text = state.documentTitle,
@@ -357,6 +374,33 @@ private fun EditionHeader(
                 hint = "Theme: ${app.themeMode.displayName}  ·  click to change, right-click for options",
             ) { app.cycleTheme() }
             ToolbarButton("⚙", hint = "Appearance settings") { app.dialog = ActiveDialog.APPEARANCE }
+        }
+    }
+}
+
+/**
+ * Back to the edition picker.
+ *
+ * Escape does the same thing once there is nothing left inside the editor to
+ * dismiss, but a keyboard shortcut is not an affordance: nothing on screen
+ * would otherwise say that home is still there.
+ */
+@Composable
+private fun BackButton(onClick: () -> Unit) {
+    val palette = LocalSkinPalette.current
+    WithTooltip("Back to the edition picker  (Esc)") {
+        Row(
+            Modifier
+                .height(34.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(palette.chromePanelAlt)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            Text("←", style = MaterialTheme.typography.titleSmall, color = palette.chromeText)
+            Text("Home", style = MaterialTheme.typography.labelMedium, color = palette.chromeText)
         }
     }
 }

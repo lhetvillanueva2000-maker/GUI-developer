@@ -112,11 +112,15 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
   is selected, on desktop and on the phone alike. The step is yours to set — and
   the arrow keys use the same one, so the buttons and the keyboard can never
   disagree. Optionally it walks the grid a line at a time instead.
-- **Pick an edition, get that edition.** Java and Bedrock are two tabs across
-  the top of both apps. Whichever is lit, everything below it belongs to that
-  edition — the component palette, the templates, the skin, the validation rules
-  and the export formats all follow. Switching keeps the document and reports
-  anything the new edition cannot express instead of dropping it.
+- **Pick an edition before the editor opens.** The app starts on a home screen
+  with two cards, and each card is drawn in its own edition's widget language —
+  Java flat and square, Bedrock soft-cornered with a 2px border. You are
+  choosing by looking at the thing you are choosing, and the whole shell
+  repaints as you move between them. Whichever you take, everything after it
+  belongs to that edition: the component palette, the templates, the skin, the
+  validation rules and the export formats. The editor's header reports which
+  edition you are in, and the arrow at its top left goes back to the picker
+  without touching the open document.
 - **Save a group once, reuse it forever.** Select a header and its buttons, a
   row of slots, a whole settings block, and save it as a *prefab*. It drops into
   any later project as one piece, carrying the textures it uses with it.
@@ -144,6 +148,12 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 - **It remembers where you were.** Window size and position, which docks were
   open, the last export target and the recent-projects list are all restored on
   the next launch.
+- **No ads, ever.** There is one **Support the designer** page, reached from the
+  hand-and-heart mark at the top right of the home screen, and that is the whole
+  of the app's monetisation. It shows an InstaPay / QR Ph code that around sixty wallets and
+  banks can pay, the same details as plain text for anyone who would rather type
+  them, and a **Save the QR code** button — press and hold the code itself to do
+  the same thing. Nothing on that page phones home.
 
 ---
 
@@ -165,6 +175,10 @@ Build, edit, preview and export Minecraft GUIs without opening the game.
 | Settings | View ▸ Editor Settings, or ⋯ in the bottom bar | ⋮ ▸ Editor settings |
 | Prefabs & library | Docks beside the palette | Bottom sheets |
 | Export | Folder or `.zip` | `.zip` via the Storage Access Framework |
+| Edition | Chosen on the home screen | Chosen on the home screen |
+| Back to home | Arrow at the top left, or Escape | System back gesture; arrow on tablets |
+| Support page | Hand-and-heart at the top right of home | Hand-and-heart at the top right of home |
+| What's new | Strip under the top bar — click the chevron | Strip under the top bar — swipe it down |
 
 ### The same app at three sizes
 
@@ -327,6 +341,7 @@ desktopApp/     Compose Desktop shell: menus, docks, mouse, AWT dialogs
 androidApp/     Compose Android shell: sheets, nav, touch, SAF
 assets/icon/    App icon, generated from build-scripts/icon
 assets/backdrop/ Editor wallpaper, generated from build-scripts/backdrop
+assets/donate/  The InstaPay QR shown on the support page
 templates/      Bundled .mcgui templates + sample export output (generated)
 docs/           Architecture, project format, exporting, editor guide
 build-scripts/  Packaging scripts and the icon renderer
@@ -344,6 +359,7 @@ build-scripts/  Packaging scripts and the icon renderer
 | [Exporting](docs/exporting.md) | Java pack, Bedrock pack, code generation, parity warnings |
 | [Editor guide](docs/editor-guide.md) | Desktop and Android interaction models, shortcuts, validation |
 | [Extending](docs/extending.md) | Adding components, templates, themes and code targets |
+| [Donation QR](docs/donation-qr.md) | Where the support page's QR came from and how to replace it |
 
 ---
 

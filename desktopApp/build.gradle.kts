@@ -40,12 +40,21 @@ val copyBackdrops by tasks.registering(Copy::class) {
     into(layout.buildDirectory.dir("generated/backdrops"))
 }
 
+// The donation QR shown on the Support page, and handed back byte-for-byte
+// when someone saves it. Same single-source-of-truth reasoning as above: the
+// Android build packages the very same file out of `assets/donate`.
+val copyDonateAssets by tasks.registering(Copy::class) {
+    from(rootProject.file("assets/donate")) { include("donate-qr.png") }
+    into(layout.buildDirectory.dir("generated/donate"))
+}
+
 sourceSets.named("main") {
     resources.srcDir(layout.buildDirectory.dir("generated/appIcon"))
     resources.srcDir(layout.buildDirectory.dir("generated/backdrops"))
+    resources.srcDir(layout.buildDirectory.dir("generated/donate"))
 }
 
-tasks.named("processResources") { dependsOn(copyAppIcon, copyBackdrops) }
+tasks.named("processResources") { dependsOn(copyAppIcon, copyBackdrops, copyDonateAssets) }
 
 compose.desktop {
     application {
