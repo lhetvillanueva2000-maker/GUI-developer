@@ -538,7 +538,7 @@ private fun MobileTopBar(
                     onClick = { menuOpen = false; app.sheet = MobileSheet.EXPORT },
                 )
                 DropdownMenuItem(text = { Text("Save a copy...") }, onClick = { menuOpen = false; onSaveAs() })
-                DropdownMenuItem(text = { Text("Open...") }, onClick = { menuOpen = false; onOpen() })
+                DropdownMenuItem(text = { Text("Open or import...") }, onClick = { menuOpen = false; onOpen() })
                 DropdownMenuItem(
                     text = { Text("New from template...") },
                     onClick = { menuOpen = false; app.sheet = MobileSheet.TEMPLATES },

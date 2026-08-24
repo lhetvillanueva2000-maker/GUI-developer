@@ -88,7 +88,19 @@ object HelpBook {
             listOf(
                 HelpEntry("Nudge", "Arrow keys", "By the small step set in Settings."),
                 HelpEntry("Nudge further", "Shift + arrows", "By the big step."),
-                HelpEntry("Move pad", "", "The four arrows on the canvas. Its corner and step are set in Editor Settings."),
+                HelpEntry(
+                    "Move pad",
+                    "",
+                    "The four arrows on the canvas. Drag the number in the middle to " +
+                        "change the step, tap it to come back to 1, long press it for " +
+                        "the settings.",
+                ),
+                HelpEntry(
+                    "Resize the move pad",
+                    "",
+                    "Drag the small grip on the pad's inner corner. Reset it from " +
+                        "Editor Settings.",
+                ),
                 HelpEntry("Rotate", "", "The rotate buttons in the toolbar, or the Rotation property."),
                 HelpEntry("Bring forward", "Ctrl+]"),
                 HelpEntry("Send backward", "Ctrl+["),
@@ -139,8 +151,37 @@ object HelpBook {
                 HelpEntry("Minecraft's own formats", "", "Bedrock JSON UI and the Java GUI definition sidecars."),
                 HelpEntry("Source code", "", "Java Screen, Kotlin Compose, HTML+CSS, CSS, React JSX, SwiftUI, Flutter and Android XML."),
                 HelpEntry("Artwork", "", "SVG vector drawing."),
+                HelpEntry(
+                    "A PNG of the design",
+                    "Ctrl+Shift+I",
+                    "At 144p through 2160p, or a whole multiple. Pixel art only " +
+                        "survives whole-number scaling, so each named height snaps to " +
+                        "the nearest one and shows what you actually get.",
+                ),
                 HelpEntry("Everything at once", "Ctrl+Shift+E", "Every format above into one folder."),
-                HelpEntry("Import", "", "Projects via File ▸ Open; Java and Bedrock resource packs via Import pack."),
+            ),
+        ),
+
+        HelpSection(
+            "Importing",
+            listOf(
+                HelpEntry("Open a project", "Ctrl+O", "A .mcgui document, exactly as it was saved."),
+                HelpEntry(
+                    "Import a design",
+                    "Ctrl+I",
+                    "Bedrock JSON UI, HTML + CSS, or SVG. Anything exported from here " +
+                        "comes back with its own element types; anything else is mapped " +
+                        "to the nearest match and the differences are listed.",
+                ),
+                HelpEntry("Import a resource pack", "", "Java and Bedrock packs, with the GUI art pre-selected."),
+                HelpEntry("Import textures", "", "Images and GIFs, straight into the library."),
+                HelpEntry(
+                    "What import cannot do",
+                    "",
+                    "Percentage sizes, SVG paths and CSS layout have no fixed pixel " +
+                        "position, so they are left out rather than guessed at. Every " +
+                        "import says what it skipped.",
+                ),
             ),
         ),
     )

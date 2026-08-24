@@ -30,6 +30,17 @@ object DesktopFileIO {
     fun openProjectDialog(owner: Frame?): File? =
         showDialog(owner, "Open GUI project", FileDialog.LOAD, "*.$PROJECT_EXTENSION")
 
+    /**
+     * Picks a file to import a design out of.
+     *
+     * The filter is a hint, not a gate: AWT's file dialog treats the pattern
+     * differently on every platform, and a format list that quietly hid a file
+     * somebody knows is importable would be worse than one that shows
+     * everything and reports what it could not read.
+     */
+    fun openImportDialog(owner: Frame?): File? =
+        showDialog(owner, "Import a design", FileDialog.LOAD, "*.*")
+
     fun saveProjectDialog(owner: Frame?, suggestedName: String): File? {
         val chosen = showDialog(
             owner, "Save GUI project", FileDialog.SAVE,

@@ -25,12 +25,13 @@ import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.IntPoint
 import com.mcguidesigner.core.model.TextureAsset
 import com.mcguidesigner.core.packs.PackTexture
-import com.mcguidesigner.core.serialization.LoadResult
 import com.mcguidesigner.core.serialization.ProjectSerializer
 import com.mcguidesigner.core.templates.BuiltInTemplates
 import com.mcguidesigner.core.util.Ids
 import com.mcguidesigner.exporters.CodeTarget
+import com.mcguidesigner.exporters.DesignImporter
 import com.mcguidesigner.exporters.ExportManager
+import com.mcguidesigner.exporters.ImportFormat
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.render.createAnimatedTextureFromFrames
 import com.mcguidesigner.styles.render.createTextureAsset
@@ -548,21 +549,56 @@ class AndroidAppState(initial: GuiProject) {
         status = "Opened '${template.title}'."
     }
 
+    /**
+     * Opens anything the app can read a design out of.
+     *
+     * One entry point for project documents and for the formats
+     * [DesignImporter] understands, because a phone has one file picker and
+     * making somebody choose "open" versus "import" before they have looked at
+     * the file is asking a question they cannot answer yet. What the file
+     * turned out to be is reported after the fact instead.
+     */
     fun openDocument(context: Context, uri: Uri) {
+        val displayName = AndroidFileIO.displayName(context, uri)
         AndroidFileIO.readText(context, uri).fold(
             onSuccess = { text ->
-                when (val result = ProjectSerializer.decode(text)) {
-                    is LoadResult.Success -> {
-                        controller = freshController(result.project)
-                        documentUri = uri
-                        documentName = AndroidFileIO.displayName(context, uri)
-                        AndroidFileIO.persistPermission(context, uri, writable = true)
-                        status = "Opened $documentName."
-                        section = MobileSection.DESIGN
-                        sheet = MobileSheet.NONE
-                    }
+                val outcome = DesignImporter.import(
+                    fileName = displayName ?: "document",
+                    content = text,
+                    edition = controller.current.edition,
+                )
+                val project = outcome.project
+                if (project == null) {
+                    status = outcome.notes.firstOrNull() ?: "Could not read that file."
+                    return@fold
+                }
 
-                    is LoadResult.Failure -> status = "Could not open: ${result.message}"
+                controller = freshController(project)
+                section = MobileSection.DESIGN
+                sheet = MobileSheet.NONE
+
+                if (outcome.format == ImportFormat.PROJECT) {
+                    // Only a project document is the file it came from; saving
+                    // an imported design must not write over the JSON or HTML
+                    // it was read out of.
+                    documentUri = uri
+                    documentName = displayName
+                    AndroidFileIO.persistPermission(context, uri, writable = true)
+                    status = "Opened ${displayName ?: "project"}."
+                } else {
+                    documentUri = null
+                    documentName = null
+                    status = "Imported ${project.elements.size} element(s) from ${displayName ?: "the file"}."
+                }
+
+                if (outcome.notes.isNotEmpty()) {
+                    postNotice(
+                        Notice(
+                            id = "import",
+                            headline = "Imported as ${outcome.format?.displayName ?: "a design"}",
+                            points = outcome.notes,
+                        ),
+                    )
                 }
             },
             onFailure = { status = "Could not open: ${it.message}" },

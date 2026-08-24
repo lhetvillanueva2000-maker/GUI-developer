@@ -453,6 +453,9 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
             }
             Item("Save a Copy...") { app.saveAs() }
             Separator()
+            Item("Import a Design (JSON UI, HTML, SVG)...", shortcut = KeyShortcut(Key.I, ctrl = true)) {
+                app.importDesign()
+            }
             Item("Import Textures, Images or GIFs...") { app.importTextures() }
             Item("Build an Animation from Images...") { app.importAnimationFrames() }
             Item("Import Resource Pack...") { app.browsePack() }

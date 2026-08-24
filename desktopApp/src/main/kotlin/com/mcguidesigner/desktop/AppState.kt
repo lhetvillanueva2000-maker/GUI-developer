@@ -32,6 +32,7 @@ import com.mcguidesigner.desktop.io.LibraryStore
 import com.mcguidesigner.desktop.io.PackImport
 import com.mcguidesigner.desktop.io.Workspace
 import com.mcguidesigner.exporters.CodeTarget
+import com.mcguidesigner.exporters.DesignImporter
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.render.createAnimatedTextureFromFrames
@@ -641,6 +642,59 @@ class AppState(initial: GuiProject) {
                 if (!file.isFile) recentFiles.removeAll { it.absolutePath == file.absolutePath }
                 status = "Open failed: ${result.message}"
             }
+        }
+    }
+
+    /**
+     * Reads a design out of something that is not a project document.
+     *
+     * Opens into a *new tab* rather than replacing what is on the canvas.
+     * Import is nearly always a comparison - bring the hand-edited JSON back
+     * and see what changed - and an import that quietly overwrote the open
+     * screen would make that comparison impossible and lose the screen.
+     */
+    fun importDesign() {
+        val file = DesktopFileIO.openImportDialog(frameProvider()) ?: return
+        val content = runCatching { file.readText() }.getOrElse {
+            status = "Could not read ${file.name}: ${it.message}"
+            return
+        }
+
+        val outcome = DesignImporter.import(
+            fileName = file.name,
+            content = content,
+            edition = controller.current.edition,
+        )
+        val project = outcome.project
+        if (project == null) {
+            postNotice(
+                Notice(
+                    id = "import",
+                    headline = "Could not import ${file.name}",
+                    points = outcome.notes,
+                ),
+            )
+            status = outcome.notes.firstOrNull() ?: "Nothing could be read from ${file.name}."
+            return
+        }
+
+        tabs.add(DocumentTab(project))
+        activeTab = tabs.lastIndex
+        // The imported document is not the file it came from: saving must not
+        // write a project over somebody's hand-edited JSON.
+        currentFile = null
+        dialog = ActiveDialog.NONE
+        screen = AppScreen.EDITOR
+
+        status = "Imported ${project.elements.size} element(s) from ${file.name}."
+        if (outcome.notes.isNotEmpty()) {
+            postNotice(
+                Notice(
+                    id = "import",
+                    headline = "Imported ${file.name} as ${outcome.format?.displayName ?: "a design"}",
+                    points = outcome.notes,
+                ),
+            )
         }
     }
 
