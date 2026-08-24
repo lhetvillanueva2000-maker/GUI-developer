@@ -15,7 +15,7 @@ import com.mcguidesigner.styles.theme.ThemeMode
  */
 data class AppearanceSettings(
     /** Light, dark, or follow the host. */
-    val theme: ThemeMode = ThemeMode.SYSTEM,
+    val theme: ThemeMode = ThemeMode.DARK,
 
     /** How the chrome is recoloured on top of the edition's own palette. */
     val chromeTheme: ChromeTheme = ChromeTheme.DEFAULT,

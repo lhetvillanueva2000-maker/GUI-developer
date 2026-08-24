@@ -816,6 +816,18 @@ private fun ArrangeSheet(controller: EditorController, state: EditorState) {
             if (enabled) "${state.selection.size} selected" else "Select something to align it",
         )
 
+        // Rotation first, because it is the one thing on this sheet that is
+        // not about where an element sits relative to something else.
+        SheetSection("Rotate")
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ArrangeButton("↺  90° left", enabled, Modifier.weight(1f)) {
+                controller.rotateSelection(-90)
+            }
+            ArrangeButton("↻  90° right", enabled, Modifier.weight(1f)) {
+                controller.rotateSelection(90)
+            }
+        }
+
         SheetSection("Align")
         // With one element selected these align it inside its container; with
         // several, to each other. That is the behaviour every design tool has,

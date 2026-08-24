@@ -165,11 +165,20 @@ class AppearancePreferencesTest {
     }
 
     @Test
-    fun anUnknownThemeNameFallsBackToFollowingTheSystem() {
+    fun anUnknownThemeNameFallsBackToDark() {
         // A preferences file written by a future build that renamed the enum
         // must not leave the app with no theme at all.
         Workspace.savePreferences(Workspace.loadPreferences().copy(themeMode = "HIGH_CONTRAST_PURPLE"))
-        assertEquals(ThemeMode.SYSTEM, Workspace.loadPreferences().theme)
+        assertEquals(ThemeMode.DARK, Workspace.loadPreferences().theme)
+    }
+
+    @Test
+    fun aFileFromBeforeTheSystemThemeWasRemovedStillReads() {
+        // 1.6.0 and earlier wrote "SYSTEM", which no longer exists. It has to
+        // land on dark - what SYSTEM resolved to on desktop anyway - rather
+        // than leaving the app themeless on the first launch after upgrading.
+        Workspace.savePreferences(Workspace.loadPreferences().copy(themeMode = "SYSTEM"))
+        assertEquals(ThemeMode.DARK, Workspace.loadPreferences().theme)
     }
 
     @Test
@@ -177,7 +186,7 @@ class AppearancePreferencesTest {
         val defaults = Workspace.loadPreferences()
         assertTrue(defaults.backdropEnabled)
         assertTrue(defaults.backdropMotion)
-        assertEquals(ThemeMode.SYSTEM, defaults.theme)
+        assertEquals(ThemeMode.DARK, defaults.theme)
     }
 
     @Test
@@ -200,7 +209,7 @@ class AppearancePreferencesTest {
 
         assertEquals(1280, loaded.windowWidth)
         assertTrue(!loaded.showLeftDock)
-        assertEquals(ThemeMode.SYSTEM, loaded.theme, "a missing key must take the default, not fail the read")
+        assertEquals(ThemeMode.DARK, loaded.theme, "a missing key must take the default, not fail the read")
         assertTrue(loaded.backdropEnabled)
     }
 }

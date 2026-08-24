@@ -67,6 +67,7 @@ fun SettingsScreen(
     settings: AppearanceSettings,
     onChange: (AppearanceSettings) -> Unit,
     onClose: () -> Unit,
+    onOpenHelp: () -> Unit,
     systemIsDark: Boolean,
     version: String,
     modifier: Modifier = Modifier,
@@ -243,6 +244,22 @@ fun SettingsScreen(
                                 "also means no account, no tracking and nothing to leak.",
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.chromeTextMuted,
+                        )
+                    }
+
+                    // -- Help --------------------------------------------------
+                    Section(
+                        title = "Help",
+                        note = null,
+                        palette = palette,
+                    ) {
+                        OptionRow(
+                            title = "All keys and functions",
+                            body = "Every shortcut and every action the app has, in one page.",
+                            selected = false,
+                            palette = palette,
+                            metrics = metrics,
+                            onClick = onOpenHelp,
                         )
                     }
 

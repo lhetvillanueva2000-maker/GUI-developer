@@ -54,6 +54,7 @@ import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
 import com.mcguidesigner.styles.layout.LocalAdaptive
 import com.mcguidesigner.styles.settings.AppearanceSettings
+import com.mcguidesigner.styles.settings.HelpScreen
 import com.mcguidesigner.styles.settings.SettingsIcon
 import com.mcguidesigner.styles.settings.SettingsScreen
 import com.mcguidesigner.styles.support.DonateIcon
@@ -69,7 +70,7 @@ import com.mcguidesigner.styles.theme.spec
  * shell can register a `BackHandler`. Keeping the state here and the handler
  * there would mean back either dismissed nothing or left the app entirely.
  */
-enum class HomeOverlay { NONE, SUPPORT, SETTINGS }
+enum class HomeOverlay { NONE, SUPPORT, SETTINGS, HELP }
 
 /**
  * The home screen: pick an edition, read what this is, or open settings.
@@ -341,8 +342,15 @@ fun HomeScreen(
                 settings = settings,
                 onChange = onSettingsChange,
                 onClose = { onOverlayChange(HomeOverlay.NONE) },
+                onOpenHelp = { onOverlayChange(HomeOverlay.HELP) },
                 systemIsDark = systemIsDark,
                 version = version,
+                metrics = metrics,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            HomeOverlay.HELP -> HelpScreen(
+                onClose = { onOverlayChange(HomeOverlay.NONE) },
                 metrics = metrics,
                 modifier = Modifier.fillMaxSize(),
             )

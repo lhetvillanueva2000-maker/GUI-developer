@@ -3,6 +3,7 @@ package com.mcguidesigner.android
 import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.mcguidesigner.android.io.AndroidFileIO
@@ -13,6 +14,7 @@ import com.mcguidesigner.core.catalog.ElementCatalog
 import com.mcguidesigner.core.editor.EditorSettings
 import com.mcguidesigner.android.io.LibraryStore
 import com.mcguidesigner.android.io.SessionStore
+import com.mcguidesigner.core.editor.DocumentSet
 import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.library.LibraryTexture
 import com.mcguidesigner.core.library.Prefab
@@ -89,14 +91,77 @@ enum class MobileSheet {
  */
 class AndroidAppState(initial: GuiProject) {
 
-    var controller by mutableStateOf(EditorController(initial))
+    // -- Open documents ----------------------------------------------------
+
+    /**
+     * Every open document, in tab order.
+     *
+     * Switching edition used to *convert* the open document, so opening
+     * Bedrock while a Java screen was on the canvas rewrote that screen. Java
+     * and Bedrock are different enough that having both on the go is the
+     * normal case.
+     */
+    val tabs = mutableStateListOf(AndroidDocumentTab(initial))
+
+    var activeTab by mutableStateOf(0)
         private set
 
-    var documentUri by mutableStateOf<Uri?>(null)
-        private set
+    val active: AndroidDocumentTab
+        get() = tabs[activeTab.coerceIn(0, tabs.lastIndex)]
 
-    var documentName by mutableStateOf<String?>(null)
-        private set
+    /**
+     * The front document's controller, under the name and shape it had when
+     * there was only ever one - so every existing call site follows the front
+     * tab without being touched.
+     */
+    var controller: EditorController
+        get() = active.controller
+        private set(value) { active.controller = value }
+
+    var documentUri: Uri?
+        get() = active.uri
+        private set(value) { active.uri = value }
+
+    var documentName: String?
+        get() = active.name
+        private set(value) { active.name = value }
+
+    fun selectTab(index: Int) {
+        if (index in tabs.indices) activeTab = index
+    }
+
+    /** Brings [edition]'s tab forward, or opens one if there is not one yet. */
+    fun openTabFor(edition: Edition) {
+        DocumentSet.existingTabFor(tabs.map { it.edition }, edition)
+            ?.let { activeTab = it; return }
+        tabs.add(AndroidDocumentTab(DocumentSet.newDocument(edition, tabs.map { it.title })))
+        activeTab = tabs.lastIndex
+    }
+
+    /** A blank document for [edition], even if one is already open. */
+    fun addTab(edition: Edition) {
+        tabs.add(AndroidDocumentTab(DocumentSet.newDocument(edition, tabs.map { it.title })))
+        activeTab = tabs.lastIndex
+        status = "New ${edition.displayName} screen."
+    }
+
+    /**
+     * Closes a tab. The last one goes home rather than leaving the editor with
+     * nothing to show.
+     */
+    fun closeTab(index: Int) {
+        val tab = tabs.getOrNull(index) ?: return
+        val close = {
+            if (tabs.size == 1) {
+                goHome()
+            } else {
+                val next = DocumentSet.activeAfterClose(activeTab, index, tabs.size)
+                tabs.removeAt(index)
+                activeTab = next
+            }
+        }
+        if (tab.dirty) guardUnsaved("close ${tab.title}", close) else close()
+    }
 
     var screen by mutableStateOf(AppScreen.HOME)
         private set
@@ -131,10 +196,8 @@ class AndroidAppState(initial: GuiProject) {
      * express instead of dropping it silently.
      */
     fun openEditor(edition: Edition) {
-        if (controller.current.edition != edition) {
-            controller.switchEdition(edition)
-            status = "Now designing for ${edition.displayName}."
-        }
+        // A tab, not a conversion - see [tabs].
+        openTabFor(edition)
         screen = AppScreen.EDITOR
     }
 
@@ -291,11 +354,7 @@ class AndroidAppState(initial: GuiProject) {
     fun cycleTheme(context: Context) {
         setTheme(
             context,
-            when (themeMode) {
-                ThemeMode.SYSTEM -> ThemeMode.DARK
-                ThemeMode.DARK -> ThemeMode.LIGHT
-                ThemeMode.LIGHT -> ThemeMode.SYSTEM
-            },
+            if (themeMode == ThemeMode.DARK) ThemeMode.LIGHT else ThemeMode.DARK,
         )
         status = "Theme: ${themeMode.displayName}."
     }

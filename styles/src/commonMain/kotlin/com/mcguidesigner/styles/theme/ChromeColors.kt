@@ -10,21 +10,31 @@ import androidx.compose.ui.graphics.Color
  * caller's job because only the shell knows what the host says.
  */
 enum class ThemeMode(val displayName: String) {
-    SYSTEM("Match the system"),
     DARK("Dark"),
     LIGHT("Light"),
     ;
 
-    /** The concrete choice, given what the host reports. */
-    fun isDark(systemIsDark: Boolean): Boolean = when (this) {
-        SYSTEM -> systemIsDark
-        DARK -> true
-        LIGHT -> false
-    }
+    /**
+     * Whether the chrome is painted dark.
+     *
+     * [systemIsDark] is still accepted so callers do not all have to change,
+     * and is deliberately ignored: "match the system" was removed because on
+     * desktop there is no portable way to ask, so it silently resolved to dark
+     * and the setting was a choice between "dark", "light" and "dark again".
+     * A control with a third option that does nothing is worse than two that
+     * both do.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun isDark(systemIsDark: Boolean = true): Boolean = this == DARK
 
     companion object {
+        /**
+         * Anything unrecognised - including "SYSTEM" from a store written
+         * before 1.7.0 - reads as dark, which is what SYSTEM resolved to on
+         * desktop anyway and what the app has always looked like.
+         */
         fun fromName(name: String?): ThemeMode =
-            entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: SYSTEM
+            entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: DARK
     }
 }
 

@@ -82,21 +82,21 @@ object AppNotice {
      */
     val current = Notice(
         id = "whatsnew-${Branding.VERSION}",
-        headline = "${Branding.NAME} ${Branding.VERSION} — new name, settings page, seven themes",
+        headline = "${Branding.NAME} ${Branding.VERSION} — tabs, rotation, twelve more shapes",
         points = listOf(
-            "The app is called ${Branding.NAME} now. Your projects, prefabs, texture " +
-                "library and preferences are all read exactly as before.",
-            "Settings live behind the gear on the home screen: seven themes, three " +
-                "motion levels, and a name for the home screen to greet you by. " +
-                "Everything stays on this device.",
-            "Motion can be turned down or off. On an older phone that is the setting " +
-                "worth changing — the drifting backdrop redraws every frame while it " +
-                "moves, and Reduced stops everything that loops.",
-            "Home links out to public plugins and public creations. Both galleries are " +
-                "still being set up, so the buttons say so rather than opening nothing.",
-            "Android tells a tablet from a phone by the screen rather than the window, " +
-                "so a phone in landscape keeps the phone layout instead of being handed " +
-                "a rail and a docked inspector.",
+            "Java and Bedrock open in their own tabs. Picking the other edition " +
+                "used to convert the screen you had open; now both stay open and " +
+                "the tab strip shows which is which.",
+            "Rotate is on the toolbar and in the Arrange sheet — 90° either way, " +
+                "on any selection, and undoable.",
+            "Twelve new shapes: dividers, capsules, cut-corner plates, tabs, " +
+                "banners, bookmarks, shields, hearts, carets and notched bars.",
+            "Four more code exports — React JSX, SwiftUI, Flutter and Android XML — " +
+                "on top of the Java, Compose, HTML, CSS and SVG that were already there.",
+            "Help lists every key and every function the app has, from the Help " +
+                "menu or Settings.",
+            "Back is at the top left on every device now, phones included, and the " +
+                "system gesture still works alongside it.",
         ),
     )
 

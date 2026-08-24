@@ -67,6 +67,8 @@ import com.mcguidesigner.core.editor.NudgePadCorner
 import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.Edition
+import com.mcguidesigner.styles.editor.DocumentTabs
+import com.mcguidesigner.styles.editor.TabInfo
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
 import com.mcguidesigner.styles.layout.DeviceClass
 import com.mcguidesigner.styles.layout.LocalAdaptive
@@ -212,6 +214,14 @@ fun AndroidEditor(
                             metrics = metrics,
                         )
                         ToolStrip(app, state, metrics)
+                        DocumentTabs(
+                            tabs = app.tabs.map { TabInfo(it.title, it.edition, it.dirty) },
+                            active = app.activeTab,
+                            onSelect = app::selectTab,
+                            onClose = app::closeTab,
+                            onAdd = { app.addTab(state.edition) },
+                            metrics = metrics,
+                        )
                         NoticeStrip(
                             notices = app.notices,
                             expanded = app.noticeExpanded,
@@ -436,11 +446,11 @@ private fun ToolStrip(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // A tablet has a back control on screen; a phone uses the system
-        // gesture, which is always there and always in the same place.
-        if (!metrics.isCompact) {
-            TopBarAction("←") { app.goHome() }
-        }
+        // On every device, not just the wide ones. The phone used to rely on
+        // the system gesture alone, which is real but invisible: a back
+        // control you cannot see is one a first-time user does not know is
+        // there, and the gesture still works alongside it.
+        TopBarAction("←") { app.goHome() }
         Text(
             state.edition.displayName,
             style = MaterialTheme.typography.labelMedium,

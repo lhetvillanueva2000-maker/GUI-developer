@@ -37,6 +37,25 @@ enum class ShapeKind(
     PARALLELOGRAM("parallelogram", "Parallelogram", "▰"),
     TRAPEZOID("trapezoid", "Trapezoid", "⏢"),
     POLYGON("polygon", "Regular polygon", "⬢", "Side count is set by the Sides property."),
+
+    // -- Added in 1.7.0 ----------------------------------------------------
+    // Chosen for what interfaces are actually built out of rather than for
+    // variety: dividers, plates, tabs, badges, meters and the two arrow forms
+    // a HUD needs. Every one is a polygon, so the canvas, the HTML clip-path,
+    // the SVG export and both pack exporters all get it for free.
+
+    LINE("line", "Line / divider", "─", "A thin bar. Set the height to 1 or 2 for a rule."),
+    CAPSULE("capsule", "Capsule / pill", "⬭", "A tag or a badge. Square it up for a circle."),
+    PLATE("plate", "Cut-corner plate", "⬒", "A rectangle with the corners taken off - the usual backing plate."),
+    TAB_TOP("tab_top", "Tab", "⌂", "A tab head, flat along the bottom to sit against a panel."),
+    BANNER("banner", "Banner / ribbon", "⚑", "A notched end, for a title strip."),
+    BOOKMARK("bookmark", "Bookmark", "🔖", "Notched at the bottom - a marker or a pin."),
+    SHIELD("shield", "Shield", "⛊", "Crest shape, for a badge or a rank."),
+    HEART("heart", "Heart", "♥", "The vanilla health icon's silhouette."),
+    TRIANGLE_DOWN("triangle_down", "Triangle (down)", "▽", "A caret or a dropdown marker."),
+    ARROW_UP("arrow_up", "Arrow (up)", "⬆", "Rotate it to point any other direction."),
+    CHEVRON_DOWN("chevron_down", "Chevron (down)", "⌄", "An expand marker."),
+    NOTCH("notch", "Notched bar", "⊓", "A progress track or a slot rail."),
     ;
 
     /** False for the two curved kinds, which have no polygon outline. */
@@ -90,6 +109,62 @@ enum class ShapeKind(
         PARALLELOGRAM -> listOf(0.25f to 0f, 1f to 0f, 0.75f to 1f, 0f to 1f)
         TRAPEZOID -> listOf(0.22f to 0f, 0.78f to 0f, 1f to 1f, 0f to 1f)
 
+        // -- Added in 1.7.0 ------------------------------------------------
+
+        // Full width, centred band. The element's own height decides how thick
+        // it is, so a 2px-tall LINE is a hairline and a 20px one is a bar -
+        // rather than baking a thickness in here that resizing could not change.
+        LINE -> listOf(0f to 0.35f, 1f to 0.35f, 1f to 0.65f, 0f to 0.65f)
+
+        // Approximated with points rather than made a curved kind: a curved
+        // kind means every consumer special-cases it, and sixteen points is
+        // indistinguishable from a true capsule at the sizes this is used at.
+        CAPSULE -> capsule()
+
+        PLATE -> {
+            val c = 0.18f
+            listOf(
+                c to 0f, 1f - c to 0f, 1f to c, 1f to 1f - c,
+                1f - c to 1f, c to 1f, 0f to 1f - c, 0f to c,
+            )
+        }
+
+        TAB_TOP -> listOf(0.12f to 0f, 0.88f to 0f, 1f to 1f, 0f to 1f)
+
+        BANNER -> listOf(
+            0f to 0f, 1f to 0f, 0.86f to 0.5f, 1f to 1f, 0f to 1f,
+        )
+
+        BOOKMARK -> listOf(
+            0f to 0f, 1f to 0f, 1f to 1f, 0.5f to 0.72f, 0f to 1f,
+        )
+
+        SHIELD -> listOf(
+            0f to 0f, 1f to 0f, 1f to 0.55f, 0.85f to 0.82f,
+            0.5f to 1f, 0.15f to 0.82f, 0f to 0.55f,
+        )
+
+        HEART -> heart()
+
+        TRIANGLE_DOWN -> listOf(0f to 0f, 1f to 0f, 0.5f to 1f)
+
+        ARROW_UP -> listOf(
+            0.5f to 0f, 1f to 0.4f, 0.7f to 0.4f, 0.7f to 1f,
+            0.3f to 1f, 0.3f to 0.4f, 0f to 0.4f,
+        )
+
+        CHEVRON_DOWN -> listOf(
+            0f to 0f, 0.5f to 0.5f, 1f to 0f, 1f to 0.4f,
+            0.5f to 0.9f, 0f to 0.4f,
+        )
+
+        // A bar with a bite out of the middle of its top edge, which is what a
+        // slot rail and a segmented meter are both drawn from.
+        NOTCH -> listOf(
+            0f to 0f, 0.35f to 0f, 0.35f to 0.3f, 0.65f to 0.3f,
+            0.65f to 0f, 1f to 0f, 1f to 1f, 0f to 1f,
+        )
+
         ELLIPSE, ROUNDED_RECTANGLE -> emptyList()
     }
 
@@ -98,6 +173,52 @@ enum class ShapeKind(
         const val MAX_SIDES = 24
 
         val ids: List<String> = entries.map { it.id }
+
+        /** Half-circle caps joined by straight sides, as points. */
+        private fun capsule(steps: Int = 8): List<Pair<Float, Float>> {
+            val points = mutableListOf<Pair<Float, Float>>()
+            // Right cap, top to bottom.
+            for (i in 0..steps) {
+                val a = -kotlin.math.PI.toFloat() / 2f + kotlin.math.PI.toFloat() * i / steps
+                points += (0.75f + 0.25f * cosOf(a)) to (0.5f + 0.5f * sinOf(a))
+            }
+            // Left cap, bottom to top.
+            for (i in 0..steps) {
+                val a = kotlin.math.PI.toFloat() / 2f + kotlin.math.PI.toFloat() * i / steps
+                points += (0.25f + 0.25f * cosOf(a)) to (0.5f + 0.5f * sinOf(a))
+            }
+            return points
+        }
+
+        /**
+         * The classic two-lobe heart, as points.
+         *
+         * The parametric heart curve, sampled and squashed into the bounding
+         * box - hand-placing the points gets the lobes wrong at any size other
+         * than the one they were placed at.
+         */
+        private fun heart(steps: Int = 28): List<Pair<Float, Float>> {
+            val raw = (0 until steps).map { i ->
+                val t = 2f * kotlin.math.PI.toFloat() * i / steps
+                val x = 16f * sinOf(t) * sinOf(t) * sinOf(t)
+                // Screen space grows downwards, so the curve is negated here
+                // rather than flipped later.
+                val y = -(13f * cosOf(t) - 5f * cosOf(2 * t) - 2f * cosOf(3 * t) - cosOf(4 * t))
+                x to y
+            }
+            // Normalised from the *sampled* extents rather than the curve's
+            // analytic range. Hand-written bounds were wrong by 4% on the y
+            // axis, which put two points outside the bounding box - and a
+            // shape drawing outside its own element fails silently everywhere
+            // it is used.
+            val minX = raw.minOf { it.first }
+            val maxX = raw.maxOf { it.first }
+            val minY = raw.minOf { it.second }
+            val maxY = raw.maxOf { it.second }
+            val spanX = (maxX - minX).takeIf { it > 0f } ?: 1f
+            val spanY = (maxY - minY).takeIf { it > 0f } ?: 1f
+            return raw.map { (x, y) -> ((x - minX) / spanX) to ((y - minY) / spanY) }
+        }
 
         fun fromId(id: String?): ShapeKind = entries.firstOrNull { it.id == id } ?: RECTANGLE
 

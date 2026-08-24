@@ -38,8 +38,14 @@ data class DesktopPreferences(
     val exportTarget: String? = null,
     val showWelcomeOnStart: Boolean = true,
     val autosaveEnabled: Boolean = true,
-    /** [ThemeMode] name; anything unrecognised falls back to following the OS. */
-    val themeMode: String = ThemeMode.SYSTEM.name,
+    /**
+     * [ThemeMode] name.
+     *
+     * Anything unrecognised - including "SYSTEM" from a file written before
+     * 1.7.0 - reads as dark, which is what SYSTEM resolved to on desktop
+     * anyway, so the upgrade is invisible.
+     */
+    val themeMode: String = ThemeMode.DARK.name,
     /** [ChromeTheme] name; anything unrecognised falls back to the edition's own. */
     val chromeTheme: String = ChromeTheme.DEFAULT.name,
     /**

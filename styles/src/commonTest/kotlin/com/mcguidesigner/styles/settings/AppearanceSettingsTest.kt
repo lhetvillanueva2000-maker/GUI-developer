@@ -28,6 +28,13 @@ class AppearanceSettingsTest {
     )
 
     @Test
+    fun `a store written before the system theme was removed reads as dark`() {
+        // "SYSTEM" was a real value up to 1.6.0 and resolved to dark on
+        // desktop; upgrading must not leave the app themeless.
+        assertEquals(ThemeMode.DARK, stored(themeMode = "SYSTEM").theme)
+    }
+
+    @Test
     fun `an empty store gives the defaults`() {
         assertEquals(AppearanceSettings(), stored())
     }
@@ -67,7 +74,7 @@ class AppearanceSettingsTest {
     @Test
     fun `unrecognised names fall back rather than failing`() {
         val settings = stored(themeMode = "PLAID", chromeTheme = "NEON", motion = "LUDICROUS")
-        assertEquals(ThemeMode.SYSTEM, settings.theme)
+        assertEquals(ThemeMode.DARK, settings.theme)
         assertEquals(ChromeTheme.DEFAULT, settings.chromeTheme)
         assertEquals(MotionLevel.FULL, settings.motion)
     }

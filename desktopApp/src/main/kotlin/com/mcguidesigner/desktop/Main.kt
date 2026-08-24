@@ -615,6 +615,7 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
             }
             Item("Welcome Screen") { app.dialog = ActiveDialog.WELCOME }
             Item("Keyboard Shortcuts") { app.dialog = ActiveDialog.SHORTCUTS }
+            Item("Help - all keys and functions") { app.showHelp = true }
             Separator()
             Item("About") { app.dialog = ActiveDialog.ABOUT }
         }

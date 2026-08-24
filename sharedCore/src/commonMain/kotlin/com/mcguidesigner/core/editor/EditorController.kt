@@ -15,7 +15,9 @@ import com.mcguidesigner.core.model.IntPoint
 import com.mcguidesigner.core.model.IntRect
 import com.mcguidesigner.core.model.IntSize
 import com.mcguidesigner.core.model.ProjectMeta
+import com.mcguidesigner.core.model.IntValue
 import com.mcguidesigner.core.model.PropValue
+import com.mcguidesigner.core.model.int
 import com.mcguidesigner.core.model.ResizeHandle
 import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.model.TextureAsset
@@ -813,6 +815,44 @@ class EditorController(initial: GuiProject) {
                 ),
             )
         }
+    }
+
+    /**
+     * 0..359, whichever way and however far the angle has been turned.
+     *
+     * Kotlin's `%` keeps the sign of the left operand, so -90 % 360 is -90,
+     * not 270 - which is why this is a named function with a test rather than
+     * an inline modulo somebody would write once and get wrong.
+     */
+    private fun normaliseAngle(degrees: Int): Int = ((degrees % 360) + 360) % 360
+
+    /**
+     * Turns every selected element by [degrees].
+     *
+     * Relative rather than absolute, and wrapped into 0..359 rather than left
+     * to grow: rotating right four times from 270 should land back on 0, not
+     * on 360 - which is the same angle but a different number, and would show
+     * up as a spurious change in the inspector, in the diff and in the export.
+     *
+     * Unlike [setPropOnSelection] this does not skip elements whose catalog
+     * entry has no rotation property. Rotation is a transform every element
+     * has, not a widget feature some of them opt into, and every exporter
+     * already reads it off the element rather than off the catalog.
+     */
+    fun rotateSelection(degrees: Int) {
+        val s = _state.value
+        if (s.selection.isEmpty() || degrees % 360 == 0) return
+        edit("Rotate ${s.selection.size} elements") { st ->
+            st.copy(
+                project = st.project.withElements(
+                    st.project.elements.updateAll(st.selection) { element ->
+                        val next = normaliseAngle(element.props.int("rotation", 0) + degrees)
+                        element.withProp("rotation", IntValue(next))
+                    },
+                ),
+            )
+        }
+        history.breakCoalescing()
     }
 
     /** Applies one property value to every selected element that supports it. */

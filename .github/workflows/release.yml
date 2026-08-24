@@ -423,97 +423,58 @@ jobs:
 
           ## What's new in $VERSION
 
-          ### A new name
+          ### Java and Bedrock open in their own tabs
 
-          **UILabs.** The old one described the first thing the editor could do
-          rather than what it is: a visual editor for interfaces, which happens to speak
-          Minecraft's two dialects fluently and exports to six other targets besides. The
-          installers, the window title, the Android launcher and the generated file headers
-          all say the new name.
+          Picking the other edition used to *convert* the screen you had open, which
+          meant you could not have a Java screen and a Bedrock screen on the go at the
+          same time. Now each gets its own tab and both stay open. The tab carries its
+          edition's accent down its left edge, an unsaved document shows a dot instead
+          of a close button, and the strip only appears once there is more than one
+          document - one document is a document, not a set of tabs.
 
-          Nothing about your projects changes. \`.mcgui\` files, prefabs, the texture library
-          and your preferences are all read exactly as before.
+          ### Rotation
 
-          ### A settings page
+          Two buttons on the toolbar and on the Arrange sheet: 90 degrees either way, on
+          any selection, undoable, and wrapped so four right turns land back on 0 rather
+          than on 360.
 
-          The gear at the top right of the home screen. It replaces the light/dark toggle
-          that used to live there, and it holds rather more than that toggle did:
+          ### Twelve more shapes
 
-          **Seven themes.** Light and dark are still there, and on top of them sit
-          Midnight, Deepslate, Slate, Sandstone, Nether and End. Each one recolours the
-          application around the canvas and nothing else — a Minecraft button is the same
-          grey in every one of them, because a design tool that retinted its own preview
-          would be lying about the result. Each theme previews as the colours it actually
-          produces, against the edition you are in and the light/dark setting you have
-          chosen.
+          Nothing was removed. Added: divider, capsule, cut-corner plate, tab, banner,
+          bookmark, shield, heart, downward triangle, upward arrow, downward chevron and
+          notched bar - chosen for what interfaces are actually built out of rather than
+          for variety. Every one is a polygon, so the canvas, the HTML clip-path, the SVG
+          export and both pack exporters understand them without any extra work.
 
-          **Motion.** Full, Reduced, or Off. This is the one to reach for on an older
-          phone: the drifting backdrop and the star field redraw every frame while they
-          are moving, and Reduced stops everything that loops while keeping the
-          transitions. It also fixes a real bug — turning the backdrop drift off used to
-          cost exactly as much as leaving it on, because the animation was still running
-          with its result thrown away.
+          ### Four more code exports
 
-          **A name.** Purely local, stored in the same preferences file as everything
-          else, used to greet you on the home screen. There is no account and nothing is
-          sent anywhere; the settings page says so in as many words, and says plainly what
-          signing in would actually require rather than showing a button that does not
-          work.
+          **React JSX**, **SwiftUI**, **Flutter** and **Android XML**, alongside the Java
+          Screen, Kotlin Compose, HTML+CSS, CSS and SVG that were already there.
 
-          ### Public plugins and public creations
+          Each one positions absolutely rather than translating into that platform's flow
+          layout. A Minecraft screen is a fixed pixel canvas with no parent-child
+          relationships to express, and generating constraints or flexbox would mean
+          inventing a structure the design does not have.
 
-          Two cards under the edition cards, linking out to what other people have
-          shared. They are drawn as chrome rather than as Minecraft widgets on purpose:
-          the cards above them are real Java and Bedrock containers because they preview
-          what you are about to design, and these two leave the app entirely.
+          ### Help
 
-          Neither gallery is published yet, and neither button pretends otherwise — both
-          carry a **SOON** tag and do not respond. A button that looks live and opens
-          nothing is worse than one that says it is not ready.
+          Every key and every function the app has, on one page, from the Help menu or
+          from Settings. Actions with no keyboard shortcut are listed with the column
+          blank rather than left out - most of the app on a phone has no shortcut, and a
+          page that only listed the ones that do would be a shortcut reference wearing
+          help's name.
 
-          ### The home screen explains itself
+          ### Smaller things
 
-          Three short answers under the edition cards: what this is, who it is for, and
-          how to use it. New here and unsure what you are looking at — that is what they
-          are for, and they are at the bottom so everyone else can ignore them.
-
-          ### Android knows a tablet from a phone
-
-          It used to decide from the window width alone, which meant a large phone turned
-          sideways — around 900dp — was handed the tablet layout: a navigation rail and a
-          docked inspector on a screen four inches tall. It now asks the system for the
-          device's shorter edge, which does not change when you rotate, so a phone stays a
-          phone in both orientations and a tablet gets the layout its window can carry in
-          each.
-
-          ### Release signing is wired up, but not switched on yet
-
-          The build now takes a real upload key from the repository's
-          \`ANDROID_KEYSTORE_*\` secrets when they are set. They are not set for this
-          release, so this APK and App Bundle carry the same development key every
-          previous release used.
-
-          That key is committed to the repository, so it is not a secret and this build
-          should not be treated as one you published. It is signed enough to install and
-          to upgrade cleanly over 1.5.0, and no further.
-
-          **When the real key is switched on, one release will not upgrade in place.**
-          Android refuses an update whose signature changed, so that build has to be
-          installed over an uninstall. Every release after it upgrades normally again.
-
-          ### Fixes
-
-          - **Keyboard shortcuts fired on screens they did not belong to.** They are
-            installed ahead of everything focused, so on the home screen Delete opened a
-            confirmation about elements that were not on screen, and V, H and M silently
-            changed the tool in an editor that was not showing. Worse, inside any dialog
-            Backspace reached the canvas before the text field you were typing in and
-            deleted the selected element. Shortcuts are now the editor's, and a dialog
-            keeps the keyboard while it is open.
-          - **Backdrop motion off cost the same as on.** See Motion, above.
-          - **The home backdrop rebuilt itself on every hover.** 260 stars and about 570
-            ridge segments were regenerated to arrive at the same silhouette in a
-            different colour. The shape is generated once now and only the colours change.
+          - **Back is at the top left on every device**, phones included. The system
+            gesture still works alongside it; it was the only back affordance on a phone
+            before, and an invisible one is no use to somebody opening the app for the
+            first time.
+          - **"Match the system" is gone from the theme setting.** There is no portable
+            way to ask a desktop what its theme is, so it silently resolved to dark -
+            making the control a choice between "dark", "light" and "dark again". Files
+            that stored it read as dark, so nothing changes on upgrade.
+          - Closing a tab, and **Ctrl+N**, both ask before discarding unsaved work.
 
           ---
 

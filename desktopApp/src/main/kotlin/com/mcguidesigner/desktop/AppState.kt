@@ -11,6 +11,7 @@ import com.mcguidesigner.styles.notice.Notice
 import com.mcguidesigner.styles.notice.Notices
 import com.mcguidesigner.core.catalog.CustomPresets
 import com.mcguidesigner.core.catalog.ElementCatalog
+import com.mcguidesigner.core.editor.DocumentSet
 import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.editor.EditorSettings
 import com.mcguidesigner.core.library.LibraryTexture
@@ -96,11 +97,93 @@ enum class ToolboxTab(val title: String) {
  */
 class AppState(initial: GuiProject) {
 
-    var controller by mutableStateOf(EditorController(initial))
+    // -- Open documents ----------------------------------------------------
+
+    /**
+     * Every open document, in tab order.
+     *
+     * The editor used to hold exactly one, and switching edition *converted*
+     * it - so opening Bedrock while a Java screen was on the canvas rewrote
+     * that screen rather than starting a second one. Java and Bedrock are
+     * different enough that wanting both open at once is the normal case, not
+     * an edge one.
+     */
+    val tabs = mutableStateListOf(DocumentTab(initial))
+
+    var activeTab by mutableStateOf(0)
         private set
 
-    var currentFile by mutableStateOf<File?>(null)
-        private set
+    /** The document in front. Never out of bounds, whatever closed last. */
+    val active: DocumentTab
+        get() = tabs[activeTab.coerceIn(0, tabs.lastIndex)]
+
+    /**
+     * The active document's controller.
+     *
+     * Kept as a property with the same name and shape it had when there was
+     * only ever one, so every call site that reads `app.controller` - and
+     * there are two dozen across both shells - goes on working and simply
+     * follows the front tab.
+     */
+    var controller: EditorController
+        get() = active.controller
+        private set(value) { active.controller = value }
+
+    var currentFile: File?
+        get() = active.file
+        private set(value) { active.file = value }
+
+    fun selectTab(index: Int) {
+        if (index in tabs.indices) activeTab = index
+    }
+
+    /**
+     * Opens [edition] in its own tab, or brings its tab forward.
+     *
+     * Bringing an existing one forward rather than always opening a new tab:
+     * home is visited often, and a card that spawns another empty document
+     * every time you pass through it turns the row into a graveyard.
+     */
+    fun openTabFor(edition: Edition) {
+        DocumentSet.existingTabFor(tabs.map { it.controller.current.edition }, edition)
+            ?.let { activeTab = it; return }
+        tabs.add(DocumentTab(DocumentSet.newDocument(edition, tabs.map { it.title })))
+        activeTab = tabs.lastIndex
+    }
+
+    /** Adds a blank document for [edition] even if one is already open. */
+    fun addTab(edition: Edition) {
+        tabs.add(DocumentTab(DocumentSet.newDocument(edition, tabs.map { it.title })))
+        activeTab = tabs.lastIndex
+        status = "New ${edition.displayName} screen."
+    }
+
+    /**
+     * Closes a tab, asking first if it has unsaved work.
+     *
+     * The last tab is never closed outright - the editor would have nothing to
+     * show - so it goes back to home instead, which is where you would be
+     * heading anyway.
+     */
+    fun closeTab(index: Int) {
+        val tab = tabs.getOrNull(index) ?: return
+        val close = {
+            if (tabs.size == 1) {
+                goHome()
+            } else {
+                val next = DocumentSet.activeAfterClose(activeTab, index, tabs.size)
+                tabs.removeAt(index)
+                activeTab = next
+            }
+        }
+        if (tab.controller.current.dirty) {
+            pendingActionLabel = "close ${tab.title}"
+            pendingAction = close
+            dialog = ActiveDialog.UNSAVED_CHANGES
+        } else {
+            close()
+        }
+    }
 
     var dialog by mutableStateOf(ActiveDialog.NONE)
     var inspectorTab by mutableStateOf(InspectorTab.PROPERTIES)
@@ -165,6 +248,15 @@ class AppState(initial: GuiProject) {
     var homeOverlay by mutableStateOf(HomeOverlay.NONE)
 
     /**
+     * Whether the help page is over the editor.
+     *
+     * Separate from [homeOverlay] because help is reachable from both screens
+     * and the two must not fight: opening it from the editor's menu should not
+     * also arm something on a home screen that is not showing.
+     */
+    var showHelp by mutableStateOf(false)
+
+    /**
      * Opens the editor on [edition], converting the open document if it is
      * currently the other one.
      *
@@ -174,11 +266,11 @@ class AppState(initial: GuiProject) {
      * express instead of dropping it silently.
      */
     fun openEditor(edition: Edition) {
-        if (controller.current.edition != edition) {
-            controller.switchEdition(edition)
-            status = "Now designing for ${edition.displayName}. " +
-                "The palette, the skin and the export format all followed."
-        }
+        // A tab, not a conversion. Picking the other card used to rewrite the
+        // document that was already open, which meant you could not have a
+        // Java screen and a Bedrock screen on the go at the same time - and
+        // wanting both is the normal case, not an unusual one.
+        openTabFor(edition)
         screen = AppScreen.EDITOR
         persistPreferences()
     }
@@ -267,11 +359,7 @@ class AppState(initial: GuiProject) {
     fun cycleTheme() {
         applyAppearance(
             appearance.copy(
-                theme = when (themeMode) {
-                    ThemeMode.SYSTEM -> ThemeMode.DARK
-                    ThemeMode.DARK -> ThemeMode.LIGHT
-                    ThemeMode.LIGHT -> ThemeMode.SYSTEM
-                },
+                theme = if (themeMode == ThemeMode.DARK) ThemeMode.LIGHT else ThemeMode.DARK,
             ),
         )
         status = "Theme: ${themeMode.displayName}."

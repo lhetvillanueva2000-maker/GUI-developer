@@ -90,6 +90,9 @@ import com.mcguidesigner.desktop.widgets.NudgePad
 import com.mcguidesigner.desktop.widgets.ToolbarButton
 import com.mcguidesigner.desktop.widgets.ToolbarSeparator
 import com.mcguidesigner.desktop.widgets.WithTooltip
+import com.mcguidesigner.styles.editor.DocumentTabs
+import com.mcguidesigner.styles.settings.HelpScreen
+import com.mcguidesigner.styles.editor.TabInfo
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
 import com.mcguidesigner.styles.layout.LocalAdaptive
 import com.mcguidesigner.styles.notice.NoticeStrip
@@ -150,6 +153,14 @@ fun DesktopEditor(
         ) {
             Column(Modifier.fillMaxSize()) {
                 EditionHeader(app, controller, state, metrics)
+                DocumentTabs(
+                    tabs = app.tabs.map { TabInfo(it.title, it.edition, it.dirty) },
+                    active = app.activeTab,
+                    onSelect = app::selectTab,
+                    onClose = app::closeTab,
+                    onAdd = { app.addTab(state.edition) },
+                    metrics = metrics,
+                )
                 // Exactly where the edition tabs were, and for the same reason
                 // that row existed: it is the one strip that is about the app
                 // rather than about the document.
@@ -296,6 +307,16 @@ fun DesktopEditor(
             ActiveDialog.CONFIRM_DELETE -> ConfirmDeleteDialog(app)
             ActiveDialog.NONE -> Unit
         }
+
+        // Over everything, including the docks: help is a page you read, not a
+        // panel you work beside.
+        if (app.showHelp) {
+            HelpScreen(
+                onClose = { app.showHelp = false },
+                metrics = metrics,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
     }
 }
@@ -369,11 +390,7 @@ private fun EditionHeader(
                 }
             }
             ToolbarButton(
-                label = when (app.themeMode) {
-                    ThemeMode.LIGHT -> "☀"
-                    ThemeMode.DARK -> "☾"
-                    ThemeMode.SYSTEM -> "◑"
-                },
+                label = if (app.themeMode == ThemeMode.LIGHT) "☀" else "☾",
                 hint = "Theme: ${app.themeMode.displayName}  ·  click to change, right-click for options",
             ) { app.cycleTheme() }
             ToolbarButton("⚙", hint = "Appearance settings") { app.dialog = ActiveDialog.APPEARANCE }
@@ -488,6 +505,22 @@ private fun EditorToolbar(
                         }
                     }
                 }
+
+                // Rotation sits with align and distribute because it is the
+                // same kind of thing - a transform applied to whatever is
+                // selected - and unlike the align block it is two buttons, so
+                // it stays even in a narrow window.
+                ToolbarSeparator()
+                ToolbarButton(
+                    "↺",
+                    enabled = state.hasSelection,
+                    hint = "Rotate 90° left",
+                ) { controller.rotateSelection(-90) }
+                ToolbarButton(
+                    "↻",
+                    enabled = state.hasSelection,
+                    hint = "Rotate 90° right",
+                ) { controller.rotateSelection(90) }
             }
 
             ToolbarSeparator()
