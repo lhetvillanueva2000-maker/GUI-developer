@@ -35,6 +35,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -81,6 +82,7 @@ import com.mcguidesigner.core.validation.Severity
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.canvas.GuiPreview
+import com.mcguidesigner.styles.export.ImageExportPanel
 import com.mcguidesigner.styles.render.TextureCache
 import com.mcguidesigner.styles.theme.ErrorRed
 import com.mcguidesigner.styles.theme.InfoBlue
@@ -103,6 +105,7 @@ fun MobileSheets(
     onImportImages: () -> Unit,
     onImportPack: () -> Unit,
     onExport: (ExportTarget) -> Unit,
+    onSaveImage: (fileName: String, bytes: ByteArray) -> Unit,
 ) {
     if (app.sheet == MobileSheet.NONE) return
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
@@ -126,6 +129,7 @@ fun MobileSheets(
                 MobileSheet.ASSETS -> AssetsSheet(app, controller, state, textures, onImportImages)
                 MobileSheet.ISSUES -> IssuesSheet(controller, state)
                 MobileSheet.EXPORT -> ExportSheet(app, state, onExport)
+                MobileSheet.IMAGE_EXPORT -> ImageExportSheet(app, state, textures, onSaveImage)
                 MobileSheet.PROJECT -> ProjectSheet(controller, state)
                 MobileSheet.CANVAS -> CanvasSheet(controller, state)
                 MobileSheet.PREFABS -> PrefabsSheet(app, state)
@@ -707,6 +711,42 @@ private fun ExportSheet(app: AndroidAppState, state: EditorState, onExport: (Exp
             modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
         ) { Text("Export as .zip") }
 
+        TextButton(
+            onClick = { app.sheet = MobileSheet.IMAGE_EXPORT },
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        ) { Text("Export as an image instead…") }
+
+        Box(Modifier.height(24.dp))
+    }
+}
+
+/**
+ * The design as a PNG, at a size picked from a list.
+ *
+ * A separate sheet rather than another [ExportTarget] for the same reason the
+ * desktop gives it a separate dialog: an image is the one export that has to be
+ * *drawn*, so it cannot come out of `ExportManager` with the rest.
+ */
+@Composable
+private fun ImageExportSheet(
+    app: AndroidAppState,
+    state: EditorState,
+    textures: TextureCache,
+    onSaveImage: (fileName: String, bytes: ByteArray) -> Unit,
+) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
+    ) {
+        SheetTitle("Export as image", "A PNG of the design, at whatever size you need")
+        ImageExportPanel(
+            project = state.project,
+            textures = textures,
+            onSave = onSaveImage,
+            onCancel = { app.sheet = MobileSheet.EXPORT },
+        )
         Box(Modifier.height(24.dp))
     }
 }

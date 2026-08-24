@@ -129,6 +129,15 @@ fun AndroidEditor(
         ActivityResultContracts.CreateDocument(AndroidFileIO.ZIP_MIME),
     ) { uri -> uri?.let { app.performExport(context, it) } }
 
+    // Its own launcher rather than a mode on the export one: the contract
+    // carries the MIME type, and offering to create a .zip when the thing
+    // being saved is a .png would have the picker suggest the wrong extension.
+    val imageSaveLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(AndroidFileIO.PNG_MIME),
+    ) { uri ->
+        if (uri == null) app.pendingImageBytes = null else app.performImageSave(context, uri)
+    }
+
     val packLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri -> uri?.let { app.openPack(context, it) } }
@@ -331,6 +340,10 @@ fun AndroidEditor(
                 onExport = { target ->
                     app.pendingExportTarget = target
                     exportLauncher.launch(app.exportFileName(target))
+                },
+                onSaveImage = { fileName, bytes ->
+                    app.pendingImageBytes = bytes
+                    imageSaveLauncher.launch(fileName)
                 },
             )
 

@@ -138,6 +138,14 @@ object DesktopFileIO {
         zipFile
     }
 
+    /** Writes raw bytes - a rendered PNG, so far - to one file. */
+    fun writeBytes(file: File, bytes: ByteArray): Result<File> = runCatching {
+        file.parentFile?.mkdirs()
+        file.writeBytes(bytes)
+        lastDirectory = file.parentFile ?: lastDirectory
+        file
+    }
+
     fun writeText(file: File, content: String): Result<File> = runCatching {
         file.parentFile?.mkdirs()
         file.writeText(content)

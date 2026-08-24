@@ -60,6 +60,7 @@ enum class ActiveDialog {
     NEW_PROJECT,
     TEMPLATES,
     EXPORT,
+    IMAGE_EXPORT,
     PROJECT_SETTINGS,
     ABOUT,
     SHORTCUTS,
@@ -1036,6 +1037,27 @@ class AppState(initial: GuiProject) {
         )
         dialog = ActiveDialog.NONE
         persistPreferences()
+    }
+
+    /**
+     * Writes a rendered PNG somewhere the user picks.
+     *
+     * Takes finished bytes rather than a project and a size because only a
+     * composition can render one - see `ImageExportPanel`. This end of it is
+     * just a file dialog and a write.
+     */
+    fun saveImage(fileName: String, bytes: ByteArray) {
+        val file = DesktopFileIO.saveFileDialog(frameProvider(), "Save image", fileName)
+        if (file == null) {
+            // Cancelling the file dialog cancels the save, not the export
+            // dialog: the size list is still there to pick a different one.
+            return
+        }
+        status = DesktopFileIO.writeBytes(file, bytes).fold(
+            onSuccess = { "Wrote ${it.name} (${bytes.size / 1024} KB)." },
+            onFailure = { "Could not write the image: ${it.message}" },
+        )
+        dialog = ActiveDialog.NONE
     }
 
     /** Saves the current Code tab's output to a single file. */

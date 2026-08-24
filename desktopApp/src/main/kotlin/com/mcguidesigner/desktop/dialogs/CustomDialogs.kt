@@ -206,7 +206,7 @@ fun EditorSettingsDialog(app: AppState) {
                 Box(Modifier.height(10.dp))
                 StepSetting(
                     label = "Big step",
-                    help = "Used while Shift is held, or when the pad's step button is lit.",
+                    help = "Used while Shift is held.",
                     value = draft.largeNudgeStep,
                     onChange = { commit(draft.copy(largeNudgeStep = it)) },
                 )

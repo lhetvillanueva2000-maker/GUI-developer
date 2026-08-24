@@ -69,6 +69,7 @@ enum class MobileSheet {
     ASSETS,
     ISSUES,
     EXPORT,
+    IMAGE_EXPORT,
     PROJECT,
     CANVAS,
     PREFABS,
@@ -183,6 +184,16 @@ class AndroidAppState(initial: GuiProject) {
 
     /** Set while an export is pending a "create document" result from SAF. */
     var pendingExportTarget: ExportTarget? = null
+
+    /**
+     * A rendered PNG waiting for somewhere to go.
+     *
+     * The image has to be drawn by a composition before the storage-access
+     * picker can be opened for it - there is nothing to write until it exists -
+     * so unlike every other export the bytes come first and the destination
+     * second. They are held here for the few seconds in between.
+     */
+    var pendingImageBytes: ByteArray? = null
 
     // -- Navigation --------------------------------------------------------
 
@@ -809,6 +820,23 @@ class AndroidAppState(initial: GuiProject) {
     fun exportFileName(target: ExportTarget): String {
         val bundle = ExportManager.export(controller.project, target, codeTarget)
         return "${bundle.rootName}.zip"
+    }
+
+    /** Writes the PNG held by [pendingImageBytes] to the document just created. */
+    fun performImageSave(context: Context, uri: Uri) {
+        val bytes = pendingImageBytes
+        pendingImageBytes = null
+        if (bytes == null) {
+            status = "The image was no longer ready to save. Try again."
+            return
+        }
+        AndroidFileIO.writeBytes(context, uri, bytes).fold(
+            onSuccess = {
+                status = "Saved the image (${bytes.size / 1024} KB)."
+                sheet = MobileSheet.NONE
+            },
+            onFailure = { status = "Could not save the image: ${it.message}" },
+        )
     }
 
     fun performExport(context: Context, uri: Uri) {

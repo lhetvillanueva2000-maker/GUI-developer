@@ -448,6 +448,9 @@ private fun FrameWindowScope.DesignerMenuBar(app: AppState) {
                 app.exportTarget = ExportTarget.EVERYTHING
                 app.dialog = ActiveDialog.EXPORT
             }
+            Item("Export as Image...", shortcut = KeyShortcut(Key.I, ctrl = true, shift = true)) {
+                app.dialog = ActiveDialog.IMAGE_EXPORT
+            }
             Item("Save a Copy...") { app.saveAs() }
             Separator()
             Item("Import Textures, Images or GIFs...") { app.importTextures() }

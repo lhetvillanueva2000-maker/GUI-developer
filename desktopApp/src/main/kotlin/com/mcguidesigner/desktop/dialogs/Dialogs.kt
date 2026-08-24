@@ -48,6 +48,7 @@ import com.mcguidesigner.exporters.CodeGenerator
 import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
+import com.mcguidesigner.styles.export.ImageExportPanel
 import com.mcguidesigner.styles.render.rememberTextureCache
 import com.mcguidesigner.styles.theme.ErrorRed
 import com.mcguidesigner.styles.theme.LocalSkinPalette
@@ -251,6 +252,7 @@ fun ExportDialog(app: AppState, state: EditorState) {
         },
         confirmButton = {
             Row {
+                TextButton(onClick = { app.dialog = ActiveDialog.IMAGE_EXPORT }) { Text("Image…") }
                 TextButton(onClick = {
                     app.exportTarget = target
                     app.runExport(target, asZip = false)
@@ -263,6 +265,37 @@ fun ExportDialog(app: AppState, state: EditorState) {
         },
         dismissButton = {
             TextButton(onClick = { app.dialog = ActiveDialog.NONE }) { Text("Cancel") }
+        },
+    )
+}
+
+/**
+ * Renders the design to a PNG at a chosen size.
+ *
+ * Its own dialog rather than another [ExportTarget], because the image is the
+ * only export that cannot be produced by `ExportManager`: everything else is
+ * text or bytes computed from the document, and this one has to be *drawn*,
+ * which needs a live composition. Pretending otherwise would mean an export
+ * target that the shared pipeline silently returns nothing for.
+ */
+@Composable
+fun ImageExportDialog(app: AppState, state: EditorState) {
+    val textures = rememberTextureCache(state.project)
+
+    AlertDialog(
+        onDismissRequest = { app.dialog = ActiveDialog.NONE },
+        title = { Text("Export as image") },
+        text = {
+            ImageExportPanel(
+                project = state.project,
+                textures = textures,
+                onSave = { fileName, bytes -> app.saveImage(fileName, bytes) },
+                modifier = Modifier.width(520.dp).heightIn(max = 640.dp).verticalScroll(rememberScrollState()),
+            )
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = { app.dialog = ActiveDialog.NONE }) { Text("Close") }
         },
     )
 }

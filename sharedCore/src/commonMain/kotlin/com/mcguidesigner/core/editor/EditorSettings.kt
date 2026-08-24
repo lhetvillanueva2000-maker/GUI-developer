@@ -58,6 +58,18 @@ data class EditorSettings(
     /** Whether the four move buttons appear when something is selected. */
     val showNudgePad: Boolean = true,
     val nudgePadCorner: NudgePadCorner = NudgePadCorner.BOTTOM_RIGHT,
+    /**
+     * How big the move pad is drawn, as a multiple of its normal size.
+     *
+     * A setting rather than a fixed size because the pad is the one control in
+     * the app whose right size is a property of the *hand*, not the screen: a
+     * 44dp key is comfortable for some people and a target you keep missing for
+     * others, and the pad is used precisely when a fingertip drag is not
+     * accurate enough. Dragged directly on the pad's own handle rather than
+     * buried in a settings screen, because the only way to tell whether it is
+     * the right size is to reach for it.
+     */
+    val nudgePadScale: Float = 1f,
     /** How far a duplicate lands from its original, in GUI pixels. */
     val duplicateOffset: Int = 8,
     /** Seconds between autosaves of a dirty document; 0 disables it. */
@@ -82,11 +94,19 @@ data class EditorSettings(
         largeNudgeStep = largeNudgeStep.coerceIn(MIN_STEP, MAX_STEP),
         duplicateOffset = duplicateOffset.coerceIn(0, MAX_STEP),
         autosaveSeconds = autosaveSeconds.coerceIn(0, 600),
+        // NaN survives coerceIn - it compares false against everything - and a
+        // NaN here would size the pad to nothing at all. A file written by a
+        // future build, or by hand, can contain one.
+        nudgePadScale = if (nudgePadScale.isNaN()) 1f else nudgePadScale.coerceIn(MIN_PAD_SCALE, MAX_PAD_SCALE),
     )
 
     companion object {
         const val MIN_STEP = 1
         const val MAX_STEP = 128
+
+        /** Range the pad can be dragged between; 1.0 is the size it always was. */
+        const val MIN_PAD_SCALE = 0.7f
+        const val MAX_PAD_SCALE = 2f
 
         /** Step sizes offered as one-tap presets in the settings screens. */
         val STEP_PRESETS = listOf(1, 2, 4, 8, 16)

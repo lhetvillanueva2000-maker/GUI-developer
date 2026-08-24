@@ -66,6 +66,7 @@ import com.mcguidesigner.desktop.dialogs.ComponentGalleryDialog
 import com.mcguidesigner.desktop.dialogs.ConfirmDeleteDialog
 import com.mcguidesigner.desktop.dialogs.EditorSettingsDialog
 import com.mcguidesigner.desktop.dialogs.ExportDialog
+import com.mcguidesigner.desktop.dialogs.ImageExportDialog
 import com.mcguidesigner.desktop.dialogs.NewProjectDialog
 import com.mcguidesigner.desktop.dialogs.PackImportDialog
 import com.mcguidesigner.desktop.dialogs.ProjectSettingsDialog
@@ -292,6 +293,7 @@ fun DesktopEditor(
             ActiveDialog.NEW_PROJECT -> NewProjectDialog(app)
             ActiveDialog.TEMPLATES -> TemplateGalleryDialog(app)
             ActiveDialog.EXPORT -> ExportDialog(app, state)
+            ActiveDialog.IMAGE_EXPORT -> ImageExportDialog(app, state)
             ActiveDialog.PROJECT_SETTINGS -> ProjectSettingsDialog(app, controller, state)
             ActiveDialog.ABOUT -> AboutDialog(app)
             ActiveDialog.SHORTCUTS -> ShortcutsDialog(app)
