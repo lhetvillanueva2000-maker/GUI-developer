@@ -82,29 +82,34 @@ object AppNotice {
      */
     val current = Notice(
         id = "whatsnew-${Branding.VERSION}",
-        headline = "${Branding.NAME} ${Branding.VERSION} — Other UIs, redrawn",
+        headline = "${Branding.NAME} ${Branding.VERSION} — the third card is a paint canvas now",
         points = listOf(
-            "The Open editor button on the Other UIs card was white text on a " +
-                "white button. The card filled it with the control colour and " +
-                "wrote in the on-accent colour — a pairing that works by luck " +
-                "in both Minecraft skins and vanished entirely in a pale one. " +
-                "Skins now name their filled button explicitly, and a test " +
-                "measures the contrast of every one of them.",
-            "Other UIs has been rebuilt out of near-whites into a palette with " +
-                "real steps in it: visible borders, controls you can tell from " +
-                "the card behind them, and text that is not one shade off its " +
-                "background.",
-            "It is typeset properly. Screens were being drawn in the monospace " +
-                "face the Minecraft skins use, so a settings page read like a " +
-                "terminal. Headings, labels and captions now differ in weight " +
-                "as well as size, and the Font property does something.",
-            "Light or dark, from the canvas backdrop. Set a dark backdrop and " +
-                "the whole screen follows — dark fields, dark dividers, light " +
-                "placeholder text — instead of light widgets recoloured one at " +
-                "a time. There is a Dark Studio Panel template to start from.",
-            "No label can be invisible any more. Every piece of text on a " +
-                "coloured surface checks what it is being drawn on and takes " +
-                "the readable side if the requested colour would disappear.",
+            "Other UIs opens a white sheet you can draw on, not the element " +
+                "editor with different colours. Layers with fourteen blend " +
+                "modes, alpha lock and clipping; eight nibs from a hard dip pen " +
+                "to a wide airbrush; bucket, eyedropper and a stabilizer; " +
+                "mirror and radial symmetry; undo that records only the tiles a " +
+                "stroke touched, so it works on a phone.",
+            "The eraser is the brush with the arithmetic reversed, so it is " +
+                "exactly as good. It takes alpha away and leaves colour alone, " +
+                "which means a stroke erased to a whisper and painted back over " +
+                "is still its own colour rather than a grey ghost.",
+            "Cut out the background without a download. It builds a colour " +
+                "model of the image's edges, labels every pixel against it, " +
+                "cleans the boundary up so it follows real edges, then works " +
+                "out a partial transparency for every pixel along it — so soft " +
+                "edges come out soft instead of cut with scissors, and no " +
+                "fringe of the old background is left behind. It tells you how " +
+                "confident it is, and says so when it is not.",
+            "Both halves of the app's own name are visible again. LABS is drawn " +
+                "inside a slot in the active skin's colours, and the letters " +
+                "took the chrome's text colour — near-white letters on a " +
+                "near-white plate. Same mistake as the launch card's button, " +
+                "same fix, and now a test measures both.",
+            "Translucent brushes stay translucent. Dabs within one stroke " +
+                "accumulate into a shared buffer instead of compositing " +
+                "individually, so a 40% brush is 40% along its whole length " +
+                "rather than solid wherever it overlapped itself.",
         ),
     )
 

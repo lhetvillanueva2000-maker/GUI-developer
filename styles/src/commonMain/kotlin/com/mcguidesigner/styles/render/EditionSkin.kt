@@ -102,6 +102,16 @@ interface EditionSkin {
     /** Short description shown in the edition switcher. */
     val tagline: String
 
+    /**
+     * What the card's button says.
+     *
+     * Overridable because the three cards no longer all open the same kind of
+     * thing: two open the element editor and one opens a paint canvas. A card
+     * that says "Open editor" and then presents a set of brushes has told the
+     * person the wrong thing about where they are going.
+     */
+    val openLabel: String get() = "Open editor"
+
     /** Editor-chrome colours for each theme, owned by this edition's skin. */
     val darkChrome: ChromeColors
     val lightChrome: ChromeColors

@@ -118,6 +118,35 @@ class ContrastTest {
     }
 
     @Test
+    fun `the wordmark's slot never swallows the half of the name inside it`() {
+        // The app's own name is "UI" on the panel and "LABS" inside a slot
+        // drawn in the active skin's widget colours. The slot's fill and the
+        // chrome's text belong to two different colour systems and nothing
+        // makes them contrast: on a skin with a pale slot they landed within a
+        // few percent of each other and the second half of the name vanished.
+        //
+        // Asserted against readableTextOn rather than against chromeText,
+        // because that is now what the top bar uses - this test fails if
+        // anybody puts it back.
+        val failures = skins.flatMap { skin ->
+            listOf(true, false).mapNotNull { dark ->
+                val p = skin.paletteFor(dark)
+                val ratio = contrast(readableTextOn(p.slot), p.slot)
+                // Same split as the rest of this file: a skin that draws its
+                // text with a shadow gets the lower bar, because the shadow is
+                // doing work the ratio cannot see. Java's slot is vanilla
+                // mid-grey and sits at 3.4:1 whichever ink is chosen - the top
+                // bar shadows the letters for exactly that reason.
+                val bar = if (p.textShadow.alpha > 0f) 3.0f else 4.5f
+                if (ratio >= bar) null else {
+                    "${skin.displayName} (${if (dark) "dark" else "light"}): slot ${ratio.round()}:1"
+                }
+            }
+        }
+        assertTrue(failures.isEmpty(), "Unreadable wordmark:\n" + failures.joinToString("\n"))
+    }
+
+    @Test
     fun `at least one skin is actually being held to the strict bar`() {
         // Without this, deleting a token or flipping a shadow flag would empty
         // the strict tests out and turn three green checks into three no-ops.

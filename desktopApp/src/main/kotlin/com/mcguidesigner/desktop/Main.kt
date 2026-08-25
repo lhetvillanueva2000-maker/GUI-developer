@@ -42,6 +42,7 @@ import com.mcguidesigner.core.templates.BuiltInTemplates
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.core.support.Donation
 import com.mcguidesigner.styles.home.HomeScreen
+import com.mcguidesigner.styles.paint.PaintScreen
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
 import com.mcguidesigner.styles.layout.DeviceClass
 import com.mcguidesigner.styles.layout.LocalAdaptive
@@ -214,6 +215,19 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
 
                         AppScreen.EDITOR ->
                             DesktopEditor(appState, controller, editorState, Modifier.fillMaxSize())
+
+                        AppScreen.PAINT -> {
+                            val paint = appState.paint
+                            if (paint == null) appState.goHome() else {
+                                PaintScreen(
+                                    state = paint,
+                                    onBack = { appState.goHome() },
+                                    onExport = { bytes, name -> appState.savePaintPng(bytes, name) },
+                                    onImportImage = { appState.importPaintImage() },
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        }
                     }
                 }
             }

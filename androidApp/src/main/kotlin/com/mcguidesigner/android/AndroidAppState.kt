@@ -19,6 +19,8 @@ import com.mcguidesigner.core.image.ImageBackground
 import com.mcguidesigner.android.io.LibraryStore
 import com.mcguidesigner.android.io.SessionStore
 import com.mcguidesigner.core.editor.DocumentSet
+import com.mcguidesigner.core.paint.PaintBackground
+import com.mcguidesigner.styles.paint.PaintState
 import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.library.LibraryTexture
 import com.mcguidesigner.core.library.Prefab
@@ -38,6 +40,8 @@ import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ImportFormat
 import com.mcguidesigner.exporters.ImportOutcome
 import com.mcguidesigner.exporters.ExportTarget
+import com.mcguidesigner.styles.render.decodeImageBitmap
+import com.mcguidesigner.styles.render.readImageSize
 import com.mcguidesigner.styles.render.createAnimatedTextureFromFrames
 import com.mcguidesigner.styles.render.createTextureAsset
 import com.mcguidesigner.styles.home.HomeOverlay
@@ -49,14 +53,21 @@ import com.mcguidesigner.styles.theme.MotionLevel
 import com.mcguidesigner.styles.theme.ThemeMode
 
 /**
- * Which of the app's two screens is showing.
+ * The three top-level screens.
  *
- * Home is where the edition is chosen, so it comes before the editor rather
- * than being reachable from inside it. Moving between them never touches the
- * document, which is what lets the back gesture reach home without an "are
- * you sure" in the way.
+ * Home is where the target is chosen, so it comes before the other two rather
+ * than being reachable from inside them. Moving between them never touches the
+ * document, which is what lets the back gesture reach home without an "are you
+ * sure" in the way.
+ *
+ * PAINT is a peer of EDITOR rather than a mode inside it. They share no state:
+ * one edits a tree of widgets with properties, the other edits a stack of
+ * pixels, and the only thing they have in common is the app around them.
+ * Squeezing a paint canvas into the element editor's document model - as a
+ * special kind of element, say - would mean every inspector, exporter and
+ * validator growing a branch for a thing they can say nothing useful about.
  */
-enum class AppScreen { HOME, EDITOR }
+enum class AppScreen { HOME, EDITOR, PAINT }
 
 /** Bottom-navigation destinations. Mobile navigation, not desktop docks. */
 enum class MobileSection(val title: String, val glyph: String) {
@@ -236,9 +247,86 @@ class AndroidAppState(initial: GuiProject) {
      * express instead of dropping it silently.
      */
     fun openEditor(edition: Edition) {
+        if (edition == Edition.OTHER) {
+            openPaint()
+            return
+        }
         // A tab, not a conversion - see [tabs].
         openTabFor(edition)
         screen = AppScreen.EDITOR
+    }
+
+    /**
+     * The paint canvas.
+     *
+     * Created on first use and kept afterwards, so leaving and coming back
+     * finds the drawing where it was. A phone-sized square at a resolution that
+     * prints acceptably and still leaves room for several layers: 1536 squared
+     * is 9MB a layer, against the 24MB a layer that 2048 by 3072 would cost.
+     */
+    fun openPaint() {
+        if (paint == null) {
+            paint = PaintState(1536, 1536, PaintBackground.WHITE)
+        }
+        sheet = MobileSheet.NONE
+        screen = AppScreen.PAINT
+    }
+
+    var paint by mutableStateOf<PaintState?>(null)
+        private set
+
+    /** Set while the picker is open for a paint export. See [pendingImageSize]. */
+    var pendingPaintPng: ByteArray? = null
+
+    /**
+     * Reads an image and drops it onto the paint canvas.
+     *
+     * The size check before decoding is not caution, it is the difference
+     * between working and not. A modern phone camera produces images of fifty
+     * megapixels, which is two hundred megabytes as ARGB_8888 - enough to be
+     * killed outright on the device this app is tuned for. The header is read
+     * first, and anything too large is refused with a message that says so
+     * rather than by dying.
+     */
+    fun importPaintImage(context: Context, uri: Uri) {
+        val target = paint ?: return
+        val bytes = AndroidFileIO.readBytes(context, uri).getOrElse {
+            status = "Could not read that image: ${it.message}"
+            return
+        }
+        val size = readImageSize(bytes)
+        if (size != null) {
+            val megapixels = size.first.toLong() * size.second / 1_000_000
+            if (megapixels > 40) {
+                status = "That image is ${megapixels}MP - too large to open here. Try a smaller copy."
+                return
+            }
+        }
+        val bitmap = decodeImageBitmap(bytes) ?: run {
+            status = "That file is not an image this app can read."
+            return
+        }
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        runCatching { bitmap.readPixels(pixels, 0, 0, bitmap.width, bitmap.height) }.fold(
+            onSuccess = {
+                target.placeImage(pixels, bitmap.width, bitmap.height)
+                status = "Image placed on ${target.document.active?.name ?: "the layer"}."
+            },
+            onFailure = { status = "Could not read that image's pixels: ${it.message}" },
+        )
+    }
+
+    fun savePaintPng(context: Context, uri: Uri) {
+        val bytes = pendingPaintPng
+        pendingPaintPng = null
+        if (bytes == null || bytes.isEmpty()) {
+            status = "Nothing to save - try exporting again."
+            return
+        }
+        AndroidFileIO.writeBytes(context, uri, bytes).fold(
+            onSuccess = { status = "Image saved." },
+            onFailure = { status = "Could not save the image: ${it.message}" },
+        )
     }
 
     /**

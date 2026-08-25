@@ -16,6 +16,10 @@ import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.editor.EditorSettings
 import com.mcguidesigner.core.image.ImageSize
 import com.mcguidesigner.core.image.ImageBackground
+import com.mcguidesigner.styles.render.decodeImageBitmap
+import com.mcguidesigner.styles.render.readImageSize
+import com.mcguidesigner.core.paint.PaintBackground
+import com.mcguidesigner.styles.paint.PaintState
 import com.mcguidesigner.core.library.LibraryTexture
 import com.mcguidesigner.core.library.Prefab
 import com.mcguidesigner.core.library.PrefabLibrary
@@ -56,7 +60,7 @@ import java.net.URI
  * document - the editor is still holding whatever was open - which is what
  * makes going back cheap enough not to need an "are you sure".
  */
-enum class AppScreen { HOME, EDITOR }
+enum class AppScreen { HOME, EDITOR, PAINT }
 
 /** Which auxiliary window is currently open. */
 enum class ActiveDialog {
@@ -272,6 +276,10 @@ class AppState(initial: GuiProject) {
      * express instead of dropping it silently.
      */
     fun openEditor(edition: Edition) {
+        if (edition == Edition.OTHER) {
+            openPaint()
+            return
+        }
         // A tab, not a conversion. Picking the other card used to rewrite the
         // document that was already open, which meant you could not have a
         // Java screen and a Bedrock screen on the go at the same time - and
@@ -279,6 +287,64 @@ class AppState(initial: GuiProject) {
         openTabFor(edition)
         screen = AppScreen.EDITOR
         persistPreferences()
+    }
+
+    /**
+     * The paint canvas. Created on first use and kept, so leaving and coming
+     * back finds the drawing where it was.
+     *
+     * Larger than the phone's default because a desktop has the memory for it
+     * and a mouse can make use of the resolution.
+     */
+    fun openPaint() {
+        if (paint == null) paint = PaintState(2048, 2048, PaintBackground.WHITE)
+        screen = AppScreen.PAINT
+    }
+
+    var paint by mutableStateOf<PaintState?>(null)
+        private set
+
+    /** Writes the painting straight out - a desktop has a real file system. */
+    fun savePaintPng(bytes: ByteArray, fileName: String) {
+        if (bytes.isEmpty()) {
+            status = "Nothing to export - the canvas produced no image."
+            return
+        }
+        val file = DesktopFileIO.saveFileDialog(frameProvider(), "Export image", fileName) ?: return
+        runCatching {
+            file.parentFile?.mkdirs()
+            file.writeBytes(bytes)
+        }.fold(
+            onSuccess = { status = "Saved ${file.name}." },
+            onFailure = { status = "Could not save the image: ${it.message}" },
+        )
+    }
+
+    /** Picks an image and drops it onto the paint canvas. See the Android twin. */
+    fun importPaintImage() {
+        val target = paint ?: return
+        val file = DesktopFileIO.openImportDialog(frameProvider()) ?: return
+        val bytes = runCatching { file.readBytes() }.getOrElse {
+            status = "Could not read ${file.name}: ${it.message}"
+            return
+        }
+        val size = readImageSize(bytes)
+        if (size != null && size.first.toLong() * size.second > 60_000_000L) {
+            status = "${file.name} is too large to open here. Try a smaller copy."
+            return
+        }
+        val bitmap = decodeImageBitmap(bytes) ?: run {
+            status = "${file.name} is not an image this app can read."
+            return
+        }
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        runCatching { bitmap.readPixels(pixels, 0, 0, bitmap.width, bitmap.height) }.fold(
+            onSuccess = {
+                target.placeImage(pixels, bitmap.width, bitmap.height)
+                status = "Placed ${file.name}."
+            },
+            onFailure = { status = "Could not read the pixels of ${file.name}: ${it.message}" },
+        )
     }
 
     /** Back to the picker. The document stays loaded exactly as it is. */

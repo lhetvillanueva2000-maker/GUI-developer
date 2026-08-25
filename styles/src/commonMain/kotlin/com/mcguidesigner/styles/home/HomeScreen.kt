@@ -38,7 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -60,6 +62,7 @@ import com.mcguidesigner.styles.settings.SettingsScreen
 import com.mcguidesigner.styles.support.DonateIcon
 import com.mcguidesigner.styles.support.DonateScreen
 import com.mcguidesigner.styles.theme.SkinRegistry
+import com.mcguidesigner.styles.theme.readableTextOn
 import com.mcguidesigner.styles.theme.spec
 
 /**
@@ -186,6 +189,7 @@ fun HomeScreen(
                 text = text,
                 muted = muted,
                 slotFill = skin.paletteFor(dark, settings.chromeTheme).slot,
+                slotShadow = skin.paletteFor(dark, settings.chromeTheme).textShadow,
                 version = version,
                 metrics = metrics,
                 onDonate = { onOverlayChange(HomeOverlay.SUPPORT) },
@@ -456,6 +460,7 @@ private fun HomeTopBar(
     text: Color,
     muted: Color,
     slotFill: Color,
+    slotShadow: Color,
     version: String,
     metrics: AdaptiveMetrics,
     onDonate: () -> Unit,
@@ -470,6 +475,16 @@ private fun HomeTopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // The mark carries a real slot in it - the logo is a widget.
+        //
+        // The half inside the slot takes its colour from the slot, not from the
+        // chrome. They are different colour systems: the slot is a widget fill
+        // belonging to whichever skin is active, the chrome text belongs to the
+        // window around it, and nothing makes them contrast. That pairing held
+        // by luck while both Minecraft skins had dark slots, and the moment a
+        // skin with a near-white slot arrived it put near-white letters on a
+        // near-white plate - the second half of the app's own name, invisible
+        // in the top bar. This is the same mistake the launch card's button
+        // made, and readableTextOn exists because of it.
         Text("${Branding.WORDMARK} ", style = label(text))
         Box(
             Modifier
@@ -477,7 +492,27 @@ private fun HomeTopBar(
                 .clip(RoundedCornerShape(3.dp))
                 .background(slotFill),
             contentAlignment = Alignment.Center,
-        ) { Text(Branding.WORDMARK_SLOT, style = label(text).copy(fontSize = 9.sp)) }
+        ) {
+            // Plus the skin's own text shadow where it has one. Java's slot is
+            // vanilla mid-grey, which no choice of ink clears the small-text
+            // contrast bar against - 3.4:1 either way - and recolouring it is
+            // not an option because it is a measurement of the game. The game's
+            // own answer to text on stone is to draw it twice, once in black
+            // one pixel down, and that is worth roughly a doubling of effective
+            // contrast. Skins with no shadow do not need one; their slots are
+            // far enough from both extremes already.
+            Text(
+                Branding.WORDMARK_SLOT,
+                style = label(readableTextOn(slotFill)).copy(
+                    fontSize = 9.sp,
+                    shadow = if (slotShadow.alpha > 0f) {
+                        Shadow(slotShadow, Offset(1f, 1f), 0f)
+                    } else {
+                        null
+                    },
+                ),
+            )
+        }
         Spacer(Modifier.width(8.dp))
         Text(version, style = label(muted))
 

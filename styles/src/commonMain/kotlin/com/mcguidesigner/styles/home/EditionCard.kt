@@ -109,7 +109,7 @@ fun EditionCard(
         Spacer(Modifier.height(metrics.gap * 1.4f))
 
         EditionButton(
-            label = "Open editor",
+            label = skin.openLabel,
             palette = p,
             height = p.controlHeight.dp * HomeMetrics.widgetScale(metrics),
             hovered = hovered,

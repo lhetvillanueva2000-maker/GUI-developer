@@ -23,6 +23,9 @@ import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.support.Donation
 import com.mcguidesigner.styles.home.HomeOverlay
 import com.mcguidesigner.styles.home.HomeScreen
+import com.mcguidesigner.styles.paint.PaintPopover
+import com.mcguidesigner.styles.paint.PaintScreen
+import com.mcguidesigner.styles.paint.PaintSheet
 import com.mcguidesigner.styles.layout.AdaptiveMetrics
 import com.mcguidesigner.styles.layout.DeviceClass
 import com.mcguidesigner.styles.layout.LocalAdaptive
@@ -68,6 +71,20 @@ fun AndroidApp(
         if (uri != null) app.saveQrCode(context, uri) else app.pendingQrBytes = null
     }
 
+    val paintLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(AndroidFileIO.PNG_MIME),
+    ) { uri ->
+        if (uri != null) app.savePaintPng(context, uri) else app.pendingPaintPng = null
+    }
+
+    // Reading one image needs no storage permission either: the picker hands
+    // back a URI the app may read, and nothing more.
+    val paintImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) app.importPaintImage(context, uri)
+    }
+
     // Innermost first. A page open over home is what back should close, and
     // only once there is nothing left over home does back leave the app. Each
     // handler is enabled for exactly one state, so no two can claim a press.
@@ -76,6 +93,15 @@ fun AndroidApp(
     }
     BackHandler(enabled = app.screen == AppScreen.HOME && app.homeOverlay == HomeOverlay.NONE) {
         app.guardUnsaved("leave the app") { activity?.finish() }
+    }
+    BackHandler(enabled = app.screen == AppScreen.PAINT) {
+        val paint = app.paint
+        when {
+            paint == null -> app.goHome()
+            paint.sheet != PaintSheet.NONE -> paint.sheet = PaintSheet.NONE
+            paint.popover != PaintPopover.NONE -> paint.popover = PaintPopover.NONE
+            else -> app.goHome()
+        }
     }
 
     Crossfade(targetState = app.screen, label = "screen") { screen ->
@@ -113,6 +139,30 @@ fun AndroidApp(
             }
 
             AppScreen.EDITOR -> AndroidEditor(app, controller, state, device)
+
+            AppScreen.PAINT -> {
+                val paint = app.paint
+                if (paint == null) {
+                    app.goHome()
+                } else {
+                    PaintScreen(
+                        state = paint,
+                        onBack = { app.goHome() },
+                        onExport = { bytes, name ->
+                            // Destination first, bytes second - the same order
+                            // the rest of the app now uses, because the picker
+                            // creates the file the moment a location is chosen
+                            // and anything held across that can be reclaimed.
+                            app.pendingPaintPng = bytes
+                            paintLauncher.launch(name)
+                        },
+                        onImportImage = { paintImportLauncher.launch(arrayOf("image/*")) },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .windowInsetsPadding(WindowInsets.safeDrawing),
+                    )
+                }
+            }
         }
     }
 

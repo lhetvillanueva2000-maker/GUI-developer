@@ -70,7 +70,8 @@ object OtherUiSkin : EditionSkin {
 
     override val edition = Edition.OTHER
     override val displayName = "Other UIs"
-    override val tagline = "Flat and modern - rounded corners, real type, light or dark from the backdrop"
+    override val tagline = "A paint canvas - layers, brushes, an eraser that mattes its edges"
+    override val openLabel = "Open canvas"
     override val palette: SkinPalette = OtherUiPalette.palette
     override val darkChrome: ChromeColors = OtherUiPalette.DarkChrome
     override val lightChrome: ChromeColors = OtherUiPalette.LightChrome

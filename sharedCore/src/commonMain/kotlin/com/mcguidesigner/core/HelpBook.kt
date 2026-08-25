@@ -37,10 +37,10 @@ object HelpBook {
                 HelpEntry("Open the Java editor", "J", "From the home screen."),
                 HelpEntry("Open the Bedrock editor", "B", "From the home screen."),
                 HelpEntry(
-                    "Open the Other UIs editor",
+                    "Open the paint canvas",
                     "",
-                    "The third card on the home screen. For apps, websites and tools - " +
-                        "anything that is not Minecraft.",
+                    "The third card on the home screen. A white sheet, layers, brushes " +
+                        "and an eraser - not the element editor.",
                 ),
                 HelpEntry("Open settings", "S", "From the home screen, or the gear at the top right."),
                 HelpEntry("Switch theme", "T", "Dark and light."),
@@ -169,6 +169,72 @@ object HelpBook {
                     "Set a dark backdrop colour on the canvas and the whole screen " +
                         "follows: dark fields, dark dividers, light placeholder text. " +
                         "There is nothing to switch - the widgets read the backdrop.",
+                ),
+            ),
+        ),
+
+        HelpSection(
+            "The paint canvas",
+            listOf(
+                HelpEntry(
+                    "Draw, and move around",
+                    "",
+                    "One finger draws. Two fingers pan and pinch - if a second finger " +
+                        "lands while the first is drawing, that stroke is rolled back " +
+                        "rather than left as a smear.",
+                ),
+                HelpEntry(
+                    "Swap brush and eraser",
+                    "",
+                    "The leftmost button on the bottom bar. It remembers which tool you " +
+                        "came from, so it swaps back rather than always landing on the brush.",
+                ),
+                HelpEntry(
+                    "Size and opacity",
+                    "",
+                    "The two rows above the tool bar. The minus and plus step precisely; " +
+                        "the track is for getting close quickly. Size travel is logarithmic, " +
+                        "so the first half of the track covers the sizes line art uses.",
+                ),
+                HelpEntry(
+                    "Opacity and flow are different",
+                    "",
+                    "Opacity is the ceiling the whole stroke may reach; going over the same " +
+                        "place inside one stroke will not build past it. That is why a 40% " +
+                        "brush stays 40% along its whole length.",
+                ),
+                HelpEntry(
+                    "Alpha lock",
+                    "",
+                    "In the layer panel. Painting can change a pixel's colour but not " +
+                        "whether it is there - the way to recolour line art without going " +
+                        "outside it.",
+                ),
+                HelpEntry(
+                    "Clip to the layer below",
+                    "",
+                    "Also in the layer panel. The layer shows only where the one under it " +
+                        "has pixels, for shading inside a shape without a selection.",
+                ),
+                HelpEntry(
+                    "Cut out a background",
+                    "",
+                    "The picture button at the top right, or Cut out in the tool sheet. It " +
+                        "runs on your device with nothing downloaded, and reports how " +
+                        "confident it is - when that number is low, the magic eraser or the " +
+                        "eraser brush will do better.",
+                ),
+                HelpEntry(
+                    "Lift line art from a scan",
+                    "",
+                    "Turns the paper of a photographed drawing transparent while keeping " +
+                        "the pencil's soft edges as partial alpha.",
+                ),
+                HelpEntry(
+                    "Symmetry",
+                    "",
+                    "The ruler button. Mirror, both axes, or radial. Every mirrored copy " +
+                        "shares one stroke, so no seam appears along the axis.",
                 ),
             ),
         ),
