@@ -48,6 +48,9 @@ android {
 
     buildFeatures {
         compose = true
+        // BuildConfig.DEBUG decides how chatty the in-app log is: everything
+        // while testing, faults only in the shipped app.
+        buildConfig = true
     }
 
     signingConfigs {
@@ -96,8 +99,14 @@ android {
 
     buildTypes {
         debug {
+            // A separate package, so it installs *beside* the release build
+            // rather than replacing it - the whole point of a test build is
+            // being able to compare it against the one you already trust.
             applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
             isMinifyEnabled = false
+            // Signed with the debug key, which is stable across builds, so
+            // successive test builds upgrade over each other cleanly.
         }
         release {
             isMinifyEnabled = false

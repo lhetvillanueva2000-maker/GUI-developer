@@ -235,11 +235,17 @@ jobs:
       # `bundleRelease` produces the .aab Google Play requires; `assembleRelease`
       # produces the .apk people can sideload. They are different artifacts for
       # different audiences, so both are built.
-      - name: Build the APK, the AAB and the Linux package
+      # `assembleDebug` is built alongside the shipping artifacts on purpose.
+      # It carries its own applicationId, so it installs beside the real app
+      # rather than over it, and it is the build that can show a crash's actual
+      # text on screen where it can be copied. A test build that lags the
+      # release is worse than none, so it is cut from the same commit.
+      - name: Build the APK, the AAB, the test build and the Linux package
         run: >
           ./gradlew "-Pmcgui.version=$VERSION"
           :androidApp:assembleRelease
           :androidApp:bundleRelease
+          :androidApp:assembleDebug
           :desktopApp:packageReleaseDeb
 
       - name: Collect the artifacts
@@ -247,6 +253,12 @@ jobs:
         run: |
           mkdir -p out
           find androidApp/build/outputs/apk/release -type f -name '*.apk' -exec cp {} out/ \;
+          # Renamed on the way out: both are "androidApp-*.apk" in the build
+          # tree, and two files whose names differ only by a build type is how
+          # somebody installs the wrong one and reports the wrong result.
+          for debug in androidApp/build/outputs/apk/debug/*.apk; do
+            [ -e "$debug" ] && cp "$debug" "out/UILabsDebug-$VERSION.apk"
+          done
           find androidApp/build/outputs/bundle -type f -name '*.aab' -exec cp {} out/ \;
           find desktopApp/build/compose/binaries -type f -name '*.deb' -exec cp {} out/ \;
           ls -la out
@@ -256,6 +268,10 @@ jobs:
           fi
           if ! ls out/*.aab >/dev/null 2>&1; then
             echo "::error::the Android build did not produce an .aab"
+            exit 1
+          fi
+          if ! ls out/UILabsDebug-*.apk >/dev/null 2>&1; then
+            echo "::error::the Android build did not produce a test build"
             exit 1
           fi
 
@@ -343,6 +359,7 @@ jobs:
               *.exe) rename_to "$file" "UILabsInstaller-$VERSION.exe" ;;
               *.msi) rename_to "$file" "UILabsInstaller-$VERSION.msi" ;;
               *.deb) rename_to "$file" "UILabsInstaller-$VERSION-amd64.deb" ;;
+              UILabsDebug-*.apk) ;;  # already named, and not an installer
               *.apk) rename_to "$file" "UILabsInstaller-$VERSION.apk" ;;
               *.dmg) rename_to "$file" "UILabsInstaller-$VERSION-macos-aarch64.dmg" ;;
               *.pkg) rename_to "$file" "UILabsInstaller-$VERSION-macos-aarch64.pkg" ;;
@@ -404,6 +421,7 @@ jobs:
           | **Windows** | \`UILabsInstaller-$VERSION.exe\` — installer, no Java needed |
           | **macOS (Apple Silicon)** | \`UILabsInstaller-$VERSION-macos-aarch64.dmg\` — every Mac since late 2020 |
           | **Android** | \`UILabsInstaller-$VERSION.apk\` — allow "install from unknown sources" when prompted |
+          | **Android (test build)** | \`UILabsDebug-$VERSION.apk\` — installs *alongside* the one above, shows errors you can copy |
           | **Linux** | \`UILabsInstaller-$VERSION-amd64.deb\` |
           | **Any OS with a JVM** | \`UILabs-$VERSION.jar\` — \`java -jar <file>\` |
           | **Google Play** | \`UILabs-$VERSION.aab\` — for uploading to Play, **not** installable on a phone |
@@ -470,6 +488,22 @@ jobs:
             the shared path, and their labels stayed upright while the shape leaned.
 
           ---
+
+          ### The test build
+
+          `UILabsDebug-$VERSION.apk` is the same code as the release, built as a
+          separate package (`com.mcguidesigner.android.debug`) so it installs
+          **alongside** the normal app instead of replacing it. It appears in the
+          launcher as **UILabs DEBUG**.
+
+          What it adds: **⋮ ▸ Diagnostics** shows everything that has failed this
+          session with its real message and full stack trace, and **Copy
+          everything** puts the lot on the clipboard with the app version, Android
+          version and device model already attached. A crash is written to disk on
+          the way out and is waiting on that screen the next time the app opens.
+
+          It is not signed with the release key, so it will not upgrade over the
+          normal app and vice versa - which is the point.
 
           ### First launch notes
 

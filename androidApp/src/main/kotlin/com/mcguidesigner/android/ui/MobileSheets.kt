@@ -147,6 +147,7 @@ fun MobileSheets(
                 MobileSheet.ARRANGE -> ArrangeSheet(controller, state)
                 MobileSheet.ADD_CUSTOM -> AddCustomSheet(app)
                 MobileSheet.EDITOR_SETTINGS -> EditorSettingsSheet(app)
+                MobileSheet.DIAGNOSTICS -> DiagnosticsSheet(app)
                 MobileSheet.CONFIRM_DELETE -> ConfirmDeleteSheet(app, state)
                 MobileSheet.NONE -> Unit
             }
@@ -1099,7 +1100,7 @@ private fun ArrangeButton(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun SheetTitle(title: String, subtitle: String) {
+internal fun SheetTitle(title: String, subtitle: String) {
     val palette = LocalSkinPalette.current
     Column(Modifier.padding(bottom = 10.dp)) {
         Text(title, style = MaterialTheme.typography.titleMedium, color = palette.chromeText)

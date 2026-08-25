@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The debug build's own name.
+
+    It installs alongside the real app rather than over it, thanks to the
+    applicationId suffix, so both appear in the launcher at once - and two
+    identical icons with two identical labels is a guaranteed way to test the
+    wrong one and report the result.
+-->
+<resources>
+    <string name="app_name">UILabs DEBUG</string>
+</resources>

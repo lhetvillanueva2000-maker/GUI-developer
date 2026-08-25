@@ -551,6 +551,10 @@ private fun MobileTopBar(
                     onClick = { menuOpen = false; onImportFrames() },
                 )
                 DropdownMenuItem(
+                    text = { Text("Diagnostics...") },
+                    onClick = { menuOpen = false; app.sheet = MobileSheet.DIAGNOSTICS },
+                )
+                DropdownMenuItem(
                     text = { Text("Import resource pack...") },
                     onClick = { menuOpen = false; onImportPack() },
                 )

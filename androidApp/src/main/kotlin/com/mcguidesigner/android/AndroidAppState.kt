@@ -6,6 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.mcguidesigner.android.diagnostics.AndroidDiagnostics
+import com.mcguidesigner.core.diagnostics.LogLevel
 import com.mcguidesigner.android.io.AndroidFileIO
 import com.mcguidesigner.android.io.AndroidPackImport
 import com.mcguidesigner.android.io.AndroidPreferences
@@ -85,6 +87,7 @@ enum class MobileSheet {
     ARRANGE,
     ADD_CUSTOM,
     EDITOR_SETTINGS,
+    DIAGNOSTICS,
     CONFIRM_DELETE,
 }
 
@@ -948,12 +951,18 @@ class AndroidAppState(initial: GuiProject) {
                 status = "Saved the image (${bytes.size / 1024} KB)."
                 sheet = MobileSheet.NONE
             },
-            onFailure = { status = "Could not save the image: ${it.message}" },
+            onFailure = {
+                AndroidDiagnostics.recordFailure("image-export", "Could not save the image", it)
+                status = "Could not save the image: ${it.message}"
+            },
         )
         cancelImageSave()
     }
 
     fun failImageSave(message: String) {
+        // Recorded as well as shown. The strip is transient by design, so a
+        // fault that only went there was gone in seconds and unquotable.
+        AndroidDiagnostics.record(LogLevel.ERROR, "image-export", message)
         status = message
         cancelImageSave()
     }

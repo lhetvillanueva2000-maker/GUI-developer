@@ -11,6 +11,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
+import com.mcguidesigner.android.diagnostics.AndroidDiagnostics
+import com.mcguidesigner.core.diagnostics.LogLevel
 import com.mcguidesigner.android.io.AndroidPreferences
 import com.mcguidesigner.android.io.SessionStore
 import com.mcguidesigner.android.ui.AndroidApp
@@ -42,6 +44,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Installed before anything else can throw. Whatever kills the process
+        // is written to disk on the way out and is waiting in Diagnostics on
+        // the next launch - which is the only way a crash on a device with no
+        // cable attached ever reaches the person who can fix it.
+        AndroidDiagnostics.install(this)
+        AndroidDiagnostics.consumePreviousCrash(this)?.let { previous ->
+            AndroidDiagnostics.record(
+                LogLevel.CRASH,
+                "previous-run",
+                "The last run ended in a crash. The full report follows.",
+                previous,
+            )
+        }
+        AndroidDiagnostics.trace("lifecycle", "Activity created.")
 
         // A session written by a previous run wins over the demo document.
         // Android kills backgrounded processes freely, and coming back to an
