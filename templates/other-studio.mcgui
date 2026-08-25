@@ -1,0 +1,1467 @@
+{
+  "formatVersion": 1,
+  "id": "template_other-studio",
+  "name": "Dark Studio Panel",
+  "edition": "other",
+  "canvas": {
+    "width": 360,
+    "height": 752,
+    "guiScale": 2,
+    "gridSize": 8,
+    "backdrop": "SOLID",
+    "backdropColor": 4279506716,
+    "targetForm": "desktop",
+    "safeArea": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 0
+    }
+  },
+  "elements": [
+    {
+      "id": "other-studio_0_header",
+      "type": "bar.header",
+      "name": "Top Bar",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 56
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "title": {
+          "kind": "s",
+          "value": "Untitled canvas"
+        },
+        "icon": {
+          "kind": "tex"
+        },
+        "showDivider": {
+          "kind": "b",
+          "value": true
+        },
+        "showCloseButton": {
+          "kind": "b",
+          "value": false
+        },
+        "background": {
+          "kind": "c",
+          "argb": 0
+        },
+        "dividerColor": {
+          "kind": "c",
+          "argb": 4281808695
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "left"
+        },
+        "font": {
+          "kind": "e",
+          "value": "sans"
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_1_placeholder",
+      "type": "image.placeholder",
+      "name": "Artboard",
+      "bounds": {
+        "x": 16,
+        "y": 68,
+        "width": 328,
+        "height": 216
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "texture": {
+          "kind": "tex"
+        },
+        "fit": {
+          "kind": "e",
+          "value": "contain"
+        },
+        "keepAspect": {
+          "kind": "b",
+          "value": true
+        },
+        "pixelated": {
+          "kind": "b",
+          "value": true
+        },
+        "opacity": {
+          "kind": "f",
+          "value": 1.0
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "placeholderColor": {
+          "kind": "c",
+          "argb": 4282400832
+        },
+        "rotation": {
+          "kind": "i",
+          "value": 0
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_2_icon",
+      "type": "button.icon",
+      "name": "Brush",
+      "bounds": {
+        "x": 20,
+        "y": 296,
+        "width": 40,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "icon": {
+          "kind": "tex"
+        },
+        "iconPadding": {
+          "kind": "i",
+          "value": 3
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": ""
+        },
+        "action": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 0
+        },
+        "iconTint": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_3_icon",
+      "type": "button.icon",
+      "name": "Eraser",
+      "bounds": {
+        "x": 86,
+        "y": 296,
+        "width": 40,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "icon": {
+          "kind": "tex"
+        },
+        "iconPadding": {
+          "kind": "i",
+          "value": 3
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": ""
+        },
+        "action": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 0
+        },
+        "iconTint": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_4_icon",
+      "type": "button.icon",
+      "name": "Fill",
+      "bounds": {
+        "x": 152,
+        "y": 296,
+        "width": 40,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "icon": {
+          "kind": "tex"
+        },
+        "iconPadding": {
+          "kind": "i",
+          "value": 3
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": ""
+        },
+        "action": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 0
+        },
+        "iconTint": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_5_icon",
+      "type": "button.icon",
+      "name": "Pick",
+      "bounds": {
+        "x": 218,
+        "y": 296,
+        "width": 40,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "icon": {
+          "kind": "tex"
+        },
+        "iconPadding": {
+          "kind": "i",
+          "value": 3
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": ""
+        },
+        "action": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 0
+        },
+        "iconTint": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_6_icon",
+      "type": "button.icon",
+      "name": "Undo",
+      "bounds": {
+        "x": 284,
+        "y": 296,
+        "width": 40,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "icon": {
+          "kind": "tex"
+        },
+        "iconPadding": {
+          "kind": "i",
+          "value": 3
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": ""
+        },
+        "action": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 0
+        },
+        "iconTint": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_7_frame",
+      "type": "panel.frame",
+      "name": "Brush Panel",
+      "bounds": {
+        "x": 16,
+        "y": 348,
+        "width": 328,
+        "height": 116
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4280099112
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 16
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": [
+        {
+          "id": "other-studio_8_label",
+          "type": "text.label",
+          "name": "Size Label",
+          "bounds": {
+            "x": 16,
+            "y": 14,
+            "width": 120,
+            "height": 16
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "Size"
+            },
+            "scale": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4289114559
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-studio_9_slider",
+          "type": "input.slider",
+          "name": "Size",
+          "bounds": {
+            "x": 16,
+            "y": 34,
+            "width": 296,
+            "height": 24
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Size"
+            },
+            "value": {
+              "kind": "f",
+              "value": 0.35
+            },
+            "minValue": {
+              "kind": "f",
+              "value": 0.0
+            },
+            "maxValue": {
+              "kind": "f",
+              "value": 100.0
+            },
+            "stepSize": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "showValue": {
+              "kind": "b",
+              "value": true
+            },
+            "suffix": {
+              "kind": "s",
+              "value": "%"
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "trackColor": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "knobColor": {
+              "kind": "c",
+              "argb": 4291217094
+            },
+            "knobWidth": {
+              "kind": "i",
+              "value": 8
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-studio_10_label",
+          "type": "text.label",
+          "name": "Opacity Label",
+          "bounds": {
+            "x": 16,
+            "y": 62,
+            "width": 120,
+            "height": 16
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "Opacity"
+            },
+            "scale": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4289114559
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-studio_11_slider",
+          "type": "input.slider",
+          "name": "Opacity",
+          "bounds": {
+            "x": 16,
+            "y": 82,
+            "width": 296,
+            "height": 24
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Opacity"
+            },
+            "value": {
+              "kind": "f",
+              "value": 0.8
+            },
+            "minValue": {
+              "kind": "f",
+              "value": 0.0
+            },
+            "maxValue": {
+              "kind": "f",
+              "value": 100.0
+            },
+            "stepSize": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "showValue": {
+              "kind": "b",
+              "value": true
+            },
+            "suffix": {
+              "kind": "s",
+              "value": "%"
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "trackColor": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "knobColor": {
+              "kind": "c",
+              "argb": 4291217094
+            },
+            "knobWidth": {
+              "kind": "i",
+              "value": 8
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "other-studio_12_frame",
+      "type": "panel.frame",
+      "name": "Swatch 1",
+      "bounds": {
+        "x": 20,
+        "y": 480,
+        "width": 40,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4294472049
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 6
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_13_frame",
+      "type": "panel.frame",
+      "name": "Swatch 2",
+      "bounds": {
+        "x": 76,
+        "y": 480,
+        "width": 40,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4294688548
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 6
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_14_frame",
+      "type": "panel.frame",
+      "name": "Swatch 3",
+      "bounds": {
+        "x": 132,
+        "y": 480,
+        "width": 40,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4281652121
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 6
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_15_frame",
+      "type": "panel.frame",
+      "name": "Swatch 4",
+      "bounds": {
+        "x": 188,
+        "y": 480,
+        "width": 40,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4284524026
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 6
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_16_frame",
+      "type": "panel.frame",
+      "name": "Swatch 5",
+      "bounds": {
+        "x": 244,
+        "y": 480,
+        "width": 40,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4289170426
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 6
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_17_frame",
+      "type": "panel.frame",
+      "name": "Swatch 6",
+      "bounds": {
+        "x": 300,
+        "y": 480,
+        "width": 40,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4294210230
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 6
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-studio_18_frame",
+      "type": "panel.frame",
+      "name": "Layers",
+      "bounds": {
+        "x": 16,
+        "y": 540,
+        "width": 328,
+        "height": 128
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4280099112
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 16
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": [
+        {
+          "id": "other-studio_19_label",
+          "type": "text.label",
+          "name": "Layers Heading",
+          "bounds": {
+            "x": 16,
+            "y": 12,
+            "width": 200,
+            "height": 22
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "Layers"
+            },
+            "scale": {
+              "kind": "f",
+              "value": 1.4
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-studio_20_toggle",
+          "type": "button.toggle",
+          "name": "Layer 2",
+          "bounds": {
+            "x": 16,
+            "y": 46,
+            "width": 296,
+            "height": 28
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Sketch"
+            },
+            "onLabel": {
+              "kind": "s",
+              "value": "ON"
+            },
+            "offLabel": {
+              "kind": "s",
+              "value": "OFF"
+            },
+            "value": {
+              "kind": "b",
+              "value": true
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "tooltip": {
+              "kind": "s",
+              "value": ""
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "onColor": {
+              "kind": "c",
+              "argb": 4283873355
+            },
+            "style": {
+              "kind": "e",
+              "value": "label_swap"
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-studio_21_separator",
+          "type": "decor.separator",
+          "name": "Layer Rule",
+          "bounds": {
+            "x": 16,
+            "y": 82,
+            "width": 296,
+            "height": 2
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "orientation": {
+              "kind": "e",
+              "value": "horizontal"
+            },
+            "style": {
+              "kind": "e",
+              "value": "bevel"
+            },
+            "color": {
+              "kind": "c",
+              "argb": 4281547333
+            },
+            "highlightColor": {
+              "kind": "c",
+              "argb": 4285427310
+            },
+            "thickness": {
+              "kind": "i",
+              "value": 2
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-studio_22_toggle",
+          "type": "button.toggle",
+          "name": "Layer 1",
+          "bounds": {
+            "x": 16,
+            "y": 90,
+            "width": 296,
+            "height": 28
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Background"
+            },
+            "onLabel": {
+              "kind": "s",
+              "value": "ON"
+            },
+            "offLabel": {
+              "kind": "s",
+              "value": "OFF"
+            },
+            "value": {
+              "kind": "b",
+              "value": false
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "tooltip": {
+              "kind": "s",
+              "value": ""
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "onColor": {
+              "kind": "c",
+              "argb": 4283873355
+            },
+            "style": {
+              "kind": "e",
+              "value": "label_swap"
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "other-studio_23_normal",
+      "type": "button.normal",
+      "name": "Export",
+      "bounds": {
+        "x": 16,
+        "y": 684,
+        "width": 328,
+        "height": 48
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "label": {
+          "kind": "s",
+          "value": "Export image"
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": ""
+        },
+        "action": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 4285295724
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4278190080
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "center"
+        },
+        "font": {
+          "kind": "e",
+          "value": "sans"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    }
+  ],
+  "textures": [],
+  "meta": {
+    "author": "",
+    "description": "A dark creative-tool screen: toolbar, layer rows, sliders and a swatch row.",
+    "createdAt": "",
+    "modifiedAt": "",
+    "tags": [
+      "app",
+      "dark",
+      "tool",
+      "mobile"
+    ],
+    "namespace": "app",
+    "screenId": "dark_studio_panel"
+  }
+}

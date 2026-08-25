@@ -82,22 +82,29 @@ object AppNotice {
      */
     val current = Notice(
         id = "whatsnew-${Branding.VERSION}",
-        headline = "${Branding.NAME} ${Branding.VERSION} — it is not only a Minecraft tool any more",
+        headline = "${Branding.NAME} ${Branding.VERSION} — Other UIs, redrawn",
         points = listOf(
-            "A third target: Other UIs. Apps, websites, tools — anything with " +
-                "buttons and text fields rather than inventory slots. Its own " +
-                "flat skin, its own starter screens, and the code exports that " +
-                "were already there.",
-            "The grid is off by default. It is a measuring aid, and it used to " +
-                "be drawn over every design and land in every screenshot. " +
-                "Snapping still works with it hidden; the toggle is in the " +
-                "three-dots menu.",
-            "Saving a PNG produced a zero-byte file on a phone short on memory. " +
-                "The image is now rendered after the destination is chosen " +
-                "rather than held in memory while the file picker is open.",
-            "A separate test build, UILabs DEBUG, installs alongside the normal " +
-                "app and shows what failed with its real message and stack " +
-                "trace, ready to copy.",
+            "The Open editor button on the Other UIs card was white text on a " +
+                "white button. The card filled it with the control colour and " +
+                "wrote in the on-accent colour — a pairing that works by luck " +
+                "in both Minecraft skins and vanished entirely in a pale one. " +
+                "Skins now name their filled button explicitly, and a test " +
+                "measures the contrast of every one of them.",
+            "Other UIs has been rebuilt out of near-whites into a palette with " +
+                "real steps in it: visible borders, controls you can tell from " +
+                "the card behind them, and text that is not one shade off its " +
+                "background.",
+            "It is typeset properly. Screens were being drawn in the monospace " +
+                "face the Minecraft skins use, so a settings page read like a " +
+                "terminal. Headings, labels and captions now differ in weight " +
+                "as well as size, and the Font property does something.",
+            "Light or dark, from the canvas backdrop. Set a dark backdrop and " +
+                "the whole screen follows — dark fields, dark dividers, light " +
+                "placeholder text — instead of light widgets recoloured one at " +
+                "a time. There is a Dark Studio Panel template to start from.",
+            "No label can be invisible any more. Every piece of text on a " +
+                "coloured surface checks what it is being drawn on and takes " +
+                "the readable side if the requested colour would disappear.",
         ),
     )
 

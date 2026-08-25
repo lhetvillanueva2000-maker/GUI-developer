@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      The base theme plus the one attribute that needs API 27.
+
+      `windowLayoutInDisplayCutoutMode` was introduced with the notch, in
+      Android 8.1. This app supports 26, so declaring it in the default
+      `values/` folder is a lint error and, on a 26 device, a no-op. Everything
+      else about the theme is unchanged - see values/themes.xml.
+    -->
+    <style name="Theme.McGuiDesigner" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+</resources>

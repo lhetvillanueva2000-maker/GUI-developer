@@ -546,6 +546,11 @@ object BuiltInTemplates {
             "A wide layout: search, tabs and a row of stat cards.",
             listOf("app", "dashboard"), ::otherDashboard,
         ),
+        GuiTemplate(
+            "other-studio", "Dark Studio Panel", Edition.OTHER, TargetForm.MOBILE,
+            "A dark creative-tool screen: toolbar, layer rows, sliders and a swatch row.",
+            listOf("app", "dark", "tool"), ::otherStudio,
+        ),
     )
 
     fun forEdition(edition: Edition): List<GuiTemplate> = all.filter { it.edition == edition }
@@ -579,7 +584,7 @@ object BuiltInTemplates {
                         ),
                         uiNode(
                             ElementCatalog.TEXT_LABEL, "Subheading", 20, 48, 272, 20,
-                            mapOf("text" to text("Sign in to continue"), "textColor" to rgb(0xFF5B6570)),
+                            mapOf("text" to text("Sign in to continue"), "textColor" to rgb(0xFF4B5665)),
                         ),
                         uiNode(
                             ElementCatalog.INPUT_TEXTBOX, "Email", 20, 84, 272, 44,
@@ -603,7 +608,7 @@ object BuiltInTemplates {
             add(
                 uiNode(
                     ElementCatalog.TEXT_LABEL, "Footer", 24, 400, 312, 20,
-                    mapOf("text" to text("No account? Create one"), "textColor" to rgb(0xFF3B82F6)),
+                    mapOf("text" to text("No account? Create one"), "textColor" to rgb(0xFF2F6BE0)),
                 ),
             )
         }
@@ -611,7 +616,7 @@ object BuiltInTemplates {
             id = Ids.prefixed("project"),
             name = "Sign-in Screen",
             edition = Edition.OTHER,
-            canvas = CanvasSpec(360, 440, guiScale = 2, gridSize = 8, backdrop = CanvasBackdrop.SOLID, backdropColor = 0xFFEDEFF3),
+            canvas = CanvasSpec(360, 440, guiScale = 2, gridSize = 8, backdrop = CanvasBackdrop.SOLID, backdropColor = 0xFFEEF1F5),
             elements = elements,
             meta = ProjectMeta(
                 description = "A phone-sized sign-in form: card, two fields and a primary action.",
@@ -664,13 +669,115 @@ object BuiltInTemplates {
             id = Ids.prefixed("project"),
             name = "Settings Screen",
             edition = Edition.OTHER,
-            canvas = CanvasSpec(360, 420, guiScale = 2, gridSize = 8, backdrop = CanvasBackdrop.SOLID, backdropColor = 0xFFEDEFF3),
+            canvas = CanvasSpec(360, 420, guiScale = 2, gridSize = 8, backdrop = CanvasBackdrop.SOLID, backdropColor = 0xFFEEF1F5),
             elements = elements,
             meta = ProjectMeta(
                 description = "Grouped settings rows: switches, a divider, a select and a slider.",
                 namespace = "app",
                 screenId = "settings",
                 tags = listOf("app", "settings", "mobile"),
+            ),
+        )
+    }
+
+    /**
+     * A dark creative-tool screen.
+     *
+     * Here to prove one thing about this target that the three light templates
+     * cannot: the skin reads its whole token set from the canvas backdrop, so a
+     * dark screen is a dark screen throughout - dark fields, dark dividers,
+     * light placeholder text - rather than light widgets with their backgrounds
+     * individually overridden, which is how a dark mock-up usually ends up
+     * being built and why it usually ends up half-light.
+     *
+     * Nothing here sets a background except the two panels and the swatches.
+     * That is the point: the darkness comes from `backdropColor`.
+     */
+    private fun otherStudio(): GuiProject {
+        val swatches = listOf(0xFFF87171L, 0xFFFBBF24L, 0xFF34D399L, 0xFF60A5FA, 0xFFA78BFA, 0xFFF472B6)
+
+        val elements = buildList {
+            add(uiNode(ElementCatalog.BAR_HEADER, "Top Bar", 0, 0, 360, 56, mapOf("title" to text("Untitled canvas"))))
+
+            // The artboard the tools act on.
+            add(uiNode(ElementCatalog.IMAGE_PLACEHOLDER, "Artboard", 16, 68, 328, 216))
+
+            // A tool strip. Icon buttons are transparent in this edition, so
+            // these read as a row of glyphs rather than a row of grey plates.
+            listOf("Brush", "Eraser", "Fill", "Pick", "Undo").forEachIndexed { index, name ->
+                add(uiNode(ElementCatalog.BUTTON_ICON, name, 20 + index * 66, 296, 40, 40))
+            }
+
+            add(
+                uiNode(
+                    ElementCatalog.PANEL_FRAME, "Brush Panel", 16, 348, 328, 116,
+                    mapOf("background" to rgb(0xFF1D2128), "padding" to num(16)),
+                    children = listOf(
+                        uiNode(
+                            ElementCatalog.TEXT_LABEL, "Size Label", 16, 14, 120, 16,
+                            mapOf("text" to text("Size"), "textColor" to rgb(0xFFA6B1BF)),
+                        ),
+                        uiNode(
+                            ElementCatalog.INPUT_SLIDER, "Size", 16, 34, 296, 24,
+                            mapOf("label" to text("Size"), "value" to dec(0.35f)),
+                        ),
+                        uiNode(
+                            ElementCatalog.TEXT_LABEL, "Opacity Label", 16, 62, 120, 16,
+                            mapOf("text" to text("Opacity"), "textColor" to rgb(0xFFA6B1BF)),
+                        ),
+                        uiNode(
+                            ElementCatalog.INPUT_SLIDER, "Opacity", 16, 82, 296, 24,
+                            mapOf("label" to text("Opacity"), "value" to dec(0.8f)),
+                        ),
+                    ),
+                ),
+            )
+
+            swatches.forEachIndexed { index, colour ->
+                add(uiNode(ElementCatalog.PANEL_FRAME, "Swatch ${index + 1}", 20 + index * 56, 480, 40, 40, mapOf("background" to rgb(colour))))
+            }
+
+            add(
+                uiNode(
+                    ElementCatalog.PANEL_FRAME, "Layers", 16, 540, 328, 128,
+                    mapOf("background" to rgb(0xFF1D2128), "padding" to num(16)),
+                    children = listOf(
+                        uiNode(
+                            ElementCatalog.TEXT_LABEL, "Layers Heading", 16, 12, 200, 22,
+                            mapOf("text" to text("Layers"), "scale" to dec(1.4f)),
+                        ),
+                        uiNode(
+                            ElementCatalog.BUTTON_TOGGLE, "Layer 2", 16, 46, 296, 28,
+                            mapOf("label" to text("Sketch"), "value" to flag(true)),
+                        ),
+                        uiNode(ElementCatalog.DECOR_SEPARATOR, "Layer Rule", 16, 82, 296, 2, mapOf("color" to rgb(0xFF333A45))),
+                        uiNode(
+                            ElementCatalog.BUTTON_TOGGLE, "Layer 1", 16, 90, 296, 28,
+                            mapOf("label" to text("Background"), "value" to flag(false)),
+                        ),
+                    ),
+                ),
+            )
+
+            add(
+                uiNode(
+                    ElementCatalog.BUTTON_NORMAL, "Export", 16, 684, 328, 48,
+                    mapOf("label" to text("Export image")),
+                ),
+            )
+        }
+
+        return GuiProject(
+            id = Ids.prefixed("project"),
+            name = "Dark Studio Panel",
+            edition = Edition.OTHER,
+            canvas = CanvasSpec(360, 752, guiScale = 2, gridSize = 8, backdrop = CanvasBackdrop.SOLID, backdropColor = 0xFF14171C),
+            elements = elements,
+            meta = ProjectMeta(
+                description = "A dark creative-tool screen: toolbar, layer rows, sliders and a swatch row.",
+                namespace = "app",
+                screenId = "studio",
+                tags = listOf("app", "dark", "tool", "mobile"),
             ),
         )
     }
@@ -704,7 +811,7 @@ object BuiltInTemplates {
                         children = listOf(
                             uiNode(
                                 ElementCatalog.TEXT_LABEL, "Card label $label", 16, 16, 184, 18,
-                                mapOf("text" to text(label), "textColor" to rgb(0xFF5B6570)),
+                                mapOf("text" to text(label), "textColor" to rgb(0xFF4B5665)),
                             ),
                             uiNode(
                                 ElementCatalog.TEXT_LABEL, "Card value $label", 16, 40, 184, 30,
@@ -723,7 +830,7 @@ object BuiltInTemplates {
             id = Ids.prefixed("project"),
             name = "Dashboard",
             edition = Edition.OTHER,
-            canvas = CanvasSpec(720, 340, guiScale = 1, gridSize = 8, backdrop = CanvasBackdrop.SOLID, backdropColor = 0xFFEDEFF3),
+            canvas = CanvasSpec(720, 340, guiScale = 1, gridSize = 8, backdrop = CanvasBackdrop.SOLID, backdropColor = 0xFFEEF1F5),
             elements = elements,
             meta = ProjectMeta(
                 description = "A wide layout: search, tabs and a row of stat cards.",

@@ -163,6 +163,13 @@ object HelpBook {
                         "the toggle is in the three-dots menu.",
                 ),
                 HelpEntry("Toggle rulers", "Ctrl+R"),
+                HelpEntry(
+                    "Light or dark (Other UIs)",
+                    "",
+                    "Set a dark backdrop colour on the canvas and the whole screen " +
+                        "follows: dark fields, dark dividers, light placeholder text. " +
+                        "There is nothing to switch - the widgets read the backdrop.",
+                ),
             ),
         ),
 

@@ -318,7 +318,12 @@ object ElementCatalog {
                 enabledProp,
                 tooltipProp,
                 textProp("action", "Action id", group = PropGroup.BEHAVIOUR),
-                colorProp("background", "Background", 0xFF6C6C6C),
+                colorProp("background", "Background", 0xFF6C6C6C, editions = MINECRAFT_EDITIONS),
+                // Transparent by default outside Minecraft. An icon button in a
+                // flat interface is a glyph with a hit area - the grey plate is
+                // the game's convention, and defaulting to it would put a solid
+                // square behind every toolbar icon on an Other UIs screen.
+                colorProp("background", "Background", 0x00000000, editions = OTHER_ONLY),
                 colorProp("iconTint", "Icon tint", 0xFFFFFFFF),
             ) + skinTextureProps,
         ),

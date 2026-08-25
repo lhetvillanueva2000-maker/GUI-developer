@@ -53,15 +53,35 @@ class ElementRenderContext(
 
     fun px(guiPixels: Number): Float = guiPixels.toFloat() * pixel
 
-    /** Base text style for this element at the current zoom. */
-    fun textStyle(color: Color, sizeInGuiPixels: Float = 7f, scaleFactor: Float = 1f): TextStyle =
+    /**
+     * Base text style for this element at the current zoom.
+     *
+     * Monospace by default because both Minecraft fonts are fixed-width and a
+     * proportional stand-in reads as the wrong game immediately. [family] and
+     * [weight] exist for skins that are not imitating a game: a settings screen
+     * typeset in Courier does not look like a settings screen, and the tell is
+     * strong enough to be the first thing anyone notices about it.
+     */
+    fun textStyle(
+        color: Color,
+        sizeInGuiPixels: Float = 7f,
+        scaleFactor: Float = 1f,
+        family: androidx.compose.ui.text.font.FontFamily =
+            androidx.compose.ui.text.font.FontFamily.Monospace,
+        weight: androidx.compose.ui.text.font.FontWeight =
+            androidx.compose.ui.text.font.FontWeight.Normal,
+        letterSpacing: androidx.compose.ui.unit.TextUnit =
+            androidx.compose.ui.unit.TextUnit.Unspecified,
+    ): TextStyle =
         TextStyle(
             color = color,
             fontSize = androidx.compose.ui.unit.TextUnit(
                 (sizeInGuiPixels * pixel * scaleFactor).coerceAtLeast(6f),
                 androidx.compose.ui.unit.TextUnitType.Sp,
             ),
-            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            fontFamily = family,
+            fontWeight = weight,
+            letterSpacing = letterSpacing,
         )
 }
 

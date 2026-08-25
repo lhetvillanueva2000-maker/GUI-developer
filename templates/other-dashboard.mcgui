@@ -9,7 +9,7 @@
     "guiScale": 1,
     "gridSize": 8,
     "backdrop": "SOLID",
-    "backdropColor": 4293783539,
+    "backdropColor": 4293849589,
     "targetForm": "desktop",
     "safeArea": {
       "left": 0,
@@ -425,7 +425,7 @@
             },
             "textColor": {
               "kind": "c",
-              "argb": 4284179824
+              "argb": 4283127397
             },
             "shadow": {
               "kind": "b",
@@ -648,7 +648,7 @@
             },
             "textColor": {
               "kind": "c",
-              "argb": 4284179824
+              "argb": 4283127397
             },
             "shadow": {
               "kind": "b",
@@ -871,7 +871,7 @@
             },
             "textColor": {
               "kind": "c",
-              "argb": 4284179824
+              "argb": 4283127397
             },
             "shadow": {
               "kind": "b",

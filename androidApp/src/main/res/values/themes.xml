@@ -8,6 +8,11 @@
         <item name="android:windowBackground">@color/window_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <!--
+          Drawing into the display cutout is set in values-v27, because the
+          attribute did not exist until API 27 and this app runs from 26. It
+          was declared here for a long time, where it did nothing on the oldest
+          supported devices and failed lint on every build.
+        -->
     </style>
 </resources>

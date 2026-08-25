@@ -42,6 +42,23 @@ data class SkinPalette(
     val textShadow: Color,
     val textOnAccent: Color,
 
+    // --- The filled call-to-action ---
+    //
+    // Both Minecraft editions draw their one prominent button as an ordinary
+    // control - stone-grey fill, white text - because that is what the game
+    // does, so for them these default to exactly that and nothing changes.
+    //
+    // They exist because an edition whose controls are pale has to be able to
+    // say so. Other UIs fills its controls with a near-white neutral, and a
+    // near-white fill under `textOnAccent` is white text on a white button: a
+    // label that is not dim but genuinely absent. Anything drawing a *filled*
+    // primary action asks for these instead of assuming that `control` and
+    // `textOnAccent` happen to contrast with each other.
+    val ctaFill: Color = control,
+    val ctaFillHover: Color = controlHover,
+    val ctaFillPressed: Color = controlPressed,
+    val ctaText: Color = textOnAccent,
+
     // --- Editor chrome (the app around the canvas) ---
     val chromeBackground: Color,
     val chromePanel: Color,
@@ -80,4 +97,31 @@ data class SkinPalette(
         hovered -> controlHover
         else -> control
     }
+
+    /** [blendControl] for the filled primary action; pairs with [ctaText]. */
+    fun blendCta(pressed: Boolean, hovered: Boolean, enabled: Boolean): Color = when {
+        !enabled -> controlDisabled
+        pressed -> ctaFillPressed
+        hovered -> ctaFillHover
+        else -> ctaFill
+    }
+}
+
+/**
+ * Black or white, whichever can actually be read on [background].
+ *
+ * Every colour in a palette is chosen with the colours around it in mind, so
+ * within one skin the pairs are known good. Element backgrounds are not: they
+ * come from whoever is holding the tool, and "white label on a white button"
+ * is one colour-picker tap away in every design tool ever written. Rather than
+ * hope, ask.
+ *
+ * The weights are the sRGB luminance ones, and the 0.55 threshold is where
+ * white text stops winning on a mid-grey. Alpha is ignored - a translucent
+ * fill is judged as if it were laid on its own colour, which is close enough
+ * for choosing between two extremes.
+ */
+fun readableTextOn(background: Color, light: Color = Color.White, dark: Color = Color(0xFF10151A)): Color {
+    val luminance = 0.2126f * background.red + 0.7152f * background.green + 0.0722f * background.blue
+    return if (luminance > 0.55f) dark else light
 }

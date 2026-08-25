@@ -123,8 +123,14 @@ fun EditionCard(
 
 /**
  * The button inside the card, at the edition's real controlHeight scaled to a
- * landing target. [SkinPalette.blendControl] already knows how to choose
- * between fill, hover and pressed, so the states are not reimplemented here.
+ * landing target. [SkinPalette.blendCta] already knows how to choose between
+ * fill, hover and pressed, so the states are not reimplemented here.
+ *
+ * The call-to-action pair rather than the plain control one, because this is
+ * the only button on the screen and it has to be legible in every edition. It
+ * used to fill with `control` and write in `textOnAccent`, which works by luck
+ * in both Minecraft skins - their controls are dark stone - and produced white
+ * text on a white button the moment a light edition was added.
  */
 @Composable
 private fun EditionButton(
@@ -137,7 +143,7 @@ private fun EditionButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val fill = palette.blendControl(pressed = pressed, hovered = hovered, enabled = true)
+    val fill = palette.blendCta(pressed = pressed, hovered = hovered, enabled = true)
 
     Box(
         modifier
@@ -151,7 +157,7 @@ private fun EditionButton(
         Text(
             label,
             style = TextStyle(
-                color = palette.textOnAccent,
+                color = palette.ctaText,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 1.6.sp,
