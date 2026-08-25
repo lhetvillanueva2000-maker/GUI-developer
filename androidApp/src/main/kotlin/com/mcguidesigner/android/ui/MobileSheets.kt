@@ -48,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -85,6 +86,7 @@ import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.canvas.GuiPreview
 import com.mcguidesigner.styles.editor.SwatchGrid
 import com.mcguidesigner.styles.export.ImageExportPanel
+import com.mcguidesigner.styles.export.ImageSaveRequest
 import com.mcguidesigner.styles.export.ImportPreviewPanel
 import com.mcguidesigner.styles.render.TextureCache
 import com.mcguidesigner.styles.render.rememberTextureCache
@@ -109,7 +111,7 @@ fun MobileSheets(
     onImportImages: () -> Unit,
     onImportPack: () -> Unit,
     onExport: (ExportTarget) -> Unit,
-    onSaveImage: (fileName: String, bytes: ByteArray) -> Unit,
+    onPickImageDestination: (fileName: String) -> Unit,
 ) {
     if (app.sheet == MobileSheet.NONE) return
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
@@ -133,7 +135,7 @@ fun MobileSheets(
                 MobileSheet.ASSETS -> AssetsSheet(app, controller, state, textures, onImportImages)
                 MobileSheet.ISSUES -> IssuesSheet(controller, state)
                 MobileSheet.EXPORT -> ExportSheet(app, state, onExport)
-                MobileSheet.IMAGE_EXPORT -> ImageExportSheet(app, state, textures, onSaveImage)
+                MobileSheet.IMAGE_EXPORT -> ImageExportSheet(app, state, textures, onPickImageDestination)
                 MobileSheet.IMPORT_PREVIEW -> ImportPreviewSheet(app)
                 MobileSheet.PROJECT -> ProjectSheet(controller, state)
                 MobileSheet.CANVAS -> CanvasSheet(controller, state)
@@ -754,8 +756,9 @@ private fun ImageExportSheet(
     app: AndroidAppState,
     state: EditorState,
     textures: TextureCache,
-    onSaveImage: (fileName: String, bytes: ByteArray) -> Unit,
+    onPickDestination: (fileName: String) -> Unit,
 ) {
+    val context = LocalContext.current
     Column(
         Modifier
             .fillMaxWidth()
@@ -766,8 +769,18 @@ private fun ImageExportSheet(
         ImageExportPanel(
             project = state.project,
             textures = textures,
-            onSave = onSaveImage,
-            onCancel = { app.sheet = MobileSheet.EXPORT },
+            onRequestDestination = { fileName, size, background ->
+                app.requestImageSave(size, background)
+                onPickDestination(fileName)
+            },
+            // Non-null only once the picker has actually made a document, which
+            // is what tells the panel it is time to render.
+            pending = app.pendingImageUri?.let { _ ->
+                app.pendingImageSize?.let { ImageSaveRequest(it, app.pendingImageBackground) }
+            },
+            onRendered = { bytes -> app.completeImageSave(context, bytes) },
+            onRenderFailed = { app.failImageSave(it) },
+            onCancel = { app.cancelImageSave(); app.sheet = MobileSheet.EXPORT },
         )
         Box(Modifier.height(24.dp))
     }

@@ -49,6 +49,7 @@ import com.mcguidesigner.exporters.CodeTarget
 import com.mcguidesigner.exporters.ExportManager
 import com.mcguidesigner.exporters.ExportTarget
 import com.mcguidesigner.styles.export.ImageExportPanel
+import com.mcguidesigner.styles.export.ImageSaveRequest
 import com.mcguidesigner.styles.export.ImportPreviewPanel
 import com.mcguidesigner.styles.render.rememberTextureCache
 import com.mcguidesigner.styles.theme.ErrorRed
@@ -234,7 +235,16 @@ fun ExportDialog(app: AppState, state: EditorState, startWithImage: Boolean = fa
                     ImageExportPanel(
                         project = state.project,
                         textures = textures,
-                        onSave = { fileName, bytes -> app.saveImage(fileName, bytes) },
+                        onRequestDestination = { fileName, size, background ->
+                            app.requestImageSave(fileName, size, background)
+                        },
+                        // Non-null only once a destination exists, which is
+                        // what tells the panel it is time to render.
+                        pending = app.pendingImageFile?.let { _ ->
+                            app.pendingImageSize?.let { ImageSaveRequest(it, app.pendingImageBackground) }
+                        },
+                        onRendered = { app.completeImageSave(it) },
+                        onRenderFailed = { app.failImageSave(it) },
                     )
                     return@Column
                 }

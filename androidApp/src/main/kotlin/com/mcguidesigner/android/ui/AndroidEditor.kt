@@ -132,11 +132,13 @@ fun AndroidEditor(
     // Its own launcher rather than a mode on the export one: the contract
     // carries the MIME type, and offering to create a .zip when the thing
     // being saved is a .png would have the picker suggest the wrong extension.
+    // The document is created *first* and rendered into afterwards. Rendering
+    // first meant holding a PNG in memory while this picker was in front, and a
+    // phone short on memory destroys the backgrounded activity - which left the
+    // freshly created document at zero bytes with nothing reported.
     val imageSaveLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(AndroidFileIO.PNG_MIME),
-    ) { uri ->
-        if (uri == null) app.pendingImageBytes = null else app.performImageSave(context, uri)
-    }
+    ) { uri -> app.onImageDocumentCreated(uri) }
 
     val packLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -341,10 +343,7 @@ fun AndroidEditor(
                     app.pendingExportTarget = target
                     exportLauncher.launch(app.exportFileName(target))
                 },
-                onSaveImage = { fileName, bytes ->
-                    app.pendingImageBytes = bytes
-                    imageSaveLauncher.launch(fileName)
-                },
+                onPickImageDestination = { fileName -> imageSaveLauncher.launch(fileName) },
             )
 
             app.unsavedPrompt?.let { prompt ->

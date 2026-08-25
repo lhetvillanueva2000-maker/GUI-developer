@@ -12,6 +12,8 @@ import com.mcguidesigner.android.io.AndroidPreferences
 import com.mcguidesigner.core.catalog.CustomPresets
 import com.mcguidesigner.core.catalog.ElementCatalog
 import com.mcguidesigner.core.editor.EditorSettings
+import com.mcguidesigner.core.image.ImageSize
+import com.mcguidesigner.core.image.ImageBackground
 import com.mcguidesigner.android.io.LibraryStore
 import com.mcguidesigner.android.io.SessionStore
 import com.mcguidesigner.core.editor.DocumentSet
@@ -199,14 +201,25 @@ class AndroidAppState(initial: GuiProject) {
         private set
 
     /**
-     * A rendered PNG waiting for somewhere to go.
+     * What was asked for, and where it is going, while the picker is open.
      *
-     * The image has to be drawn by a composition before the storage-access
-     * picker can be opened for it - there is nothing to write until it exists -
-     * so unlike every other export the bytes come first and the destination
-     * second. They are held here for the few seconds in between.
+     * Deliberately *not* the pixels. The first version of this held a rendered
+     * PNG here while the storage-access picker was the foreground activity, and
+     * Android destroys a backgrounded activity under memory pressure - which
+     * took the bytes with it. The document had already been created by then, so
+     * what landed on disk was a zero-byte file and no error at all. These two
+     * are a handful of bytes and survive being recreated; even if they did not,
+     * losing them leaves nothing written rather than something empty.
      */
-    var pendingImageBytes: ByteArray? = null
+    var pendingImageSize by mutableStateOf<ImageSize?>(null)
+        private set
+
+    var pendingImageBackground by mutableStateOf(ImageBackground.DEFAULT)
+        private set
+
+    /** The document the picker created, once it exists. */
+    var pendingImageUri by mutableStateOf<Uri?>(null)
+        private set
 
     // -- Navigation --------------------------------------------------------
 
@@ -894,12 +907,40 @@ class AndroidAppState(initial: GuiProject) {
         sheet = MobileSheet.NONE
     }
 
-    /** Writes the PNG held by [pendingImageBytes] to the document just created. */
-    fun performImageSave(context: Context, uri: Uri) {
-        val bytes = pendingImageBytes
-        pendingImageBytes = null
-        if (bytes == null) {
-            status = "The image was no longer ready to save. Try again."
+    /** Remembers what to render, then the picker is opened for it. */
+    fun requestImageSave(size: ImageSize, background: ImageBackground) {
+        pendingImageSize = size
+        pendingImageBackground = background
+        pendingImageUri = null
+    }
+
+    /**
+     * The picker created a document; now - and only now - render into it.
+     *
+     * The panel watches [pendingImageUri] and does the drawing, because only a
+     * live composition can render. Nothing was held while the picker was up.
+     */
+    fun onImageDocumentCreated(uri: Uri?) {
+        if (uri == null) {
+            cancelImageSave()
+            return
+        }
+        pendingImageUri = uri
+    }
+
+    /** Writes freshly rendered pixels to the document the picker created. */
+    fun completeImageSave(context: Context, bytes: ByteArray) {
+        val uri = pendingImageUri
+        if (uri == null) {
+            status = "There was nowhere to save the image. Try again."
+            cancelImageSave()
+            return
+        }
+        if (bytes.isEmpty()) {
+            // Refused rather than written: an empty write leaves exactly the
+            // silent zero-byte file this flow exists to prevent.
+            status = "The image came out empty and was not saved."
+            cancelImageSave()
             return
         }
         AndroidFileIO.writeBytes(context, uri, bytes).fold(
@@ -909,6 +950,17 @@ class AndroidAppState(initial: GuiProject) {
             },
             onFailure = { status = "Could not save the image: ${it.message}" },
         )
+        cancelImageSave()
+    }
+
+    fun failImageSave(message: String) {
+        status = message
+        cancelImageSave()
+    }
+
+    fun cancelImageSave() {
+        pendingImageSize = null
+        pendingImageUri = null
     }
 
     fun performExport(context: Context, uri: Uri) {

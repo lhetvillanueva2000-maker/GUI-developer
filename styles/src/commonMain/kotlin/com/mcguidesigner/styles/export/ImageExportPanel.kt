@@ -25,8 +25,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,8 +56,22 @@ import com.mcguidesigner.styles.theme.LocalEditionSkin
 import com.mcguidesigner.styles.theme.LocalMotion
 import com.mcguidesigner.styles.theme.LocalSkinPalette
 import com.mcguidesigner.styles.theme.spec
-import kotlinx.coroutines.launch
 import kotlin.math.min
+
+/**
+ * A destination the shell has obtained, waiting for pixels to fill it.
+ *
+ * The whole reason this type exists: the pixels must be rendered *after* the
+ * destination is chosen, never before. Rendering first meant holding a PNG in
+ * memory while the system file picker was the foreground activity - and Android
+ * destroys a backgrounded activity under memory pressure, taking the bytes with
+ * it. The file had already been created by then, so what landed on disk was
+ * zero bytes and no error.
+ */
+data class ImageSaveRequest(
+    val size: ImageSize,
+    val background: ImageBackground,
+)
 
 /**
  * A preview of what comes out, a size to pick, and the button that writes it.
@@ -72,30 +86,58 @@ import kotlin.math.min
  * of them, and a dozen full-width rows is a scrolling wall in front of a
  * decision that is really "roughly how big?".
  *
- * [onSave] receives finished PNG bytes and a suggested file name; where those
- * bytes go is the one genuinely platform-specific part, because the desktop has
- * a file system and Android has the storage-access framework.
+ * Saving is deliberately in two steps. [onRequestDestination] asks the shell
+ * for somewhere to put the file; when the shell has one it hands back a
+ * [pending] request, and only then is anything rendered. See [ImageSaveRequest]
+ * for why that order is not negotiable.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ImageExportPanel(
     project: GuiProject,
     textures: TextureResolver,
-    onSave: (fileName: String, bytes: ByteArray) -> Unit,
+    onRequestDestination: (fileName: String, size: ImageSize, background: ImageBackground) -> Unit,
     modifier: Modifier = Modifier,
     skin: EditionSkin = LocalEditionSkin.current,
+    pending: ImageSaveRequest? = null,
+    onRendered: (ByteArray) -> Unit = {},
+    onRenderFailed: (String) -> Unit = {},
     onCancel: (() -> Unit)? = null,
 ) {
     val palette = LocalSkinPalette.current
-    val scope = rememberCoroutineScope()
     val renderer = rememberProjectImageRenderer()
     val measurer = rememberTextMeasurer()
 
     val options = remember(project.canvas) { ImageExport.optionsFor(project.canvas) }
     var selected by remember(project.canvas) { mutableStateOf(ImageExport.defaultFor(project.canvas)) }
     var background by remember { mutableStateOf(ImageBackground.DEFAULT) }
-    var busy by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
+
+    // Rendering happens here, keyed on the destination the shell obtained -
+    // never on the button press. Nothing is held across the picker.
+    LaunchedEffect(pending) {
+        val request = pending ?: return@LaunchedEffect
+        failure = null
+        runCatching { renderer.encode(project, skin, textures, request.size, request.background) }
+            .onSuccess { bytes ->
+                if (bytes.isEmpty()) {
+                    // Writing an empty array would produce exactly the silent
+                    // zero-byte file this whole flow was rebuilt to prevent.
+                    val message = "The renderer produced nothing at ${request.size.label}."
+                    failure = message
+                    onRenderFailed(message)
+                } else {
+                    onRendered(bytes)
+                }
+            }
+            .onFailure {
+                val message = "Could not render at ${request.size.label}: ${it.message}"
+                failure = message
+                onRenderFailed(message)
+            }
+    }
+
+    val busy = pending != null
 
     Column(modifier) {
         ImagePreview(project, skin, textures, measurer, background)
@@ -153,8 +195,6 @@ fun ImageExportPanel(
                 Text(
                     failure ?: when {
                         busy -> "Rendering…"
-                        // Only worth saying when the number is big enough to
-                        // be a wait rather than a detail.
                         selected.pixels > 2_000_000L -> "${selected.scale}× · ${selected.megapixels}"
                         else -> "${selected.scale}× the design"
                     },
@@ -169,19 +209,8 @@ fun ImageExportPanel(
             Button(
                 enabled = !busy,
                 onClick = {
-                    busy = true
                     failure = null
-                    // Launched rather than run inline: reading a large layer
-                    // back off the GPU takes long enough to drop frames, and a
-                    // dialog that freezes while it works looks like a crash.
-                    scope.launch {
-                        val size = selected
-                        val fill = background
-                        runCatching { renderer.encode(project, skin, textures, size, fill) }
-                            .onSuccess { onSave(fileNameFor(project, size), it) }
-                            .onFailure { failure = "Could not render at ${size.label}: ${it.message}" }
-                        busy = false
-                    }
+                    onRequestDestination(fileNameFor(project, selected), selected, background)
                 },
             ) { Text(if (busy) "Rendering…" else "Save PNG") }
         }

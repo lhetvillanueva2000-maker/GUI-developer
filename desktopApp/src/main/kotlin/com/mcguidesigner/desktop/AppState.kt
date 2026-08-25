@@ -14,6 +14,8 @@ import com.mcguidesigner.core.catalog.ElementCatalog
 import com.mcguidesigner.core.editor.DocumentSet
 import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.editor.EditorSettings
+import com.mcguidesigner.core.image.ImageSize
+import com.mcguidesigner.core.image.ImageBackground
 import com.mcguidesigner.core.library.LibraryTexture
 import com.mcguidesigner.core.library.Prefab
 import com.mcguidesigner.core.library.PrefabLibrary
@@ -1117,24 +1119,65 @@ class AppState(initial: GuiProject) {
     }
 
     /**
-     * Writes a rendered PNG somewhere the user picks.
+     * Where a pending image is going, once the file dialog has answered.
      *
-     * Takes finished bytes rather than a project and a size because only a
-     * composition can render one - see `ImageExportPanel`. This end of it is
-     * just a file dialog and a write.
+     * Same two-step order as Android, for the same reason: the destination is
+     * chosen first and the pixels are rendered afterwards. Rendering first also
+     * meant opening a modal AWT dialog from inside a coroutine on the UI
+     * thread, which is its own way to hang.
      */
-    fun saveImage(fileName: String, bytes: ByteArray) {
+    var pendingImageFile by mutableStateOf<File?>(null)
+        private set
+
+    var pendingImageSize by mutableStateOf<ImageSize?>(null)
+        private set
+
+    var pendingImageBackground by mutableStateOf(ImageBackground.DEFAULT)
+        private set
+
+    /** Asks where the image should go. Nothing is rendered yet. */
+    fun requestImageSave(fileName: String, size: ImageSize, background: ImageBackground) {
         val file = DesktopFileIO.saveFileDialog(frameProvider(), "Save image", fileName)
         if (file == null) {
             // Cancelling the file dialog cancels the save, not the export
             // dialog: the size list is still there to pick a different one.
+            cancelImageSave()
+            return
+        }
+        pendingImageFile = file
+        pendingImageSize = size
+        pendingImageBackground = background
+    }
+
+    /** Writes freshly rendered pixels to the chosen file. */
+    fun completeImageSave(bytes: ByteArray) {
+        val file = pendingImageFile
+        if (file == null) {
+            status = "There was nowhere to save the image. Try again."
+            cancelImageSave()
+            return
+        }
+        if (bytes.isEmpty()) {
+            status = "The image came out empty and was not saved."
+            cancelImageSave()
             return
         }
         status = DesktopFileIO.writeBytes(file, bytes).fold(
             onSuccess = { "Wrote ${it.name} (${bytes.size / 1024} KB)." },
             onFailure = { "Could not write the image: ${it.message}" },
         )
+        cancelImageSave()
         dialog = ActiveDialog.NONE
+    }
+
+    fun failImageSave(message: String) {
+        status = message
+        cancelImageSave()
+    }
+
+    fun cancelImageSave() {
+        pendingImageFile = null
+        pendingImageSize = null
     }
 
     /** Saves the current Code tab's output to a single file. */
