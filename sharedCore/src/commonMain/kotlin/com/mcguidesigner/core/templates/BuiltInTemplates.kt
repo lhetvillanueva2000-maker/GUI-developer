@@ -96,6 +96,15 @@ object BuiltInTemplates {
         h: Int,
         props: Map<String, PropValue> = emptyMap(),
         children: List<GuiElement> = emptyList(),
+        /**
+         * Which edition's defaults to seed with.
+         *
+         * It matters more than it looks. A few keys - `font` above all - are
+         * declared once per edition with different option sets, so seeding an
+         * Other UIs element from Java's defaults gives it a font value that is
+         * not a legal option in its own edition, and that reads as a type error
+         * on every text-bearing element in the document.
+         */
         edition: Edition = Edition.JAVA,
     ): GuiElement {
         val definition = ElementCatalog.require(type)
@@ -108,6 +117,18 @@ object BuiltInTemplates {
             children = children,
         )
     }
+
+    /** [node], seeded for Other UIs. See the `edition` parameter for why. */
+    private fun uiNode(
+        type: String,
+        name: String,
+        x: Int,
+        y: Int,
+        w: Int,
+        h: Int,
+        props: Map<String, PropValue> = emptyMap(),
+        children: List<GuiElement> = emptyList(),
+    ): GuiElement = node(type, name, x, y, w, h, props, children, Edition.OTHER)
 
     private fun text(value: String) = StringValue(value)
     private fun num(value: Int) = IntValue(value)
@@ -510,6 +531,21 @@ object BuiltInTemplates {
             "ActionForm dialog with stacked full-width buttons.",
             listOf("form", "dialog"), ::bedrockActionForm,
         ),
+        GuiTemplate(
+            "other-signin", "Sign-in Screen", Edition.OTHER, TargetForm.MOBILE,
+            "A phone-sized sign-in form: card, two fields and a primary action.",
+            listOf("app", "form"), ::otherSignIn,
+        ),
+        GuiTemplate(
+            "other-settings", "Settings Screen", Edition.OTHER, TargetForm.MOBILE,
+            "Grouped settings rows: switches, a divider, a select and a slider.",
+            listOf("app", "settings"), ::otherSettings,
+        ),
+        GuiTemplate(
+            "other-dashboard", "Dashboard", Edition.OTHER, TargetForm.DESKTOP,
+            "A wide layout: search, tabs and a row of stat cards.",
+            listOf("app", "dashboard"), ::otherDashboard,
+        ),
     )
 
     fun forEdition(edition: Edition): List<GuiTemplate> = all.filter { it.edition == edition }
@@ -518,4 +554,183 @@ object BuiltInTemplates {
 
     /** The layout opened on first launch and shipped as the sample project. */
     val demo: GuiTemplate get() = all.first { it.id == "java-chest" }
+
+    // -- Other UIs ---------------------------------------------------------
+    //
+    // Deliberately ordinary app screens rather than anything clever. A starter
+    // template's job is to put something on the canvas that can be taken apart
+    // to see how the pieces fit, and a sign-in form is the most legible example
+    // of that there is.
+    //
+    // Every node goes through `uiNode`, which seeds Other UIs defaults rather
+    // than Java's - see the `edition` parameter on `node`.
+
+    private fun otherSignIn(): GuiProject {
+        val elements = buildList {
+            add(uiNode(ElementCatalog.BAR_HEADER, "App Bar", 0, 0, 360, 56, mapOf("title" to text("Sign in"))))
+            add(
+                uiNode(
+                    ElementCatalog.PANEL_FRAME, "Card", 24, 88, 312, 296,
+                    mapOf("background" to rgb(0xFFFFFFFF), "padding" to num(20)),
+                    children = listOf(
+                        uiNode(
+                            ElementCatalog.TEXT_LABEL, "Heading", 20, 20, 272, 26,
+                            mapOf("text" to text("Welcome back"), "scale" to dec(1.75f)),
+                        ),
+                        uiNode(
+                            ElementCatalog.TEXT_LABEL, "Subheading", 20, 48, 272, 20,
+                            mapOf("text" to text("Sign in to continue"), "textColor" to rgb(0xFF5B6570)),
+                        ),
+                        uiNode(
+                            ElementCatalog.INPUT_TEXTBOX, "Email", 20, 84, 272, 44,
+                            mapOf("placeholder" to text("Email address")),
+                        ),
+                        uiNode(
+                            ElementCatalog.INPUT_TEXTBOX, "Password", 20, 140, 272, 44,
+                            mapOf("placeholder" to text("Password")),
+                        ),
+                        uiNode(
+                            ElementCatalog.INPUT_CHECKBOX, "Remember", 20, 196, 160, 24,
+                            mapOf("label" to text("Remember me"), "checked" to flag(true)),
+                        ),
+                        uiNode(
+                            ElementCatalog.BUTTON_NORMAL, "Sign in", 20, 236, 272, 44,
+                            mapOf("label" to text("Sign in")),
+                        ),
+                    ),
+                ),
+            )
+            add(
+                uiNode(
+                    ElementCatalog.TEXT_LABEL, "Footer", 24, 400, 312, 20,
+                    mapOf("text" to text("No account? Create one"), "textColor" to rgb(0xFF3B82F6)),
+                ),
+            )
+        }
+        return GuiProject(
+            id = Ids.prefixed("project"),
+            name = "Sign-in Screen",
+            edition = Edition.OTHER,
+            canvas = CanvasSpec(360, 440, guiScale = 2, gridSize = 8, backdrop = CanvasBackdrop.SOLID, backdropColor = 0xFFEDEFF3),
+            elements = elements,
+            meta = ProjectMeta(
+                description = "A phone-sized sign-in form: card, two fields and a primary action.",
+                namespace = "app",
+                screenId = "sign_in",
+                tags = listOf("app", "form", "mobile"),
+            ),
+        )
+    }
+
+    private fun otherSettings(): GuiProject {
+        val elements = buildList {
+            add(uiNode(ElementCatalog.BAR_HEADER, "App Bar", 0, 0, 360, 56, mapOf("title" to text("Settings"))))
+            add(
+                uiNode(
+                    ElementCatalog.PANEL_FRAME, "Group", 16, 72, 328, 200,
+                    mapOf("background" to rgb(0xFFFFFFFF), "padding" to num(16)),
+                    children = listOf(
+                        uiNode(
+                            ElementCatalog.BUTTON_TOGGLE, "Notifications", 16, 16, 296, 32,
+                            mapOf("label" to text("Notifications"), "value" to flag(true)),
+                        ),
+                        uiNode(ElementCatalog.DECOR_SEPARATOR, "Rule 1", 16, 60, 296, 2),
+                        uiNode(
+                            ElementCatalog.BUTTON_TOGGLE, "Dark mode", 16, 76, 296, 32,
+                            mapOf("label" to text("Dark mode"), "value" to flag(false)),
+                        ),
+                        uiNode(ElementCatalog.DECOR_SEPARATOR, "Rule 2", 16, 120, 296, 2),
+                        uiNode(
+                            ElementCatalog.INPUT_DROPDOWN, "Language", 16, 136, 296, 44,
+                            mapOf("items" to items("English", "Filipino", "Espanol"), "selectedIndex" to num(0)),
+                        ),
+                    ),
+                ),
+            )
+            add(
+                uiNode(
+                    ElementCatalog.INPUT_SLIDER, "Volume", 32, 296, 296, 32,
+                    mapOf("label" to text("Volume"), "value" to dec(0.6f)),
+                ),
+            )
+            add(
+                uiNode(
+                    ElementCatalog.BUTTON_NORMAL, "Save", 32, 352, 296, 44,
+                    mapOf("label" to text("Save changes")),
+                ),
+            )
+        }
+        return GuiProject(
+            id = Ids.prefixed("project"),
+            name = "Settings Screen",
+            edition = Edition.OTHER,
+            canvas = CanvasSpec(360, 420, guiScale = 2, gridSize = 8, backdrop = CanvasBackdrop.SOLID, backdropColor = 0xFFEDEFF3),
+            elements = elements,
+            meta = ProjectMeta(
+                description = "Grouped settings rows: switches, a divider, a select and a slider.",
+                namespace = "app",
+                screenId = "settings",
+                tags = listOf("app", "settings", "mobile"),
+            ),
+        )
+    }
+
+    private fun otherDashboard(): GuiProject {
+        val labels = listOf("Visitors", "Signups", "Revenue")
+        val values = listOf("12,480", "318", "12,900")
+        val fractions = listOf(0.72f, 0.41f, 0.58f)
+
+        val elements = buildList {
+            add(uiNode(ElementCatalog.BAR_HEADER, "App Bar", 0, 0, 720, 56, mapOf("title" to text("Dashboard"))))
+            add(
+                uiNode(
+                    ElementCatalog.INPUT_SEARCH, "Search", 24, 76, 320, 40,
+                    mapOf("placeholder" to text("Search anything")),
+                ),
+            )
+            listOf("Today", "This week", "All time").forEachIndexed { index, label ->
+                add(
+                    uiNode(
+                        ElementCatalog.BUTTON_TAB, "Tab ${index + 1}", 24 + index * 96, 132, 88, 36,
+                        mapOf("label" to text(label), "selected" to flag(index == 0)),
+                    ),
+                )
+            }
+            labels.forEachIndexed { index, label ->
+                add(
+                    uiNode(
+                        ElementCatalog.PANEL_FRAME, "Card ${index + 1}", 24 + index * 232, 188, 216, 120,
+                        mapOf("background" to rgb(0xFFFFFFFF), "padding" to num(16)),
+                        children = listOf(
+                            uiNode(
+                                ElementCatalog.TEXT_LABEL, "Card label $label", 16, 16, 184, 18,
+                                mapOf("text" to text(label), "textColor" to rgb(0xFF5B6570)),
+                            ),
+                            uiNode(
+                                ElementCatalog.TEXT_LABEL, "Card value $label", 16, 40, 184, 30,
+                                mapOf("text" to text(values[index]), "scale" to dec(2f)),
+                            ),
+                            uiNode(
+                                ElementCatalog.PROGRESS_BAR, "Card bar $label", 16, 84, 184, 8,
+                                mapOf("progress" to dec(fractions[index])),
+                            ),
+                        ),
+                    ),
+                )
+            }
+        }
+        return GuiProject(
+            id = Ids.prefixed("project"),
+            name = "Dashboard",
+            edition = Edition.OTHER,
+            canvas = CanvasSpec(720, 340, guiScale = 1, gridSize = 8, backdrop = CanvasBackdrop.SOLID, backdropColor = 0xFFEDEFF3),
+            elements = elements,
+            meta = ProjectMeta(
+                description = "A wide layout: search, tabs and a row of stat cards.",
+                namespace = "app",
+                screenId = "dashboard",
+                tags = listOf("app", "dashboard", "desktop"),
+            ),
+        )
+    }
 }

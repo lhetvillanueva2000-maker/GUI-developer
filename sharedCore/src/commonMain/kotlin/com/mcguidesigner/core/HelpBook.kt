@@ -36,6 +36,12 @@ object HelpBook {
             listOf(
                 HelpEntry("Open the Java editor", "J", "From the home screen."),
                 HelpEntry("Open the Bedrock editor", "B", "From the home screen."),
+                HelpEntry(
+                    "Open the Other UIs editor",
+                    "",
+                    "The third card on the home screen. For apps, websites and tools - " +
+                        "anything that is not Minecraft.",
+                ),
                 HelpEntry("Open settings", "S", "From the home screen, or the gear at the top right."),
                 HelpEntry("Switch theme", "T", "Dark and light."),
                 HelpEntry(
@@ -150,7 +156,12 @@ object HelpBook {
                 HelpEntry("Zoom in", "Ctrl+="),
                 HelpEntry("Zoom out", "Ctrl+-"),
                 HelpEntry("Reset the view", "Ctrl+0"),
-                HelpEntry("Toggle the grid", "Ctrl+G"),
+                HelpEntry(
+                    "Toggle the grid",
+                    "Ctrl+G",
+                    "Off by default. Snapping does not need it to be visible; on a phone " +
+                        "the toggle is in the three-dots menu.",
+                ),
                 HelpEntry("Toggle rulers", "Ctrl+R"),
             ),
         ),

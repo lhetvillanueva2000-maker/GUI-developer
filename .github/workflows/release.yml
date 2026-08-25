@@ -437,57 +437,50 @@ jobs:
 
           ## What's new in $VERSION
 
-          ### Resize handles follow the angle
+          ### A third target: Other UIs
 
-          Turn an element and its handles now sit on the corners it actually has,
-          drawn at the same angle, rather than staying square to the screen however
-          far round it had gone. Dragging one resizes along the element's *own* axes
-          — on a quarter turn, the handle on the right points down the screen, so a
-          downward drag makes it wider — and the corner opposite the one you are
-          dragging stays where it looks like it is instead of sliding away.
+          The home screen now offers **Other UIs** alongside Java and Bedrock. It is
+          for interfaces that are not Minecraft at all — apps, websites, tools,
+          anything with buttons and text fields rather than inventory slots.
 
-          ### Any angle you like
+          It has its own skin: flat, neutral, rounded corners, 36px controls, a
+          filled accent for the primary action and **no text shadow**. Both
+          Minecraft skins shadow their text because the game does, and carrying
+          that habit over would be the clearest possible tell that a mock-up came
+          out of a Minecraft tool.
 
-          A round knob sits above the selection. Drag it and the element follows your
-          pointer exactly; hold **Shift** to snap to 15°, and on a touchscreen it
-          snaps on its own since there is no modifier key to ask with. The inspector
-          has a **Rotation** field that takes any whole angle from 0 to 359, with the
-          useful ones a click away. The 90° buttons are still there.
+          Three starter screens come with it — a sign-in form, a settings page and
+          a dashboard. Inventory slots, hotbars, chest panels and tooltips are not
+          offered here, because they are furniture from a different building.
 
-          ### Rotation applies to everything now
+          What it exports is what was already the right answer for it: the project
+          file and **HTML+CSS, React JSX, SwiftUI, Flutter and Android XML**. There
+          is no resource pack, because there is no game to load one.
 
-          It used to be applied by exactly one renderer, so it was quietly a
-          shapes-only feature: turning a button did nothing on the canvas while the
-          exports emitted a rotation anyway. Rotation is now one transform applied
-          once, for every element of both editions — on the canvas, in the picture
-          export, and in all five code exports.
+          ### The grid is off by default
 
-          ### Colours to pick from
-
-          Every colour field has a palette under it:
-
-          - **Minecraft** — panel, slot and button greys, tooltip purple, dirt, oak,
-            stone, deepslate, XP green and health red, measured off the real widgets.
-            Getting these right by eye is close to impossible, and a panel four greys
-            off looks wrong without looking *obviously* wrong.
-          - **Greys** — a neutral ramp from white to black.
-          - **Colours** — fourteen hues at three lightnesses each.
-
-          Picking a swatch keeps the alpha you already set. The hex field still takes
-          anything at all.
+          It is a measuring aid, and it was being drawn over every design from the
+          moment it was created — including in every screenshot anybody took to
+          show their work off. **Snapping does not depend on it**: the grid can be
+          invisible and still be snapped to, which is what most people want. The
+          toggle is **Ctrl+G**, or **⋮ ▸ Show grid** on a phone.
 
           ### Fixes
 
-          - **A turned element exported square to SVG.** The rotate transform was
-            written inside the custom-shape branch of the generator, so everything
-            else came out flat.
-          - **The same, in CSS.** The rotation line lived inside the shape-only rules.
-          - **A turned element came back straight from a Bedrock round trip.** The
-            angle was written only for shapes, and the importer never read it at all.
-          - **Shapes turned twice as far as anything else** once rotation moved to
-            the shared path, and their labels stayed upright while the shape leaned.
-
-          ---
+          - **Saving a PNG produced a zero-byte file.** The image was rendered
+            first and held in memory while the system file picker was the
+            foreground activity — and a phone short on memory destroys the
+            backgrounded activity, taking the bytes with it. The document had
+            already been created by then, so what landed on disk was empty and
+            nothing was reported. The destination is now chosen first and the
+            image rendered only once a file exists.
+          - **Empty image data is refused** with a visible message instead of
+            written, since writing it recreates the same silent empty file.
+          - **Starter templates for the new target arrived with warnings on them**,
+            because they were seeded with Java's property defaults — which gave
+            every text-bearing element a font value that is not legal in its own
+            target. Caught by a test that now holds every bundled template to a
+            clean strict-mode validation.
 
           ### The test build
 

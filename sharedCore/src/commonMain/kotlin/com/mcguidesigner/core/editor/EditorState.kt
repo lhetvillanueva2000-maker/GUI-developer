@@ -84,7 +84,16 @@ data class EditorState(
     val panX: Float = 0f,
     val panY: Float = 0f,
 
-    val showGrid: Boolean = true,
+    /**
+     * Whether the alignment grid is painted on the canvas.
+     *
+     * Off by default. The grid is a measuring aid, and a measuring aid drawn
+     * over every design by default is the first thing between you and seeing
+     * what you have made - it also lands in every screenshot somebody takes to
+     * show the thing off. Snapping does not depend on it: the grid can be
+     * invisible and still be snapped to, which is what most people want.
+     */
+    val showGrid: Boolean = false,
     val snapToGrid: Boolean = true,
     val snapToElements: Boolean = true,
     val showRulers: Boolean = true,

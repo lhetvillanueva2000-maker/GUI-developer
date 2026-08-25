@@ -82,18 +82,22 @@ object AppNotice {
      */
     val current = Notice(
         id = "whatsnew-${Branding.VERSION}",
-        headline = "${Branding.NAME} ${Branding.VERSION} — any angle, and colours to pick from",
+        headline = "${Branding.NAME} ${Branding.VERSION} — it is not only a Minecraft tool any more",
         points = listOf(
-            "Resize handles now sit on a turned element's own corners and drag " +
-                "along its own axes. They used to stay square to the screen " +
-                "however far round the element had gone.",
-            "Turn anything to any angle: drag the knob above the selection, or " +
-                "type a number into the Rotation field. Hold Shift to snap to 15°.",
-            "Rotation now works on every element rather than only on shapes — on " +
-                "the canvas, in the picture export, and in all five code exports.",
-            "Every colour field has a palette under it: vanilla Minecraft greys " +
-                "and browns, a neutral ramp, and fourteen hues at three " +
-                "lightnesses. The hex field still takes anything.",
+            "A third target: Other UIs. Apps, websites, tools — anything with " +
+                "buttons and text fields rather than inventory slots. Its own " +
+                "flat skin, its own starter screens, and the code exports that " +
+                "were already there.",
+            "The grid is off by default. It is a measuring aid, and it used to " +
+                "be drawn over every design and land in every screenshot. " +
+                "Snapping still works with it hidden; the toggle is in the " +
+                "three-dots menu.",
+            "Saving a PNG produced a zero-byte file on a phone short on memory. " +
+                "The image is now rendered after the destination is chosen " +
+                "rather than held in memory while the file picker is open.",
+            "A separate test build, UILabs DEBUG, installs alongside the normal " +
+                "app and shows what failed with its real message and stack " +
+                "trace, ready to copy.",
         ),
     )
 

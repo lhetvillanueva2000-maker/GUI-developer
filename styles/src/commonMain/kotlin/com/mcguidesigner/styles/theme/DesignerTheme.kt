@@ -19,15 +19,17 @@ import androidx.compose.ui.unit.sp
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.styles.bedrock.BedrockEditionSkin
 import com.mcguidesigner.styles.java.JavaEditionSkin
+import com.mcguidesigner.styles.other.OtherUiSkin
 import com.mcguidesigner.styles.render.EditionSkin
 
 /** Look-up from edition to its skin. The only place the two styles meet. */
 object SkinRegistry {
-    val all: List<EditionSkin> = listOf(JavaEditionSkin, BedrockEditionSkin)
+    val all: List<EditionSkin> = listOf(JavaEditionSkin, BedrockEditionSkin, OtherUiSkin)
 
     fun forEdition(edition: Edition): EditionSkin = when (edition) {
         Edition.JAVA -> JavaEditionSkin
         Edition.BEDROCK -> BedrockEditionSkin
+        Edition.OTHER -> OtherUiSkin
     }
 }
 

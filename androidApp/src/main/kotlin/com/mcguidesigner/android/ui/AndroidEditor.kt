@@ -550,6 +550,13 @@ private fun MobileTopBar(
                     text = { Text("Build an animation from images...") },
                     onClick = { menuOpen = false; onImportFrames() },
                 )
+                // The grid lives here as well as in the Canvas sheet: it is
+                // off by default now, and a setting that is off by default has
+                // to be findable without knowing which sheet it is filed under.
+                DropdownMenuItem(
+                    text = { Text(if (state.showGrid) "Hide grid" else "Show grid") },
+                    onClick = { menuOpen = false; controller.toggleGrid() },
+                )
                 DropdownMenuItem(
                     text = { Text("Diagnostics...") },
                     onClick = { menuOpen = false; app.sheet = MobileSheet.DIAGNOSTICS },

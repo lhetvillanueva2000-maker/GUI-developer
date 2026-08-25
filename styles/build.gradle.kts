@@ -19,12 +19,14 @@ kotlin {
             //
             //   styles/java/src     -> Java Edition skin + palette
             //   styles/bedrock/src  -> Bedrock Edition skin + palette
+            //   styles/other/src    -> Other UIs skin + palette
             //
             // Only the contracts in src/commonMain are shared between them.
             kotlin.srcDirs(
                 "src/commonMain/kotlin",
                 "java/src",
                 "bedrock/src",
+                "other/src",
             )
             dependencies {
                 api(project(":sharedCore"))

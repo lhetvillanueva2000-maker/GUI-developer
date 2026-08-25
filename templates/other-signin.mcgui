@@ -1,0 +1,553 @@
+{
+  "formatVersion": 1,
+  "id": "template_other-signin",
+  "name": "Sign-in Screen",
+  "edition": "other",
+  "canvas": {
+    "width": 360,
+    "height": 440,
+    "guiScale": 2,
+    "gridSize": 8,
+    "backdrop": "SOLID",
+    "backdropColor": 4293783539,
+    "targetForm": "desktop",
+    "safeArea": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 0
+    }
+  },
+  "elements": [
+    {
+      "id": "other-signin_0_header",
+      "type": "bar.header",
+      "name": "App Bar",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 56
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "title": {
+          "kind": "s",
+          "value": "Sign in"
+        },
+        "icon": {
+          "kind": "tex"
+        },
+        "showDivider": {
+          "kind": "b",
+          "value": true
+        },
+        "showCloseButton": {
+          "kind": "b",
+          "value": false
+        },
+        "background": {
+          "kind": "c",
+          "argb": 0
+        },
+        "dividerColor": {
+          "kind": "c",
+          "argb": 4281808695
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "left"
+        },
+        "font": {
+          "kind": "e",
+          "value": "sans"
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-signin_1_frame",
+      "type": "panel.frame",
+      "name": "Card",
+      "bounds": {
+        "x": 24,
+        "y": 88,
+        "width": 312,
+        "height": 296
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 20
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": [
+        {
+          "id": "other-signin_2_label",
+          "type": "text.label",
+          "name": "Heading",
+          "bounds": {
+            "x": 20,
+            "y": 20,
+            "width": 272,
+            "height": 26
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "Welcome back"
+            },
+            "scale": {
+              "kind": "f",
+              "value": 1.75
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-signin_3_label",
+          "type": "text.label",
+          "name": "Subheading",
+          "bounds": {
+            "x": 20,
+            "y": 48,
+            "width": 272,
+            "height": 20
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "Sign in to continue"
+            },
+            "scale": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4284179824
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-signin_4_textbox",
+          "type": "input.textbox",
+          "name": "Email",
+          "bounds": {
+            "x": 20,
+            "y": 84,
+            "width": 272,
+            "height": 44
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "value": {
+              "kind": "s",
+              "value": ""
+            },
+            "placeholder": {
+              "kind": "s",
+              "value": "Email address"
+            },
+            "maxLength": {
+              "kind": "i",
+              "value": 32
+            },
+            "editable": {
+              "kind": "b",
+              "value": true
+            },
+            "numericOnly": {
+              "kind": "b",
+              "value": false
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4278190080
+            },
+            "borderColor": {
+              "kind": "c",
+              "argb": 4288716960
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "placeholderColor": {
+              "kind": "c",
+              "argb": 4285558896
+            },
+            "showCursor": {
+              "kind": "b",
+              "value": true
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-signin_5_textbox",
+          "type": "input.textbox",
+          "name": "Password",
+          "bounds": {
+            "x": 20,
+            "y": 140,
+            "width": 272,
+            "height": 44
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "value": {
+              "kind": "s",
+              "value": ""
+            },
+            "placeholder": {
+              "kind": "s",
+              "value": "Password"
+            },
+            "maxLength": {
+              "kind": "i",
+              "value": 32
+            },
+            "editable": {
+              "kind": "b",
+              "value": true
+            },
+            "numericOnly": {
+              "kind": "b",
+              "value": false
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4278190080
+            },
+            "borderColor": {
+              "kind": "c",
+              "argb": 4288716960
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "placeholderColor": {
+              "kind": "c",
+              "argb": 4285558896
+            },
+            "showCursor": {
+              "kind": "b",
+              "value": true
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-signin_6_checkbox",
+          "type": "input.checkbox",
+          "name": "Remember",
+          "bounds": {
+            "x": 20,
+            "y": 196,
+            "width": 160,
+            "height": 24
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Remember me"
+            },
+            "checked": {
+              "kind": "b",
+              "value": true
+            },
+            "boxSize": {
+              "kind": "i",
+              "value": 12
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "tooltip": {
+              "kind": "s",
+              "value": ""
+            },
+            "boxColor": {
+              "kind": "c",
+              "argb": 4280953386
+            },
+            "checkColor": {
+              "kind": "c",
+              "argb": 4283873355
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-signin_7_normal",
+          "type": "button.normal",
+          "name": "Sign in",
+          "bounds": {
+            "x": 20,
+            "y": 236,
+            "width": 272,
+            "height": 44
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Sign in"
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "tooltip": {
+              "kind": "s",
+              "value": ""
+            },
+            "action": {
+              "kind": "s",
+              "value": ""
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "borderColor": {
+              "kind": "c",
+              "argb": 4278190080
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            },
+            "texture": {
+              "kind": "tex"
+            },
+            "textureFit": {
+              "kind": "e",
+              "value": "nine_slice"
+            },
+            "tint": {
+              "kind": "c",
+              "argb": 4294967295
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "other-signin_8_label",
+      "type": "text.label",
+      "name": "Footer",
+      "bounds": {
+        "x": 24,
+        "y": 400,
+        "width": 312,
+        "height": 20
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "text": {
+          "kind": "s",
+          "value": "No account? Create one"
+        },
+        "scale": {
+          "kind": "f",
+          "value": 1.0
+        },
+        "wrap": {
+          "kind": "b",
+          "value": false
+        },
+        "lineSpacing": {
+          "kind": "i",
+          "value": 2
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4282090230
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "left"
+        },
+        "font": {
+          "kind": "e",
+          "value": "sans"
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    }
+  ],
+  "textures": [],
+  "meta": {
+    "author": "",
+    "description": "A phone-sized sign-in form: card, two fields and a primary action.",
+    "createdAt": "",
+    "modifiedAt": "",
+    "tags": [
+      "app",
+      "form",
+      "mobile"
+    ],
+    "namespace": "app",
+    "screenId": "sign_in_screen"
+  }
+}

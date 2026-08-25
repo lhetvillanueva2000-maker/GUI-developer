@@ -25,8 +25,16 @@ object HomeMetrics {
     const val VERSION = Branding.VERSION
 
     /** Two columns from tablet width up, one on a phone. */
+    /**
+     * Whether the target cards sit in a row rather than a column.
+     *
+     * MEDIUM was wide enough for two cards and is not wide enough for three -
+     * a third of a tablet's width is narrower than a phone, and the preview
+     * inside each card stops reading as a screen at that size. Three cards
+     * need a genuinely wide window; below that they stack.
+     */
     fun sideBySide(metrics: AdaptiveMetrics): Boolean =
-        metrics.sizeClass != WindowSizeClass.COMPACT
+        metrics.sizeClass == WindowSizeClass.EXPANDED
 
     /** Height of the top chrome bar. Tablet gets a little more, for thumbs. */
     fun chromeHeight(metrics: AdaptiveMetrics) = when (metrics.sizeClass) {

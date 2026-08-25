@@ -20,21 +20,30 @@ import com.mcguidesigner.core.validation.ValidationIssue
 object ExportManager {
 
     /** Targets offered for a project of [edition], in menu order. */
-    fun availableTargets(edition: Edition): List<ExportTarget> = listOf(
+    fun availableTargets(edition: Edition): List<ExportTarget> = buildList {
+        // The pack for this edition first, where there is one. Other UIs has no
+        // game to load it, so offering an empty resource pack would be offering
+        // a format with nothing on the other end of it.
         when (edition) {
-            Edition.JAVA -> ExportTarget.JAVA_RESOURCE_PACK
-            Edition.BEDROCK -> ExportTarget.BEDROCK_UI_PACK
-        },
-        ExportTarget.PROJECT_JSON,
-        ExportTarget.CODE,
-        // The opposite edition is always offered too, with parity warnings
-        // attached, because porting a screen is a common reason to export.
-        when (edition) {
-            Edition.JAVA -> ExportTarget.BEDROCK_UI_PACK
-            Edition.BEDROCK -> ExportTarget.JAVA_RESOURCE_PACK
-        },
-        ExportTarget.EVERYTHING,
-    )
+            Edition.JAVA -> add(ExportTarget.JAVA_RESOURCE_PACK)
+            Edition.BEDROCK -> add(ExportTarget.BEDROCK_UI_PACK)
+            Edition.OTHER -> Unit
+        }
+
+        add(ExportTarget.PROJECT_JSON)
+        add(ExportTarget.CODE)
+
+        // The opposite edition too, with parity warnings attached, because
+        // porting a screen is a common reason to export. Only between the two
+        // that have somewhere to port to.
+        when (edition.counterpart) {
+            Edition.JAVA -> add(ExportTarget.JAVA_RESOURCE_PACK)
+            Edition.BEDROCK -> add(ExportTarget.BEDROCK_UI_PACK)
+            else -> Unit
+        }
+
+        add(ExportTarget.EVERYTHING)
+    }
 
     fun export(project: GuiProject, target: ExportTarget, codeTarget: CodeTarget = CodeTarget.HTML_CSS): ExportBundle =
         when (target) {

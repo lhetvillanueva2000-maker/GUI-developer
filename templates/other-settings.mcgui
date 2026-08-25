@@ -1,0 +1,594 @@
+{
+  "formatVersion": 1,
+  "id": "template_other-settings",
+  "name": "Settings Screen",
+  "edition": "other",
+  "canvas": {
+    "width": 360,
+    "height": 420,
+    "guiScale": 2,
+    "gridSize": 8,
+    "backdrop": "SOLID",
+    "backdropColor": 4293783539,
+    "targetForm": "desktop",
+    "safeArea": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 0
+    }
+  },
+  "elements": [
+    {
+      "id": "other-settings_0_header",
+      "type": "bar.header",
+      "name": "App Bar",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 56
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "title": {
+          "kind": "s",
+          "value": "Settings"
+        },
+        "icon": {
+          "kind": "tex"
+        },
+        "showDivider": {
+          "kind": "b",
+          "value": true
+        },
+        "showCloseButton": {
+          "kind": "b",
+          "value": false
+        },
+        "background": {
+          "kind": "c",
+          "argb": 0
+        },
+        "dividerColor": {
+          "kind": "c",
+          "argb": 4281808695
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "left"
+        },
+        "font": {
+          "kind": "e",
+          "value": "sans"
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-settings_1_frame",
+      "type": "panel.frame",
+      "name": "Group",
+      "bounds": {
+        "x": 16,
+        "y": 72,
+        "width": 328,
+        "height": 200
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 16
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": [
+        {
+          "id": "other-settings_2_toggle",
+          "type": "button.toggle",
+          "name": "Notifications",
+          "bounds": {
+            "x": 16,
+            "y": 16,
+            "width": 296,
+            "height": 32
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Notifications"
+            },
+            "onLabel": {
+              "kind": "s",
+              "value": "ON"
+            },
+            "offLabel": {
+              "kind": "s",
+              "value": "OFF"
+            },
+            "value": {
+              "kind": "b",
+              "value": true
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "tooltip": {
+              "kind": "s",
+              "value": ""
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "onColor": {
+              "kind": "c",
+              "argb": 4283873355
+            },
+            "style": {
+              "kind": "e",
+              "value": "label_swap"
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-settings_3_separator",
+          "type": "decor.separator",
+          "name": "Rule 1",
+          "bounds": {
+            "x": 16,
+            "y": 60,
+            "width": 296,
+            "height": 2
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "orientation": {
+              "kind": "e",
+              "value": "horizontal"
+            },
+            "style": {
+              "kind": "e",
+              "value": "bevel"
+            },
+            "color": {
+              "kind": "c",
+              "argb": 4281808695
+            },
+            "highlightColor": {
+              "kind": "c",
+              "argb": 4285427310
+            },
+            "thickness": {
+              "kind": "i",
+              "value": 2
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-settings_4_toggle",
+          "type": "button.toggle",
+          "name": "Dark mode",
+          "bounds": {
+            "x": 16,
+            "y": 76,
+            "width": 296,
+            "height": 32
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "label": {
+              "kind": "s",
+              "value": "Dark mode"
+            },
+            "onLabel": {
+              "kind": "s",
+              "value": "ON"
+            },
+            "offLabel": {
+              "kind": "s",
+              "value": "OFF"
+            },
+            "value": {
+              "kind": "b",
+              "value": false
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "tooltip": {
+              "kind": "s",
+              "value": ""
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "onColor": {
+              "kind": "c",
+              "argb": 4283873355
+            },
+            "style": {
+              "kind": "e",
+              "value": "label_swap"
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-settings_5_separator",
+          "type": "decor.separator",
+          "name": "Rule 2",
+          "bounds": {
+            "x": 16,
+            "y": 120,
+            "width": 296,
+            "height": 2
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "orientation": {
+              "kind": "e",
+              "value": "horizontal"
+            },
+            "style": {
+              "kind": "e",
+              "value": "bevel"
+            },
+            "color": {
+              "kind": "c",
+              "argb": 4281808695
+            },
+            "highlightColor": {
+              "kind": "c",
+              "argb": 4285427310
+            },
+            "thickness": {
+              "kind": "i",
+              "value": 2
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-settings_6_dropdown",
+          "type": "input.dropdown",
+          "name": "Language",
+          "bounds": {
+            "x": 16,
+            "y": 136,
+            "width": 296,
+            "height": 44
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "items": {
+              "kind": "l",
+              "values": [
+                {
+                  "kind": "s",
+                  "value": "English"
+                },
+                {
+                  "kind": "s",
+                  "value": "Filipino"
+                },
+                {
+                  "kind": "s",
+                  "value": "Espanol"
+                }
+              ]
+            },
+            "selectedIndex": {
+              "kind": "i",
+              "value": 0
+            },
+            "placeholder": {
+              "kind": "s",
+              "value": "Select..."
+            },
+            "enabled": {
+              "kind": "b",
+              "value": true
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4285295724
+            },
+            "popupBackground": {
+              "kind": "c",
+              "argb": 4027580432
+            },
+            "openMode": {
+              "kind": "e",
+              "value": "popup"
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "center"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "other-settings_7_slider",
+      "type": "input.slider",
+      "name": "Volume",
+      "bounds": {
+        "x": 32,
+        "y": 296,
+        "width": 296,
+        "height": 32
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "label": {
+          "kind": "s",
+          "value": "Volume"
+        },
+        "value": {
+          "kind": "f",
+          "value": 0.6
+        },
+        "minValue": {
+          "kind": "f",
+          "value": 0.0
+        },
+        "maxValue": {
+          "kind": "f",
+          "value": 100.0
+        },
+        "stepSize": {
+          "kind": "f",
+          "value": 1.0
+        },
+        "showValue": {
+          "kind": "b",
+          "value": true
+        },
+        "suffix": {
+          "kind": "s",
+          "value": "%"
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "trackColor": {
+          "kind": "c",
+          "argb": 4285295724
+        },
+        "knobColor": {
+          "kind": "c",
+          "argb": 4291217094
+        },
+        "knobWidth": {
+          "kind": "i",
+          "value": 8
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "center"
+        },
+        "font": {
+          "kind": "e",
+          "value": "sans"
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-settings_8_normal",
+      "type": "button.normal",
+      "name": "Save",
+      "bounds": {
+        "x": 32,
+        "y": 352,
+        "width": 296,
+        "height": 44
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "label": {
+          "kind": "s",
+          "value": "Save changes"
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": ""
+        },
+        "action": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 4285295724
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4278190080
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "center"
+        },
+        "font": {
+          "kind": "e",
+          "value": "sans"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    }
+  ],
+  "textures": [],
+  "meta": {
+    "author": "",
+    "description": "Grouped settings rows: switches, a divider, a select and a slider.",
+    "createdAt": "",
+    "modifiedAt": "",
+    "tags": [
+      "app",
+      "settings",
+      "mobile"
+    ],
+    "namespace": "app",
+    "screenId": "settings_screen"
+  }
+}

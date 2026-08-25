@@ -1,0 +1,1020 @@
+{
+  "formatVersion": 1,
+  "id": "template_other-dashboard",
+  "name": "Dashboard",
+  "edition": "other",
+  "canvas": {
+    "width": 720,
+    "height": 340,
+    "guiScale": 1,
+    "gridSize": 8,
+    "backdrop": "SOLID",
+    "backdropColor": 4293783539,
+    "targetForm": "desktop",
+    "safeArea": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 0
+    }
+  },
+  "elements": [
+    {
+      "id": "other-dashboard_0_header",
+      "type": "bar.header",
+      "name": "App Bar",
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 56
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "title": {
+          "kind": "s",
+          "value": "Dashboard"
+        },
+        "icon": {
+          "kind": "tex"
+        },
+        "showDivider": {
+          "kind": "b",
+          "value": true
+        },
+        "showCloseButton": {
+          "kind": "b",
+          "value": false
+        },
+        "background": {
+          "kind": "c",
+          "argb": 0
+        },
+        "dividerColor": {
+          "kind": "c",
+          "argb": 4281808695
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "left"
+        },
+        "font": {
+          "kind": "e",
+          "value": "sans"
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-dashboard_1_search",
+      "type": "input.search",
+      "name": "Search",
+      "bounds": {
+        "x": 24,
+        "y": 76,
+        "width": 320,
+        "height": 40
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "value": {
+          "kind": "s",
+          "value": ""
+        },
+        "placeholder": {
+          "kind": "s",
+          "value": "Search anything"
+        },
+        "showIcon": {
+          "kind": "b",
+          "value": true
+        },
+        "showClear": {
+          "kind": "b",
+          "value": true
+        },
+        "liveFilter": {
+          "kind": "b",
+          "value": true
+        },
+        "background": {
+          "kind": "c",
+          "argb": 4278190080
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4288716960
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-dashboard_2_tab",
+      "type": "button.tab",
+      "name": "Tab 1",
+      "bounds": {
+        "x": 24,
+        "y": 132,
+        "width": 88,
+        "height": 36
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "label": {
+          "kind": "s",
+          "value": "Today"
+        },
+        "icon": {
+          "kind": "tex"
+        },
+        "selected": {
+          "kind": "b",
+          "value": true
+        },
+        "edge": {
+          "kind": "e",
+          "value": "top"
+        },
+        "groupIndex": {
+          "kind": "i",
+          "value": 0
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "selectedColor": {
+          "kind": "c",
+          "argb": 4287335307
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "center"
+        },
+        "font": {
+          "kind": "e",
+          "value": "sans"
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-dashboard_3_tab",
+      "type": "button.tab",
+      "name": "Tab 2",
+      "bounds": {
+        "x": 120,
+        "y": 132,
+        "width": 88,
+        "height": 36
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "label": {
+          "kind": "s",
+          "value": "This week"
+        },
+        "icon": {
+          "kind": "tex"
+        },
+        "selected": {
+          "kind": "b",
+          "value": false
+        },
+        "edge": {
+          "kind": "e",
+          "value": "top"
+        },
+        "groupIndex": {
+          "kind": "i",
+          "value": 0
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "selectedColor": {
+          "kind": "c",
+          "argb": 4287335307
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "center"
+        },
+        "font": {
+          "kind": "e",
+          "value": "sans"
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-dashboard_4_tab",
+      "type": "button.tab",
+      "name": "Tab 3",
+      "bounds": {
+        "x": 216,
+        "y": 132,
+        "width": 88,
+        "height": 36
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "label": {
+          "kind": "s",
+          "value": "All time"
+        },
+        "icon": {
+          "kind": "tex"
+        },
+        "selected": {
+          "kind": "b",
+          "value": false
+        },
+        "edge": {
+          "kind": "e",
+          "value": "top"
+        },
+        "groupIndex": {
+          "kind": "i",
+          "value": 0
+        },
+        "enabled": {
+          "kind": "b",
+          "value": true
+        },
+        "tooltip": {
+          "kind": "s",
+          "value": ""
+        },
+        "background": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "selectedColor": {
+          "kind": "c",
+          "argb": 4287335307
+        },
+        "textColor": {
+          "kind": "c",
+          "argb": 4292927712
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "align": {
+          "kind": "e",
+          "value": "center"
+        },
+        "font": {
+          "kind": "e",
+          "value": "sans"
+        }
+      },
+      "stateOverrides": {},
+      "children": []
+    },
+    {
+      "id": "other-dashboard_5_frame",
+      "type": "panel.frame",
+      "name": "Card 1",
+      "bounds": {
+        "x": 24,
+        "y": 188,
+        "width": 216,
+        "height": 120
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 16
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": [
+        {
+          "id": "other-dashboard_6_label",
+          "type": "text.label",
+          "name": "Card label Visitors",
+          "bounds": {
+            "x": 16,
+            "y": 16,
+            "width": 184,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "Visitors"
+            },
+            "scale": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4284179824
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-dashboard_7_label",
+          "type": "text.label",
+          "name": "Card value Visitors",
+          "bounds": {
+            "x": 16,
+            "y": 40,
+            "width": 184,
+            "height": 30
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "12,480"
+            },
+            "scale": {
+              "kind": "f",
+              "value": 2.0
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-dashboard_8_bar",
+          "type": "progress.bar",
+          "name": "Card bar Visitors",
+          "bounds": {
+            "x": 16,
+            "y": 84,
+            "width": 184,
+            "height": 8
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "progress": {
+              "kind": "f",
+              "value": 0.72
+            },
+            "direction": {
+              "kind": "e",
+              "value": "right"
+            },
+            "showLabel": {
+              "kind": "b",
+              "value": false
+            },
+            "segmented": {
+              "kind": "b",
+              "value": false
+            },
+            "segments": {
+              "kind": "i",
+              "value": 10
+            },
+            "fillColor": {
+              "kind": "c",
+              "argb": 4283873355
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4280953386
+            },
+            "borderColor": {
+              "kind": "c",
+              "argb": 4278190080
+            },
+            "texture": {
+              "kind": "tex"
+            },
+            "textureFit": {
+              "kind": "e",
+              "value": "nine_slice"
+            },
+            "tint": {
+              "kind": "c",
+              "argb": 4294967295
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "other-dashboard_9_frame",
+      "type": "panel.frame",
+      "name": "Card 2",
+      "bounds": {
+        "x": 256,
+        "y": 188,
+        "width": 216,
+        "height": 120
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 16
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": [
+        {
+          "id": "other-dashboard_10_label",
+          "type": "text.label",
+          "name": "Card label Signups",
+          "bounds": {
+            "x": 16,
+            "y": 16,
+            "width": 184,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "Signups"
+            },
+            "scale": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4284179824
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-dashboard_11_label",
+          "type": "text.label",
+          "name": "Card value Signups",
+          "bounds": {
+            "x": 16,
+            "y": 40,
+            "width": 184,
+            "height": 30
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "318"
+            },
+            "scale": {
+              "kind": "f",
+              "value": 2.0
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-dashboard_12_bar",
+          "type": "progress.bar",
+          "name": "Card bar Signups",
+          "bounds": {
+            "x": 16,
+            "y": 84,
+            "width": 184,
+            "height": 8
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "progress": {
+              "kind": "f",
+              "value": 0.41
+            },
+            "direction": {
+              "kind": "e",
+              "value": "right"
+            },
+            "showLabel": {
+              "kind": "b",
+              "value": false
+            },
+            "segmented": {
+              "kind": "b",
+              "value": false
+            },
+            "segments": {
+              "kind": "i",
+              "value": 10
+            },
+            "fillColor": {
+              "kind": "c",
+              "argb": 4283873355
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4280953386
+            },
+            "borderColor": {
+              "kind": "c",
+              "argb": 4278190080
+            },
+            "texture": {
+              "kind": "tex"
+            },
+            "textureFit": {
+              "kind": "e",
+              "value": "nine_slice"
+            },
+            "tint": {
+              "kind": "c",
+              "argb": 4294967295
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "other-dashboard_13_frame",
+      "type": "panel.frame",
+      "name": "Card 3",
+      "bounds": {
+        "x": 488,
+        "y": 188,
+        "width": 216,
+        "height": 120
+      },
+      "anchor": "TOP_LEFT",
+      "visible": true,
+      "locked": false,
+      "props": {
+        "background": {
+          "kind": "c",
+          "argb": 4294967295
+        },
+        "borderColor": {
+          "kind": "c",
+          "argb": 4284111450
+        },
+        "borderWidth": {
+          "kind": "i",
+          "value": 1
+        },
+        "shadow": {
+          "kind": "b",
+          "value": true
+        },
+        "shadowOffset": {
+          "kind": "i",
+          "value": 3
+        },
+        "shadowOpacity": {
+          "kind": "f",
+          "value": 0.45
+        },
+        "padding": {
+          "kind": "i",
+          "value": 16
+        },
+        "corner": {
+          "kind": "e",
+          "value": "square"
+        },
+        "texture": {
+          "kind": "tex"
+        },
+        "textureFit": {
+          "kind": "e",
+          "value": "nine_slice"
+        },
+        "tint": {
+          "kind": "c",
+          "argb": 4294967295
+        }
+      },
+      "stateOverrides": {},
+      "children": [
+        {
+          "id": "other-dashboard_14_label",
+          "type": "text.label",
+          "name": "Card label Revenue",
+          "bounds": {
+            "x": 16,
+            "y": 16,
+            "width": 184,
+            "height": 18
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "Revenue"
+            },
+            "scale": {
+              "kind": "f",
+              "value": 1.0
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4284179824
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-dashboard_15_label",
+          "type": "text.label",
+          "name": "Card value Revenue",
+          "bounds": {
+            "x": 16,
+            "y": 40,
+            "width": 184,
+            "height": 30
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "text": {
+              "kind": "s",
+              "value": "12,900"
+            },
+            "scale": {
+              "kind": "f",
+              "value": 2.0
+            },
+            "wrap": {
+              "kind": "b",
+              "value": false
+            },
+            "lineSpacing": {
+              "kind": "i",
+              "value": 2
+            },
+            "textColor": {
+              "kind": "c",
+              "argb": 4292927712
+            },
+            "shadow": {
+              "kind": "b",
+              "value": true
+            },
+            "align": {
+              "kind": "e",
+              "value": "left"
+            },
+            "font": {
+              "kind": "e",
+              "value": "sans"
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        },
+        {
+          "id": "other-dashboard_16_bar",
+          "type": "progress.bar",
+          "name": "Card bar Revenue",
+          "bounds": {
+            "x": 16,
+            "y": 84,
+            "width": 184,
+            "height": 8
+          },
+          "anchor": "TOP_LEFT",
+          "visible": true,
+          "locked": false,
+          "props": {
+            "progress": {
+              "kind": "f",
+              "value": 0.58
+            },
+            "direction": {
+              "kind": "e",
+              "value": "right"
+            },
+            "showLabel": {
+              "kind": "b",
+              "value": false
+            },
+            "segmented": {
+              "kind": "b",
+              "value": false
+            },
+            "segments": {
+              "kind": "i",
+              "value": 10
+            },
+            "fillColor": {
+              "kind": "c",
+              "argb": 4283873355
+            },
+            "background": {
+              "kind": "c",
+              "argb": 4280953386
+            },
+            "borderColor": {
+              "kind": "c",
+              "argb": 4278190080
+            },
+            "texture": {
+              "kind": "tex"
+            },
+            "textureFit": {
+              "kind": "e",
+              "value": "nine_slice"
+            },
+            "tint": {
+              "kind": "c",
+              "argb": 4294967295
+            }
+          },
+          "stateOverrides": {},
+          "children": []
+        }
+      ]
+    }
+  ],
+  "textures": [],
+  "meta": {
+    "author": "",
+    "description": "A wide layout: search, tabs and a row of stat cards.",
+    "createdAt": "",
+    "modifiedAt": "",
+    "tags": [
+      "app",
+      "dashboard",
+      "desktop"
+    ],
+    "namespace": "app",
+    "screenId": "dashboard"
+  }
+}

@@ -74,6 +74,9 @@ object ElementCatalog {
 
     private val alignOptions = listOf("left", "center", "right")
 
+    /** Generic families, the vocabulary a design tool actually offers. */
+    private val otherFontOptions = listOf("sans", "serif", "mono", "display")
+
     private val javaFontOptions = listOf("minecraft", "uniform", "alt")
     private val bedrockFontOptions = listOf("default", "smooth", "rune", "mojangles")
 
@@ -83,6 +86,14 @@ object ElementCatalog {
         enumProp("align", "Alignment", alignOptions, default = "center", group = PropGroup.LAYOUT),
         enumProp("font", "Font", javaFontOptions, group = PropGroup.JAVA, editions = JAVA_ONLY),
         enumProp("font", "Font", bedrockFontOptions, group = PropGroup.BEDROCK, editions = BEDROCK_ONLY),
+        // Other UIs needs its own, or every text-bearing element in an Other
+        // project carries a `font` nothing declares - which is an "unknown
+        // property" warning on every element of every such document, from the
+        // moment it is created.
+        enumProp(
+            "font", "Font", otherFontOptions, default = "sans",
+            group = PropGroup.APPEARANCE, editions = OTHER_ONLY,
+        ),
     )
 
     // -- Definitions -------------------------------------------------------
@@ -91,6 +102,7 @@ object ElementCatalog {
 
         ElementDefinition(
             typeId = PANEL_CHEST,
+            editions = MINECRAFT_EDITIONS,
             displayName = "Chest Background Panel",
             category = ElementCategory.CONTAINERS,
             defaultSize = IntSize(176, 166),
@@ -144,6 +156,7 @@ object ElementCatalog {
 
         ElementDefinition(
             typeId = PANEL_TOOLTIP,
+            editions = MINECRAFT_EDITIONS,
             displayName = "Tooltip Box",
             category = ElementCategory.FEEDBACK,
             defaultSize = IntSize(120, 40),
@@ -185,6 +198,7 @@ object ElementCatalog {
 
         ElementDefinition(
             typeId = SLOT_INVENTORY,
+            editions = MINECRAFT_EDITIONS,
             displayName = "Inventory Slot",
             category = ElementCategory.INVENTORY,
             defaultSize = IntSize(18, 18),
@@ -206,6 +220,7 @@ object ElementCatalog {
 
         ElementDefinition(
             typeId = STRIP_HOTBAR,
+            editions = MINECRAFT_EDITIONS,
             displayName = "Hotbar Strip",
             category = ElementCategory.INVENTORY,
             defaultSize = IntSize(182, 22),

@@ -82,7 +82,27 @@ data class PropertySpec(
     }
 }
 
-val BOTH_EDITIONS: Set<Edition> = setOf(Edition.JAVA, Edition.BEDROCK)
+/**
+ * Everywhere.
+ *
+ * The default, and the right default: a button is a button in all three
+ * targets. Kept under its old name because it is the default value of two
+ * dozen declarations and renaming it would touch every one of them to say the
+ * same thing.
+ */
+val BOTH_EDITIONS: Set<Edition> = setOf(Edition.JAVA, Edition.BEDROCK, Edition.OTHER)
+
+/**
+ * The two Minecraft editions only.
+ *
+ * For the things that exist because Minecraft has them - inventory slots, the
+ * hotbar, a chest panel. Offering those on a login form would be offering
+ * furniture from a different building.
+ */
+val MINECRAFT_EDITIONS: Set<Edition> = setOf(Edition.JAVA, Edition.BEDROCK)
+
+/** Only the non-Minecraft target. */
+val OTHER_ONLY: Set<Edition> = setOf(Edition.OTHER)
 val JAVA_ONLY: Set<Edition> = setOf(Edition.JAVA)
 val BEDROCK_ONLY: Set<Edition> = setOf(Edition.BEDROCK)
 

@@ -125,6 +125,7 @@ private fun DrawScope.drawSky(edition: Edition, dark: Boolean, palette: SkinPale
     val top = when {
         !dark -> palette.chromePanel
         edition == Edition.JAVA -> Color(0xFF1A2733)
+        edition == Edition.OTHER -> Color(0xFF101A2A)
         else -> Color(0xFF141026)
     }
     val bottom = palette.chromeBackground
@@ -224,6 +225,7 @@ private fun DrawScope.drawProceduralScene(
 private fun ridgeColor(edition: Edition, dark: Boolean): Color = when {
     !dark -> Color(0xFF8A96A2)
     edition == Edition.JAVA -> Color(0xFF0B1418)
+    edition == Edition.OTHER -> Color(0xFF060C16)
     else -> Color(0xFF0A0716)
 }
 

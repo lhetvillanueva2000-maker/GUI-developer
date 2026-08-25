@@ -4,12 +4,18 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * The two Minecraft editions the designer can target.
+ * What a document is being designed *for*.
  *
- * The editions differ in far more than cosmetics: they have different widget
+ * The targets differ in far more than cosmetics: they have different widget
  * vocabularies, different layout units and completely different export
- * formats, so the edition is baked into the project itself rather than being a
+ * formats, so this is baked into the project itself rather than being a
  * view-level toggle.
+ *
+ * Still called "edition" because two of the three are Minecraft editions and
+ * that is what the project format, the file on disk and every existing
+ * document already call the field. [OTHER] is the odd one out, and renaming a
+ * serialised key to make one enum entry read better is not a trade worth
+ * making.
  */
 @Serializable
 enum class Edition {
@@ -17,12 +23,24 @@ enum class Edition {
     JAVA,
 
     @SerialName("bedrock")
-    BEDROCK;
+    BEDROCK,
+
+    /**
+     * Interfaces that are not Minecraft at all.
+     *
+     * Apps, websites, tools - anything with buttons and text fields rather
+     * than inventory slots. It has no resource pack to export and no game to
+     * imitate, so what it offers instead is the code exports that were already
+     * there: HTML, React, SwiftUI, Flutter and Android XML.
+     */
+    @SerialName("other")
+    OTHER;
 
     val displayName: String
         get() = when (this) {
             JAVA -> "Java Edition"
             BEDROCK -> "Bedrock Edition"
+            OTHER -> "Other UIs"
         }
 
     /** Short tag used in file names, export folders and style lookups. */
@@ -30,12 +48,26 @@ enum class Edition {
         get() = when (this) {
             JAVA -> "java"
             BEDROCK -> "bedrock"
+            OTHER -> "other"
         }
 
-    val other: Edition
+    /** Whether this target is a Minecraft edition with a pack format. */
+    val isMinecraft: Boolean get() = this != OTHER
+
+    /**
+     * The edition a screen would be ported *to*, or null.
+     *
+     * Only meaningful between the two Minecraft editions, which share a widget
+     * vocabulary and differ in how they express it - porting between them is a
+     * normal thing to want. There is no counterpart for [OTHER]: a login form
+     * is not a version of an inventory screen, and the parity warnings that
+     * read this would be nonsense.
+     */
+    val counterpart: Edition?
         get() = when (this) {
             JAVA -> BEDROCK
             BEDROCK -> JAVA
+            OTHER -> null
         }
 }
 

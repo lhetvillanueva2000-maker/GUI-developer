@@ -168,7 +168,9 @@ object ProjectValidator {
                     Severity.ERROR, IssueCode.UNSUPPORTED_ELEMENT,
                     "'${definition.displayName}' does not exist in ${project.edition.displayName}.",
                     element.id, element.name,
-                    fixHint = "Delete it, or switch the project to ${project.edition.other.displayName}.",
+                    fixHint = project.edition.counterpart
+                        ?.let { "Delete it, or switch the project to ${it.displayName}." }
+                        ?: "Delete it - this element belongs to a Minecraft edition.",
                 )
             }
 
@@ -341,14 +343,19 @@ object ProjectValidator {
             for ((key, value) in props) {
                 val spec = definition.property(key, project.edition)
                 if (spec == null) {
-                    val existsInOtherEdition = definition.property(key, project.edition.other) != null
-                    if (existsInOtherEdition) {
+                    // Only asked between the two Minecraft editions: a
+                    // property that exists "in the other one" is a porting
+                    // note, and Other UIs has nothing to port to.
+                    val counterpart = project.edition.counterpart
+                    val existsInOtherEdition =
+                        counterpart != null && definition.property(key, counterpart) != null
+                    if (existsInOtherEdition && counterpart != null) {
                         issues += ValidationIssue(
                             Severity.WARNING, IssueCode.UNSUPPORTED_PROPERTY,
                             "'$key'$stateLabel on '${element.name}' only applies to " +
-                                "${project.edition.other.displayName} and will be dropped on export.",
+                                "${counterpart.displayName} and will be dropped on export.",
                             element.id, element.name, key,
-                            fixHint = "Safe to ignore if you also maintain a ${project.edition.other.displayName} variant.",
+                            fixHint = "Safe to ignore if you also maintain a ${counterpart.displayName} variant.",
                         )
                     } else if (strict) {
                         issues += ValidationIssue(
@@ -428,7 +435,10 @@ object ProjectValidator {
      * knows before shipping a pack.
      */
     fun parityIssues(project: GuiProject): List<ValidationIssue> {
-        val other = project.edition.other
+        // Nothing to report for a target with no counterpart. Other UIs is not
+        // a version of a Minecraft screen, so "what would be lost porting this"
+        // has no answer rather than an empty one.
+        val other = project.edition.counterpart ?: return emptyList()
         val issues = mutableListOf<ValidationIssue>()
         val offenders = project.elements.walkAll()
             .mapNotNull { element -> ElementCatalog[element.type]?.let { element to it } }
