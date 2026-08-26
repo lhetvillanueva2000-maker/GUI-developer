@@ -16,6 +16,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,13 +37,13 @@ import com.mcguidesigner.styles.theme.LocalSkinPalette
  * copying somebody else's menu structure wholesale.
  */
 @Composable
-fun PaintPopoverContent(state: PaintState) {
+fun PaintPopoverContent(state: PaintState, onImportImage: (() -> Unit)? = null) {
     when (state.popover) {
         PaintPopover.VIEW -> ViewPopover(state)
         PaintPopover.SELECT -> SelectPopover(state)
         PaintPopover.STROKE -> StrokePopover(state)
         PaintPopover.RULER -> RulerPopover(state)
-        PaintPopover.MATERIALS -> MaterialsPopover(state)
+        PaintPopover.MATERIALS -> MaterialsPopover(state, onImportImage)
         PaintPopover.NONE -> Unit
     }
 }
@@ -229,8 +231,9 @@ private fun RulerPopover(state: PaintState) {
  * a scan onto a layer and then getting its background off - is what it does.
  */
 @Composable
-private fun MaterialsPopover(state: PaintState) {
+private fun MaterialsPopover(state: PaintState, onImportImage: (() -> Unit)?) {
     val palette = LocalSkinPalette.current
+    val scope = rememberCoroutineScope()
     PaintPopoverCard(pointerFromStart = 22.dp, modifier = Modifier.widthIn(max = 360.dp)) {
         PaintSectionLabel("From this device")
         Text(
@@ -238,9 +241,11 @@ private fun MaterialsPopover(state: PaintState) {
             style = MaterialTheme.typography.labelSmall,
             color = palette.chromeTextMuted,
         )
-        PaintWideButton("Choose an image") {
+        // Straight to the picker. This used to open the Tools sheet instead,
+        // which is a button that appears to do the wrong thing.
+        PaintWideButton("Choose an image", enabled = onImportImage != null) {
             state.popover = PaintPopover.NONE
-            state.sheet = PaintSheet.TOOLS
+            onImportImage?.invoke()
         }
 
         PaintSectionLabel("Remove a background")
@@ -278,7 +283,7 @@ private fun MaterialsPopover(state: PaintState) {
                 .background(palette.chromePanelAlt)
                 .clickable {
                     state.popover = PaintPopover.NONE
-                    state.liftLineArt()
+                    scope.launch { state.liftLineArt() }
                 }
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,

@@ -3,8 +3,8 @@ package com.mcguidesigner.styles.paint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +61,7 @@ import com.mcguidesigner.styles.paint.PaintIcons.pan
 import com.mcguidesigner.styles.paint.PaintIcons.plus
 import com.mcguidesigner.styles.paint.PaintIcons.smudge
 import com.mcguidesigner.styles.theme.LocalSkinPalette
+import kotlinx.coroutines.launch
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -328,31 +330,27 @@ private fun ColourWheel(state: PaintState) {
         Modifier
             .fillMaxWidth()
             .height(220.dp)
+            // One handler, for the reason ValueSlider has one: a tap detector
+            // and a drag detector on the same node race for the touch-down and
+            // a quick tap on the wheel gets lost between them.
             .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { offset -> handleWheel(offset, size.width.toFloat(), size.height.toFloat()) { h, s, b ->
-                        h?.let { hue = it }
-                        s?.let { saturation = it }
-                        b?.let { brightness = it }
-                        commit()
-                    } },
-                ) { change, _ ->
-                    handleWheel(change.position, size.width.toFloat(), size.height.toFloat()) { h, s, b ->
-                        h?.let { hue = it }
-                        s?.let { saturation = it }
-                        b?.let { brightness = it }
-                        commit()
-                    }
-                    change.consume()
-                }
-            }
-            .pointerInput(Unit) {
-                detectTapGestures { offset ->
+                fun apply(offset: Offset) {
                     handleWheel(offset, size.width.toFloat(), size.height.toFloat()) { h, s, b ->
                         h?.let { hue = it }
                         s?.let { saturation = it }
                         b?.let { brightness = it }
                         commit()
+                    }
+                }
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    apply(down.position)
+                    down.consume()
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val active = event.changes.firstOrNull { it.pressed } ?: break
+                        apply(active.position)
+                        active.consume()
                     }
                 }
             },
@@ -697,12 +695,16 @@ fun ToolSheet(
             }
         }
 
-        if (state.tool == PaintTool.SMUDGE || state.tool == PaintTool.BLUR) {
-            Text(
-                "${state.tool.label} is not wired up yet — it paints like the brush for now.",
-                style = MaterialTheme.typography.labelSmall,
-                color = palette.chromeTextMuted,
-            )
+        // A line of guidance for the tools whose slider means something
+        // different from "how much paint".
+        when (state.tool) {
+            PaintTool.SMUDGE -> ToolHint("Opacity is how far colour is dragged. Size is the smear's width.")
+            PaintTool.BLUR -> ToolHint("Opacity is how much softening each pass applies. Size sets the reach.")
+            PaintTool.BUCKET, PaintTool.MAGIC_ERASER ->
+                ToolHint("Tap the canvas. Colour range and edge softness are in the selection panel.")
+            PaintTool.EYEDROPPER -> ToolHint("Tap to take a colour, then it hands you back to the brush.")
+            PaintTool.PAN -> ToolHint("Drag to move the canvas. Two fingers do this from any tool.")
+            else -> Unit
         }
 
         PaintSectionLabel("Image")
@@ -724,6 +726,15 @@ fun ToolSheet(
             }
         }
     }
+}
+
+@Composable
+private fun ToolHint(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall,
+        color = LocalSkinPalette.current.chromeTextMuted,
+    )
 }
 
 @Composable
@@ -768,6 +779,7 @@ private fun ToolAction(
 @Composable
 fun CutoutSheet(state: PaintState) {
     val palette = LocalSkinPalette.current
+    val scope = rememberCoroutineScope()
 
     PaintSheetCard {
         PaintSheetTitle("Cut out the background", trailing = "Done") { state.sheet = PaintSheet.NONE }
@@ -801,10 +813,14 @@ fun CutoutSheet(state: PaintState) {
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.weight(1f)) {
-                PaintWideButton("Remove background") { state.autoCutout(invert = false) }
+                PaintWideButton("Remove background") {
+                    scope.launch { state.autoCutout(invert = false) }
+                }
             }
             Box(Modifier.weight(1f)) {
-                PaintWideButton("Remove subject") { state.autoCutout(invert = true) }
+                PaintWideButton("Remove subject") {
+                    scope.launch { state.autoCutout(invert = true) }
+                }
             }
         }
 

@@ -93,6 +93,118 @@ object PaintOps {
         }
     }
 
+    /**
+     * The blurred value at one pixel, read out of a region snapshot.
+     *
+     * Pure, and reading from a *copy* rather than from the layer, which is the
+     * whole trick. Blurring in place means the second pixel is averaged from an
+     * already-blurred first one, so the effect drags along the scan order and a
+     * stroke smears sideways instead of softening.
+     *
+     * Neighbours are weighted by their alpha. Without that, an erased pixel
+     * drags the colour towards whatever happens to be stored underneath it -
+     * which is arbitrary, since erasing only lowers alpha - and blurring near a
+     * hole pulls in a colour that was never visible.
+     */
+    fun blurredPixel(
+        source: IntArray,
+        regionLeft: Int,
+        regionTop: Int,
+        regionWidth: Int,
+        regionHeight: Int,
+        x: Int,
+        y: Int,
+        radius: Int,
+    ): Int {
+        var a = 0
+        var r = 0
+        var g = 0
+        var b = 0
+        var n = 0
+        for (dy in -radius..radius) {
+            val sy = y + dy - regionTop
+            if (sy < 0 || sy >= regionHeight) continue
+            for (dx in -radius..radius) {
+                val sx = x + dx - regionLeft
+                if (sx < 0 || sx >= regionWidth) continue
+                val p = source[sy * regionWidth + sx]
+                val pa = alpha(p)
+                a += pa
+                r += red(p) * pa
+                g += green(p) * pa
+                b += blue(p) * pa
+                n++
+            }
+        }
+        if (n == 0) return Pixels.TRANSPARENT
+        val averageAlpha = a / n
+        if (a == 0) return Pixels.TRANSPARENT
+        return argb(averageAlpha, r / a, g / a, b / a)
+    }
+
+    /**
+     * Drags colour along a path.
+     *
+     * The classic smudge: carry a small colour reservoir, and at every step
+     * pull it towards what is under the brush while pushing what it is carrying
+     * back onto the canvas. [strength] is how much of the reservoir survives
+     * each step - high values smear a long way, low values barely blend.
+     *
+     * Applied along the path in order rather than over a bounding box, because
+     * the direction of the drag *is* the direction the finger moved, and it is
+     * inherently iterative: unlike every other tool here, the result cannot be
+     * recomputed from the pre-stroke pixels, so it is applied incrementally and
+     * the undo tiles are what make it reversible.
+     *
+     * Returns the reservoir, so a caller applying the path in segments can
+     * carry it into the next one.
+     */
+    fun smudge(
+        layer: PaintLayer,
+        path: List<StrokePoint>,
+        radius: Int,
+        strength: Float,
+        carried: Int? = null,
+    ): Int {
+        if (layer.locked || path.isEmpty()) return carried ?: Pixels.TRANSPARENT
+        val carry = strength.coerceIn(0f, 0.98f)
+        val amount8 = (carry * 255f).roundToInt()
+        var reservoir = carried ?: layer[path.first().x.roundToInt(), path.first().y.roundToInt()]
+        val r2 = radius * radius
+
+        for (point in path) {
+            val cx = point.x.roundToInt()
+            val cy = point.y.roundToInt()
+            reservoir = mixPixels(layer[cx, cy], reservoir, amount8)
+
+            for (dy in -radius..radius) {
+                val y = cy + dy
+                if (y < 0 || y >= layer.height) continue
+                for (dx in -radius..radius) {
+                    val x = cx + dx
+                    if (x < 0 || x >= layer.width) continue
+                    val distance = dx * dx + dy * dy
+                    if (distance > r2) continue
+                    // Soft falloff, so the smudge has no hard rim.
+                    val falloff = 1f - (Pixels.isqrt(distance).toFloat() / radius.coerceAtLeast(1))
+                    val strengthHere = (falloff * falloff * carry * 255f).roundToInt().coerceIn(0, 255)
+                    if (strengthHere == 0) continue
+                    val index = y * layer.width + x
+                    layer.pixels[index] = mixPixels(layer.pixels[index], reservoir, strengthHere)
+                }
+            }
+        }
+        return reservoir
+    }
+
+    /** Linear blend of two straight-alpha pixels; [t] is 0..255 towards [b]. */
+    fun mixPixels(a: Int, b: Int, t: Int): Int = argb(
+        Pixels.lerp8(alpha(a), alpha(b), t),
+        Pixels.lerp8(red(a), red(b), t),
+        Pixels.lerp8(green(a), green(b), t),
+        Pixels.lerp8(blue(a), blue(b), t),
+    )
+
     /** Straight-alpha source-over of one opaque colour at alpha [a]. */
     private fun sourceOver(dst: Int, r: Int, g: Int, b: Int, a: Int): Int {
         val da = alpha(dst)

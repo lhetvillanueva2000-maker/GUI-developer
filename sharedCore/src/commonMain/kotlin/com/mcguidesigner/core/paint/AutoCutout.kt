@@ -64,11 +64,15 @@ object AutoCutout {
         /**
          * Longest side used for the segmentation stage.
          *
-         * 320 is where the boundary stops improving on the photographs this was
-         * tested against; the matting stage runs at full resolution regardless,
-         * and that is what the eye judges.
+         * 512 rather than the 320 this started at. The segmentation is the only
+         * stage that runs reduced, and halving the reduction roughly doubles
+         * how finely the label boundary can follow a thin feature - a raised
+         * arm, a chair leg, a strand of hair thick enough to matter. It costs
+         * about two and a half times the arithmetic, which was unaffordable
+         * when this ran on the frame thread and is unremarkable now that it
+         * does not.
          */
-        val workingSize: Int = 320,
+        val workingSize: Int = 512,
     )
 
     /**
@@ -95,7 +99,10 @@ object AutoCutout {
         val upscaled = upsampleLabels(labels, sw, sh, width, height)
         val band = max(1, options.edgeSoftness + scale)
         val trimap = buildTrimap(upscaled, width, height, band)
-        return matte(source, width, height, trimap, band)
+        val matted = matte(source, width, height, trimap, band)
+
+        // 6. Pull the matte onto the image's own edges.
+        return guided(source, matted, width, height, max(2, band))
     }
 
     /**
@@ -161,6 +168,35 @@ object AutoCutout {
             }
         }
         return out
+    }
+
+    /**
+     * The background colour model, with the subject's intrusions thrown out.
+     *
+     * "Whatever is at the border is background" is the assumption the whole
+     * pipeline rests on, and it is *mostly* right - but a subject cropped at
+     * the frame edge breaks it, and that is not a rare photograph, it is a
+     * portrait. When it happens the naive model absorbs the subject's own
+     * colour, every pixel then looks like background, and the cut comes out
+     * arbitrary or inverted.
+     *
+     * The fix is to notice that an intrusion is *small*. Clustering the border
+     * and discarding any cluster holding less than a twelfth of it removes the
+     * shoulder crossing the bottom edge while keeping every real part of a
+     * background, however varied - a gradient sky spreads its samples across
+     * several clusters, all of them substantial.
+     *
+     * Never returns empty: if every cluster is minor the border is genuinely
+     * that varied, and all of them are kept.
+     */
+    private fun robustBorderModel(samples: List<Int>): List<Cluster> {
+        val clusters = kmeans(samples, K)
+        if (clusters.size <= 1) return clusters
+        val total = clusters.sumOf { it.count }
+        if (total == 0) return clusters
+        val floor = total / 12
+        val kept = clusters.filter { it.count > floor }
+        return kept.ifEmpty { clusters }
     }
 
     private fun sampleLabelled(pixels: IntArray, labels: ByteArray, want: Byte): List<Int> {
@@ -276,7 +312,7 @@ object AutoCutout {
         // the background model has no such problem - it is one model, fitted to
         // pixels that really are background - and Otsu finds the split in that
         // distribution without being told where to look.
-        val bg0 = kmeans(borderSamples, K)
+        val bg0 = robustBorderModel(borderSamples)
         val distance = IntArray(w * h)
         for (i in distance.indices) {
             distance[i] = if (alpha(pixels[i]) == 0) 0 else nearest(bg0, pixels[i]).toInt().coerceIn(0, 255)
@@ -317,7 +353,40 @@ object AutoCutout {
 
             current = refine(current, data, pixels, w, h, pinned, passes = if (round == 2) 6 else 3)
         }
-        return current
+        return enforceBorderIsBackground(current, w, h, border)
+    }
+
+    /**
+     * Flips the labelling if it has come out inside-out.
+     *
+     * "The border is background" is the one thing this algorithm is told rather
+     * than infers, so it is also the one thing worth checking at the end. If
+     * most of the border band has ended up labelled foreground, the two labels
+     * have swapped roles somewhere - which is what a badly conditioned colour
+     * model does, and what produced a cutout that kept the sky and deleted the
+     * subject - and swapping them back is strictly better than shipping the
+     * inverse of what was asked for.
+     *
+     * A check rather than a constraint during the loop, because pinning the
+     * whole band every pass stops the boundary from reaching a subject that
+     * genuinely touches the edge.
+     */
+    private fun enforceBorderIsBackground(labels: ByteArray, w: Int, h: Int, border: Int): ByteArray {
+        var foreground = 0
+        var total = 0
+        for (y in 0 until h) {
+            for (x in 0 until w) {
+                if (x >= border && y >= border && x < w - border && y < h - border) continue
+                total++
+                if (labels[y * w + x] == FOREGROUND) foreground++
+            }
+        }
+        if (total == 0 || foreground * 2 <= total) return labels
+        val flipped = ByteArray(labels.size)
+        for (i in labels.indices) {
+            flipped[i] = if (labels[i] == FOREGROUND) BACKGROUND else FOREGROUND
+        }
+        return flipped
     }
 
     /**
@@ -604,7 +673,110 @@ object AutoCutout {
         return out
     }
 
-    // -- Stage 6: decontamination ------------------------------------------
+    // -- Stage 6: edge-aware refinement ------------------------------------
+
+    /**
+     * Pulls the matte onto the image's own edges: a guided filter.
+     *
+     * The segmentation ran at a fraction of the resolution, so its boundary is
+     * only ever as accurate as that reduction allowed - upsampling it gives a
+     * matte whose edge is a few pixels away from where the subject's edge
+     * actually is, and on a downscale of eight that is eight pixels of wrong.
+     * The matting stage softens that band but cannot move it.
+     *
+     * The guided filter can. For every window it fits the alpha as a *linear
+     * function of the image's own luminance*, `a = A * luma + B`, and rebuilds
+     * alpha from that fit. Where the image has an edge, luma jumps, so the
+     * fitted alpha jumps with it in the same place - the matte snaps onto the
+     * real boundary. Where the image is flat, the fit degenerates to the local
+     * average and the matte is simply smoothed. It is one pass of box sums and
+     * it does what a much more expensive matting solve would do to the edge.
+     *
+     * [epsilon] is the regularisation: how much luminance variation counts as
+     * noise rather than an edge. Too small and the matte follows film grain;
+     * too large and it stops following anything.
+     */
+    private fun guided(
+        source: IntArray,
+        alphaMask: ByteArray,
+        width: Int,
+        height: Int,
+        radius: Int,
+        epsilon: Float = 1e-3f,
+    ): ByteArray {
+        val size = width * height
+        val luma = FloatArray(size)
+        val alpha = FloatArray(size)
+        for (i in 0 until size) {
+            val p = source[i]
+            luma[i] = (red(p) * 0.299f + green(p) * 0.587f + blue(p) * 0.114f) / 255f
+            alpha[i] = (alphaMask[i].toInt() and 0xFF) / 255f
+        }
+
+        val meanI = boxMean(luma, width, height, radius)
+        val meanA = boxMean(alpha, width, height, radius)
+        val corrI = boxMean(FloatArray(size) { luma[it] * luma[it] }, width, height, radius)
+        val corrIA = boxMean(FloatArray(size) { luma[it] * alpha[it] }, width, height, radius)
+
+        val coefficientA = FloatArray(size)
+        val coefficientB = FloatArray(size)
+        for (i in 0 until size) {
+            val variance = corrI[i] - meanI[i] * meanI[i]
+            val covariance = corrIA[i] - meanI[i] * meanA[i]
+            val a = covariance / (variance + epsilon)
+            coefficientA[i] = a
+            coefficientB[i] = meanA[i] - a * meanI[i]
+        }
+
+        val smoothA = boxMean(coefficientA, width, height, radius)
+        val smoothB = boxMean(coefficientB, width, height, radius)
+
+        val out = ByteArray(size)
+        for (i in 0 until size) {
+            val value = smoothA[i] * luma[i] + smoothB[i]
+            out[i] = (value.coerceIn(0f, 1f) * 255f).roundToInt().toByte()
+        }
+
+        // The filter is a local fit, so it can pull the solid interior a few
+        // percent off full and the far background a few percent off empty.
+        // Anything that was fully committed before stays committed.
+        for (i in 0 until size) {
+            val before = alphaMask[i].toInt() and 0xFF
+            if (before == 255) out[i] = 255.toByte()
+            if (before == 0) out[i] = 0
+        }
+        return out
+    }
+
+    /** Mean over a (2r+1) square, as two separable running sums. */
+    private fun boxMean(values: FloatArray, width: Int, height: Int, radius: Int): FloatArray {
+        val temp = FloatArray(values.size)
+        val out = FloatArray(values.size)
+        val span = radius * 2 + 1
+
+        for (y in 0 until height) {
+            val row = y * width
+            var sum = 0f
+            for (x in -radius..radius) sum += values[row + x.coerceIn(0, width - 1)]
+            for (x in 0 until width) {
+                temp[row + x] = sum / span
+                sum += values[row + (x + radius + 1).coerceIn(0, width - 1)] -
+                    values[row + (x - radius).coerceIn(0, width - 1)]
+            }
+        }
+        for (x in 0 until width) {
+            var sum = 0f
+            for (y in -radius..radius) sum += temp[y.coerceIn(0, height - 1) * width + x]
+            for (y in 0 until height) {
+                out[y * width + x] = sum / span
+                sum += temp[(y + radius + 1).coerceIn(0, height - 1) * width + x] -
+                    temp[(y - radius).coerceIn(0, height - 1) * width + x]
+            }
+        }
+        return out
+    }
+
+    // -- Stage 7: decontamination ------------------------------------------
 
     /**
      * Removes the background's colour from partly transparent edge pixels.

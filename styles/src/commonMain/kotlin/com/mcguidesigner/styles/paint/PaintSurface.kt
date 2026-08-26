@@ -30,6 +30,21 @@ expect class PaintSurface(width: Int, height: Int) {
     fun update(pixels: IntArray)
 
     /**
+     * Copies only the given rectangle in.
+     *
+     * The reason the canvas can keep up with a finger. A 1536-square document
+     * is 2.36 million pixels, and copying all of them into the native bitmap
+     * sixty times a second is nine megabytes a frame - over half a gigabyte a
+     * second of pure memory traffic, which is what made drawing feel like
+     * wading. The area under a brush is a few thousand pixels.
+     *
+     * [pixels] is still the whole canvas buffer; only the rectangle is read out
+     * of it. The bounds are clamped, so a caller can hand over a brush's
+     * bounding box without checking it first.
+     */
+    fun updateRegion(pixels: IntArray, x: Int, y: Int, width: Int, height: Int)
+
+    /**
      * The renderer's view of the pixels.
      *
      * Valid until the next [update]; callers should not hold it across frames.

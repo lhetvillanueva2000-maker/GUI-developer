@@ -32,20 +32,49 @@ actual class PaintSurface actual constructor(
     )
 
     private var bitmap: Bitmap? = Bitmap().apply { allocPixels(info) }
+
+    /**
+     * The byte mirror of the canvas, kept between updates.
+     *
+     * Skia's `installPixels` takes a whole buffer, so a partial update writes
+     * only the changed rows into this and reinstalls. Rebuilding all of it per
+     * frame - which the first version did - is nine megabytes of conversion per
+     * frame on a large canvas.
+     */
     private var bytes = ByteArray(maxOf(1, width) * maxOf(1, height) * 4)
 
     actual fun update(pixels: IntArray) {
         val target = bitmap ?: return
         if (pixels.size != width * height) return
-        var b = 0
-        for (p in pixels) {
+        convert(pixels, 0, pixels.size)
+        target.installPixels(info, bytes, info.minRowBytes)
+    }
+
+    actual fun updateRegion(pixels: IntArray, x: Int, y: Int, width: Int, height: Int) {
+        val target = bitmap ?: return
+        if (pixels.size != this.width * this.height) return
+        val x0 = x.coerceIn(0, this.width - 1)
+        val y0 = y.coerceIn(0, this.height - 1)
+        val w = width.coerceIn(1, this.width - x0)
+        val h = height.coerceIn(1, this.height - y0)
+        for (row in 0 until h) {
+            val start = (y0 + row) * this.width + x0
+            convert(pixels, start, start + w)
+        }
+        target.installPixels(info, bytes, info.minRowBytes)
+    }
+
+    /** Writes `pixels[from until to]` into [bytes] at the matching offsets. */
+    private fun convert(pixels: IntArray, from: Int, to: Int) {
+        var b = from * 4
+        for (i in from until to) {
+            val p = pixels[i]
             bytes[b] = (p and 0xFF).toByte()
             bytes[b + 1] = ((p ushr 8) and 0xFF).toByte()
             bytes[b + 2] = ((p ushr 16) and 0xFF).toByte()
             bytes[b + 3] = ((p ushr 24) and 0xFF).toByte()
             b += 4
         }
-        target.installPixels(info, bytes, info.minRowBytes)
     }
 
     actual fun image(): ImageBitmap = (bitmap ?: Bitmap().apply { allocPixels(info) }).asComposeImageBitmap()

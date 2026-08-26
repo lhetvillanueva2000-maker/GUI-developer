@@ -3,8 +3,8 @@ package com.mcguidesigner.styles.paint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -137,15 +137,24 @@ fun ValueSlider(
             Modifier
                 .weight(1f)
                 .height(36.dp)
+                // One gesture handler, not two. Separate tap and drag detectors
+                // on the same node both wait for the same touch-down and race to
+                // claim it, so a tap that moves a pixel is swallowed by neither
+                // and the slider reads as unresponsive. This takes the pointer
+                // down, sets the value immediately, and follows it - which is
+                // also how a slider should behave: land where you touched, then
+                // track.
                 .pointerInput(range, exponential) {
-                    detectTapGestures { offset ->
-                        onChange(fromFraction(offset.x / size.width.toFloat()).coerceIn(range))
-                    }
-                }
-                .pointerInput(range, exponential) {
-                    detectDragGestures { change, _ ->
-                        onChange(fromFraction(change.position.x / size.width.toFloat()).coerceIn(range))
-                        change.consume()
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onChange(fromFraction(down.position.x / size.width.toFloat()).coerceIn(range))
+                        down.consume()
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val active = event.changes.firstOrNull { it.pressed } ?: break
+                            onChange(fromFraction(active.position.x / size.width.toFloat()).coerceIn(range))
+                            active.consume()
+                        }
                     }
                 },
             contentAlignment = Alignment.CenterStart,

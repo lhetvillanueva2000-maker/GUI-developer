@@ -98,7 +98,7 @@ fun PaintScreen(
                             ) { state.popover = PaintPopover.NONE },
                     )
                     Box(Modifier.align(Alignment.TopEnd).padding(horizontal = 6.dp)) {
-                        PaintPopoverContent(state)
+                        PaintPopoverContent(state, onImportImage)
                     }
                 }
 

@@ -180,6 +180,68 @@ class UndoStack(private val limit: Int = 40) {
      * Returns the layer's current value for anything not yet recorded, which is
      * the right answer: an untouched pixel has not changed.
      */
+    /**
+     * Copies the pre-stroke pixels of a rectangle into [dest], row-major.
+     *
+     * The bulk form of [originalAt], and the one the live stroke preview uses.
+     * Asking pixel by pixel meant a hash lookup per pixel - ten thousand of
+     * them per frame under a moderate brush - where the tile a pixel belongs to
+     * only changes every 64 columns. This resolves each tile once and moves
+     * whole rows with `copyInto`, which is a memory copy rather than a loop.
+     *
+     * [dest] must be at least `(right - left + 1) * (bottom - top + 1)` long.
+     */
+    fun readOriginalInto(
+        layer: PaintLayer,
+        left: Int,
+        top: Int,
+        right: Int,
+        bottom: Int,
+        dest: IntArray,
+    ) {
+        val regionWidth = right - left + 1
+        if (regionWidth <= 0 || bottom < top) return
+        val step = recording
+
+        // No step open, or it belongs to another layer: nothing has been
+        // recorded, so the layer as it stands is the original.
+        if (step == null || step.layerId != layer.id) {
+            for (y in top..bottom) {
+                val src = y * layer.width + left
+                layer.pixels.copyInto(dest, (y - top) * regionWidth, src, src + regionWidth)
+            }
+            return
+        }
+
+        var ty = top / TILE
+        while (ty * TILE <= bottom) {
+            var tx = left / TILE
+            while (tx * TILE <= right) {
+                val tile = step.tiles[ty * step.tilesAcross + tx]
+                val y0 = maxOf(top, ty * TILE)
+                val y1 = minOf(bottom, ty * TILE + TILE - 1)
+                val x0 = maxOf(left, tx * TILE)
+                val x1 = minOf(right, tx * TILE + TILE - 1)
+                val span = x1 - x0 + 1
+                if (span > 0) {
+                    for (y in y0..y1) {
+                        val destStart = (y - top) * regionWidth + (x0 - left)
+                        if (tile != null) {
+                            val srcStart = (y - ty * TILE) * TILE + (x0 - tx * TILE)
+                            tile.copyInto(dest, destStart, srcStart, srcStart + span)
+                        } else {
+                            // Not recorded, so unchanged: read it from the layer.
+                            val srcStart = y * layer.width + x0
+                            layer.pixels.copyInto(dest, destStart, srcStart, srcStart + span)
+                        }
+                    }
+                }
+                tx++
+            }
+            ty++
+        }
+    }
+
     fun originalAt(layer: PaintLayer, index: Int): Int {
         val step = recording ?: return layer.pixels[index]
         if (step.layerId != layer.id) return layer.pixels[index]

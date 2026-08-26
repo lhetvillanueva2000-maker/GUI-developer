@@ -9,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -45,6 +47,7 @@ import kotlin.math.roundToInt
 fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
     val palette = LocalSkinPalette.current
     var viewport by remember { mutableStateOf(IntSize.Zero) }
+    val scope = rememberCoroutineScope()
 
     // Read so that the canvas recomposes when the pixels change. The value
     // itself is unused - see PaintState.revision.
@@ -59,6 +62,13 @@ fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
                 awaitEachGesture {
                     val first = awaitFirstDown(requireUnconsumed = false)
                     viewport = IntSize(size.width, size.height)
+                    // A long operation is rewriting the layer. Touching the
+                    // canvas now would start a stroke on pixels that are being
+                    // replaced underneath it.
+                    if (state.busy != null) {
+                        first.consume()
+                        return@awaitEachGesture
+                    }
                     val fit = fitOf(state, size.width, size.height)
 
                     var pointers = 1
@@ -125,7 +135,9 @@ fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
                         cancelled -> Unit
                         !state.tool.isStroke -> {
                             if (fit.contains(canvasPoint, state)) {
-                                state.tap(canvasPoint.x.roundToInt(), canvasPoint.y.roundToInt())
+                                scope.launch {
+                                    state.tap(canvasPoint.x.roundToInt(), canvasPoint.y.roundToInt())
+                                }
                             }
                         }
                     }

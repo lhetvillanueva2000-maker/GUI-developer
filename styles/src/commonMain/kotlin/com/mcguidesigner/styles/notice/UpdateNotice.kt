@@ -82,34 +82,31 @@ object AppNotice {
      */
     val current = Notice(
         id = "whatsnew-${Branding.VERSION}",
-        headline = "${Branding.NAME} ${Branding.VERSION} — the third card is a paint canvas now",
+        headline = "${Branding.NAME} ${Branding.VERSION} — the canvas keeps up now",
         points = listOf(
-            "Other UIs opens a white sheet you can draw on, not the element " +
-                "editor with different colours. Layers with fourteen blend " +
-                "modes, alpha lock and clipping; eight nibs from a hard dip pen " +
-                "to a wide airbrush; bucket, eyedropper and a stabilizer; " +
-                "mirror and radial symmetry; undo that records only the tiles a " +
-                "stroke touched, so it works on a phone.",
-            "The eraser is the brush with the arithmetic reversed, so it is " +
-                "exactly as good. It takes alpha away and leaves colour alone, " +
-                "which means a stroke erased to a whisper and painted back over " +
-                "is still its own colour rather than a grey ghost.",
-            "Cut out the background without a download. It builds a colour " +
-                "model of the image's edges, labels every pixel against it, " +
-                "cleans the boundary up so it follows real edges, then works " +
-                "out a partial transparency for every pixel along it — so soft " +
-                "edges come out soft instead of cut with scissors, and no " +
-                "fringe of the old background is left behind. It tells you how " +
-                "confident it is, and says so when it is not.",
-            "Both halves of the app's own name are visible again. LABS is drawn " +
-                "inside a slot in the active skin's colours, and the letters " +
-                "took the chrome's text colour — near-white letters on a " +
-                "near-white plate. Same mistake as the launch card's button, " +
-                "same fix, and now a test measures both.",
-            "Translucent brushes stay translucent. Dabs within one stroke " +
-                "accumulate into a shared buffer instead of compositing " +
-                "individually, so a 40% brush is 40% along its whole length " +
-                "rather than solid wherever it overlapped itself.",
+            "Drawing was copying the entire canvas into the screen's bitmap on " +
+                "every frame — nine megabytes sixty times a second to show a " +
+                "change covering a few thousand pixels. Only the area under the " +
+                "brush is uploaded now, and layer opacity no longer rebuilds " +
+                "every thumbnail while you drag it.",
+            "The cutout, the bucket, the magic eraser and line-art lift ran on " +
+                "the frame thread, so the \"working\" message never had a frame " +
+                "to appear in and the app simply froze. They run in the " +
+                "background now, the message shows, and the canvas refuses " +
+                "touches while a layer is being rewritten.",
+            "Sliders and the colour wheel had a tap handler and a drag handler " +
+                "racing for the same touch, so quick taps landed on neither. " +
+                "One handler each: it jumps to where you touched, then follows.",
+            "Smudge and Blur are real tools rather than list entries. Smudge " +
+                "carries a colour reservoir along the stroke; blur reads from a " +
+                "snapshot so it softens instead of smearing along the scan order.",
+            "The cutout got better at the case that broke it: a subject cropped " +
+                "at the frame edge used to put its own colour into the " +
+                "background model and could come out inverted. Minor border " +
+                "colours are discarded, the result is checked against the one " +
+                "thing we know, and a guided filter pulls the matte onto the " +
+                "image's real edges. It also works at 512 instead of 320 now, " +
+                "which keeps thin features a coarser pass lost.",
         ),
     )
 

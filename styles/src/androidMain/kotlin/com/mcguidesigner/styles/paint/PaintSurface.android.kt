@@ -8,8 +8,14 @@ import androidx.compose.ui.graphics.asImageBitmap
  * Android: an ARGB_8888 bitmap, which is already the engine's pixel format.
  *
  * `setPixels` takes 0xAARRGGBB ints directly, so there is no channel shuffling
- * and no premultiply step - `asImageBitmap` wraps the same bitmap rather than
- * copying it, so an update is one memcpy into memory the GPU uploads from.
+ * and no premultiply step, and `asImageBitmap` wraps the same bitmap rather
+ * than copying it.
+ *
+ * The wrapper is created once and kept. An earlier version rebuilt it on every
+ * update out of caution about stale uploads; it is not needed - Compose's
+ * `drawImage` reads the underlying bitmap's live pixels each time it paints -
+ * and allocating a wrapper per frame is sixty objects a second of garbage for
+ * nothing.
  */
 actual class PaintSurface actual constructor(
     actual val width: Int,
@@ -18,16 +24,26 @@ actual class PaintSurface actual constructor(
     private var bitmap: Bitmap? =
         Bitmap.createBitmap(maxOf(1, width), maxOf(1, height), Bitmap.Config.ARGB_8888)
 
-    private var wrapped: ImageBitmap? = null
+    private var wrapped: ImageBitmap? = bitmap?.asImageBitmap()
 
     actual fun update(pixels: IntArray) {
         val target = bitmap ?: return
         if (pixels.size != width * height) return
         target.setPixels(pixels, 0, width, 0, 0, width, height)
-        // Re-wrap so Compose treats it as new content. Wrapping is cheap - it
-        // does not copy - and skipping it makes the canvas appear frozen on
-        // some devices, where the previous ImageBitmap's upload is cached.
-        wrapped = target.asImageBitmap()
+    }
+
+    actual fun updateRegion(pixels: IntArray, x: Int, y: Int, width: Int, height: Int) {
+        val target = bitmap ?: return
+        if (pixels.size != this.width * this.height) return
+        val x0 = x.coerceIn(0, this.width - 1)
+        val y0 = y.coerceIn(0, this.height - 1)
+        val w = width.coerceIn(1, this.width - x0)
+        val h = height.coerceIn(1, this.height - y0)
+        // The stride is the *canvas* width, not the rectangle's - setPixels
+        // walks the source array a full row at a time and picks the window out
+        // of each row. Passing the rectangle's width here instead is the classic
+        // way to get a sheared copy.
+        target.setPixels(pixels, y0 * this.width + x0, this.width, x0, y0, w, h)
     }
 
     actual fun image(): ImageBitmap =

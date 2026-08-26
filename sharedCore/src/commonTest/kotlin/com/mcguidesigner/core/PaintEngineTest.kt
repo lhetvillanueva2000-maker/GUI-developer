@@ -373,7 +373,154 @@ class PaintEngineTest {
         assertEquals(0, Pixels.alpha(layer[2, 2]), "the background does not")
     }
 
+    @Test
+    fun `a subject running off the edge does not poison the background model`() {
+        // The case that inverted a cutout: a limb crossing the frame edge puts
+        // the subject's own colour into the border sample, the background model
+        // absorbs it, and every pixel then looks like background.
+        val w = 128
+        val h = 128
+        val source = IntArray(w * h) { BLUE }
+        for (y in 40 until 90) for (x in 30 until 90) source[y * w + x] = RED
+        // A bar from the subject out through the right-hand edge.
+        for (y in 58 until 66) for (x in 90 until w) source[y * w + x] = RED
+
+        val mask = AutoCutout.mask(source, w, h)
+        assertEquals(255, mask[64 * w + 60].toInt() and 0xFF, "the subject must be kept")
+        assertEquals(0, mask[10 * w + 10].toInt() and 0xFF, "the background must go")
+        assertTrue(
+            (mask[61 * w + 110].toInt() and 0xFF) > 128,
+            "the limb crossing the edge must be kept too",
+        )
+    }
+
+    @Test
+    fun `a cutout never comes out inside-out`() {
+        // The border is the one piece of ground truth, so whatever else
+        // happens, most of it has to end up removed.
+        val w = 96
+        val h = 96
+        val source = IntArray(w * h) { WHITE }
+        for (y in 20 until 76) for (x in 20 until 76) source[y * w + x] = BLACK
+
+        val mask = AutoCutout.mask(source, w, h)
+        var borderKept = 0
+        var borderTotal = 0
+        for (y in 0 until h) {
+            for (x in 0 until w) {
+                if (x in 3 until w - 3 && y in 3 until h - 3) continue
+                borderTotal++
+                if ((mask[y * w + x].toInt() and 0xFF) > 128) borderKept++
+            }
+        }
+        assertTrue(borderKept * 2 < borderTotal, "$borderKept of $borderTotal border pixels survived")
+    }
+
+    // -- Smudge and blur ---------------------------------------------------
+
+    @Test
+    fun `blur softens an edge without moving it`() {
+        val document = PaintDocument.blank(32, 8, PaintBackground.TRANSPARENT)
+        val layer = document.layers[0]
+        for (y in 0 until 8) {
+            for (x in 0 until 32) layer[x, y] = if (x < 16) BLACK else WHITE
+        }
+        val source = layer.pixels.copyOf()
+        for (y in 0 until 8) {
+            for (x in 0 until 32) {
+                layer[x, y] = PaintOps.blurredPixel(source, 0, 0, 32, 8, x, y, 3)
+            }
+        }
+        val left = Pixels.red(layer[15, 4])
+        val right = Pixels.red(layer[16, 4])
+        assertTrue(left in 1..254 && right in 1..254, "the edge should be a ramp, was $left/$right")
+        assertTrue(left < right, "and still dark on the left")
+        assertEquals(0, Pixels.red(layer[0, 4]), "far from the edge nothing changes")
+        assertEquals(255, Pixels.red(layer[31, 4]))
+    }
+
+    @Test
+    fun `blur does not drag along the scan order`() {
+        // Blurring in place reads already-blurred pixels and smears sideways.
+        // Reading from a snapshot must give a symmetric result.
+        val document = PaintDocument.blank(21, 21, PaintBackground.TRANSPARENT)
+        val layer = document.layers[0]
+        layer.fill(WHITE)
+        layer[10, 10] = BLACK
+        val source = layer.pixels.copyOf()
+        for (y in 0 until 21) {
+            for (x in 0 until 21) {
+                layer[x, y] = PaintOps.blurredPixel(source, 0, 0, 21, 21, x, y, 3)
+            }
+        }
+        assertEquals(
+            Pixels.red(layer[8, 10]),
+            Pixels.red(layer[12, 10]),
+            "a blurred dot must be symmetric about its centre",
+        )
+    }
+
+    @Test
+    fun `smudge drags colour along the path`() {
+        val document = PaintDocument.blank(64, 16, PaintBackground.TRANSPARENT)
+        val layer = document.layers[0]
+        for (y in 0 until 16) {
+            for (x in 0 until 64) layer[x, y] = if (x < 20) RED else BLUE
+        }
+        val path = (0..40).map { StrokePoint(14f + it, 8f) }
+        PaintOps.smudge(layer, path, radius = 4, strength = 0.85f)
+
+        // Red should have been carried past the boundary it started behind.
+        val carried = Pixels.red(layer[26, 8])
+        assertTrue(carried > 40, "expected red dragged into the blue side, got $carried")
+        assertEquals(255, Pixels.red(layer[2, 8]), "and nothing before the stroke started")
+    }
+
+    @Test
+    fun `smudge and blur refuse a locked layer`() {
+        val document = PaintDocument.blank(32, 32, PaintBackground.TRANSPARENT)
+        val layer = document.layers[0]
+        layer.fill(RED)
+        layer.locked = true
+        PaintOps.smudge(layer, listOf(StrokePoint(16f, 16f)), radius = 4, strength = 0.9f)
+        assertEquals(RED, layer[16, 16])
+    }
+
     // -- Undo --------------------------------------------------------------
+
+    @Test
+    fun `the bulk original read matches the per-pixel one`() {
+        // The live stroke preview switched from asking pixel by pixel to
+        // copying whole tile rows. They have to agree exactly, or a stroke
+        // looks different while the finger is down from how it lands.
+        val document = PaintDocument.blank(200, 200, PaintBackground.TRANSPARENT)
+        val layer = document.layers[0]
+        for (i in layer.pixels.indices) layer.pixels[i] = RED or (i and 0xFF)
+
+        val undo = UndoStack()
+        undo.begin("Brush", layer)
+        undo.touch(layer, 50, 50, 150, 150)
+        for (y in 60..140) for (x in 60..140) layer[x, y] = BLUE
+
+        val left = 40
+        val top = 40
+        val right = 170
+        val bottom = 170
+        val width = right - left + 1
+        val bulk = IntArray(width * (bottom - top + 1))
+        undo.readOriginalInto(layer, left, top, right, bottom, bulk)
+
+        for (y in top..bottom) {
+            for (x in left..right) {
+                assertEquals(
+                    undo.originalAt(layer, y * layer.width + x),
+                    bulk[(y - top) * width + (x - left)],
+                    "disagreement at $x,$y",
+                )
+            }
+        }
+    }
+
 
     @Test
     fun `undo restores exactly what a stroke changed`() {

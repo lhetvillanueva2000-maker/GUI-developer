@@ -10,6 +10,7 @@ import com.mcguidesigner.core.paint.BlendMode
 import com.mcguidesigner.core.paint.Brush
 import com.mcguidesigner.core.paint.BrushShape
 import com.mcguidesigner.core.paint.Compositor
+import com.mcguidesigner.core.paint.distanceBetween
 import com.mcguidesigner.core.paint.Guides
 import com.mcguidesigner.core.paint.MagicEraser
 import com.mcguidesigner.core.paint.PaintBackground
@@ -22,6 +23,8 @@ import com.mcguidesigner.core.paint.Stabilizer
 import com.mcguidesigner.core.paint.StrokeEngine
 import com.mcguidesigner.core.paint.StrokePoint
 import com.mcguidesigner.core.paint.UndoStack
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 /** The tools on the wheel. */
@@ -208,11 +211,32 @@ class PaintState(
         bumpAll()
     }
 
-    private fun bump() {
-        pushToSurface()
+    /**
+     * The canvas changed inside a rectangle. Uploads only that rectangle.
+     *
+     * The hot path, called on every frame of a stroke. A full upload here was
+     * the single biggest cause of the canvas feeling like wading: nine
+     * megabytes copied into the native bitmap sixty times a second, to show a
+     * change covering a few thousand pixels.
+     */
+    private fun bumpRegion(left: Int, top: Int, right: Int, bottom: Int) {
+        val x0 = left.coerceIn(0, document.width - 1)
+        val y0 = top.coerceIn(0, document.height - 1)
+        val x1 = right.coerceIn(0, document.width - 1)
+        val y1 = bottom.coerceIn(0, document.height - 1)
+        if (x1 < x0 || y1 < y0) return
+        surface?.updateRegion(flattened, x0, y0, x1 - x0 + 1, y1 - y0 + 1)
         revision++
     }
 
+    /**
+     * Recomposites the whole document and uploads all of it.
+     *
+     * Genuinely expensive - every pixel through the blend stack, then every
+     * pixel into the bitmap - so it is reserved for changes with no bounds:
+     * adding, deleting or reordering a layer, undo, a filter over everything.
+     * A stroke must never come through here.
+     */
     private fun bumpAll() {
         flattened = Compositor.flatten(document, flattened)
         pushToSurface()
@@ -220,10 +244,18 @@ class PaintState(
         layerRevision++
     }
 
-    /** Recomposites everything. For operations with no useful bounds. */
+    /**
+     * Recomposites everything without disturbing the layer panel.
+     *
+     * For changes to how existing layers combine - opacity, blend mode,
+     * visibility - where the list itself has not changed shape. Bumping
+     * `layerRevision` there would rebuild every row and its thumbnail on every
+     * frame of an opacity drag.
+     */
     fun refresh() {
         flattened = Compositor.flatten(document, flattened)
-        bump()
+        pushToSurface()
+        revision++
     }
 
     // -- Strokes -----------------------------------------------------------
@@ -231,6 +263,20 @@ class PaintState(
     private var strokeLayer: PaintLayer? = null
     private var strokeLength = 0f
     private var lastPoint = Offset.Zero
+
+    /** Everything this stroke has touched: left, top, right, bottom. */
+    private val strokeBounds = intArrayOf(0, 0, -1, -1)
+
+    /**
+     * The stabilised path of the stroke in progress.
+     *
+     * Only smudge needs it - it drags colour *along* the stroke, so it needs
+     * the order the points arrived in and not just the area they covered. Kept
+     * as canvas coordinates and thinned to one point per two pixels, because a
+     * fast drag can deliver a thousand events and smudging every one of them
+     * moves the reservoir no further while costing a hundred times as much.
+     */
+    private val strokePath = ArrayList<StrokePoint>()
 
     /**
      * Points a stroke should be mirrored to.
@@ -260,11 +306,19 @@ class PaintState(
         strokeLayer = layer
         strokeLength = 0f
         lastPoint = Offset(x, y)
+        strokeBounds[0] = 0
+        strokeBounds[1] = 0
+        strokeBounds[2] = -1
+        strokeBounds[3] = -1
+        strokePath.clear()
+        smudgeConsumed = 0
+        smudgeCarry = null
         stabilizer.reset(stabilizerStrength)
         val (sx, sy) = stabilizer.push(x, y)
 
-        undo.begin(if (tool == PaintTool.ERASER) "Erase" else "Brush", layer)
+        undo.begin(strokeLabel(), layer)
         val b = brush
+        strokePath.add(StrokePoint(sx, sy))
         reflections(StrokePoint(sx, sy)).forEachIndexed { channel, point ->
             if (channel == 0) engine.begin(point, b) else engine.beginChannel(channel, point, b)
         }
@@ -277,6 +331,10 @@ class PaintState(
         strokeLength += (Offset(sx, sy) - lastPoint).getDistance()
         lastPoint = Offset(sx, sy)
         val b = brush
+        val last = strokePath.lastOrNull()
+        if (last == null || distanceBetween(last.x, last.y, sx, sy) >= 2f) {
+            strokePath.add(StrokePoint(sx, sy))
+        }
         reflections(StrokePoint(sx, sy)).forEachIndexed { channel, point ->
             engine.extendTo(point, b, strokeLength, channel)
         }
@@ -292,11 +350,20 @@ class PaintState(
             }
         }
         applyLive()
+        val left = strokeBounds[0]
+        val top = strokeBounds[1]
+        val right = strokeBounds[2]
+        val bottom = strokeBounds[3]
         engine.clear()
         undo.commit(layer)
         strokeLayer = null
         rememberColour()
-        bumpAll()
+        // The layer list has not changed shape, and the pixels outside the
+        // stroke have not moved - so neither a full recomposite nor a full
+        // upload is needed to finish a stroke. Only the layer panel's
+        // thumbnails are stale, and they are only on screen if it is open.
+        if (right >= left && bottom >= top) bumpRegion(left, top, right, bottom)
+        layerRevision++
     }
 
     /**
@@ -322,11 +389,11 @@ class PaintState(
                 }
             }
             Compositor.repaint(document, flattened, left, top, right, bottom)
+            bumpRegion(left, top, right, bottom)
         }
         engine.clear()
         undo.cancel()
         strokeLayer = null
-        bump()
     }
 
     /**
@@ -363,6 +430,14 @@ class PaintState(
      */
     private fun applyLive() {
         val layer = strokeLayer ?: return
+        when (tool) {
+            PaintTool.SMUDGE -> applySmudge(layer)
+            PaintTool.BLUR -> applyBlur(layer)
+            else -> applyPaintOrErase(layer)
+        }
+    }
+
+    private fun applyPaintOrErase(layer: PaintLayer) {
         if (!engine.hasDirt) return
         val left = engine.dirtyLeft
         val top = engine.dirtyTop
@@ -375,12 +450,18 @@ class PaintState(
         val alphaLocked = layer.alphaLocked
         val tint = colour
 
+        val regionWidth = right - left + 1
+        val needed = regionWidth * (bottom - top + 1)
+        if (scratch.size < needed) scratch = IntArray(needed)
+        undo.readOriginalInto(layer, left, top, right, bottom, scratch)
+
         for (y in top..bottom) {
             val row = y * document.width
+            val scratchRow = (y - top) * regionWidth
             for (x in left..right) {
                 val index = row + x
+                val original = scratch[scratchRow + (x - left)]
                 val coverage = engine.coverageAt(index)
-                val original = undo.originalAt(layer, index)
                 layer.pixels[index] = when {
                     coverage == 0 -> original
                     erasing -> PaintOps.erasedPixel(original, coverage, ceiling)
@@ -390,12 +471,149 @@ class PaintState(
         }
 
         Compositor.repaint(document, flattened, left, top, right, bottom)
-        bump()
+        growStroke(left, top, right, bottom)
+        bumpRegion(left, top, right, bottom)
+    }
+
+    /**
+     * Blur, recomputed from the pre-stroke pixels like every other tool.
+     *
+     * The neighbourhood read extends past the dirty rectangle by the radius,
+     * because a pixel on the very edge of the brush still averages pixels
+     * outside it. Reading only the dirty rectangle would darken the rim of
+     * every blur stroke against its own boundary.
+     */
+    private fun applyBlur(layer: PaintLayer) {
+        if (!engine.hasDirt) return
+        val radius = blurRadius
+        val left = engine.dirtyLeft
+        val top = engine.dirtyTop
+        val right = engine.dirtyRight
+        val bottom = engine.dirtyBottom
+        undo.touch(layer, left, top, right, bottom)
+
+        val readLeft = (left - radius).coerceAtLeast(0)
+        val readTop = (top - radius).coerceAtLeast(0)
+        val readRight = (right + radius).coerceAtMost(document.width - 1)
+        val readBottom = (bottom + radius).coerceAtMost(document.height - 1)
+        val readWidth = readRight - readLeft + 1
+        val readHeight = readBottom - readTop + 1
+        val needed = readWidth * readHeight
+        if (scratch.size < needed) scratch = IntArray(needed)
+        // The originals of the *read* area, which is wider than what is written.
+        undo.touch(layer, readLeft, readTop, readRight, readBottom)
+        undo.readOriginalInto(layer, readLeft, readTop, readRight, readBottom, scratch)
+
+        val ceiling = (activeOpacity.coerceIn(0f, 1f) * 255f).roundToInt()
+        for (y in top..bottom) {
+            val row = y * document.width
+            for (x in left..right) {
+                val index = row + x
+                val coverage = engine.coverageAt(index)
+                val original = scratch[(y - readTop) * readWidth + (x - readLeft)]
+                if (coverage == 0) {
+                    layer.pixels[index] = original
+                    continue
+                }
+                val blurred = PaintOps.blurredPixel(
+                    scratch, readLeft, readTop, readWidth, readHeight, x, y, radius,
+                )
+                layer.pixels[index] = PaintOps.mixPixels(original, blurred, Pixels.mul(coverage, ceiling))
+            }
+        }
+
+        Compositor.repaint(document, flattened, left, top, right, bottom)
+        growStroke(left, top, right, bottom)
+        bumpRegion(left, top, right, bottom)
+    }
+
+    /**
+     * Smudge, applied to the path points that have arrived since last time.
+     *
+     * The one tool that cannot be recomputed from the pre-stroke pixels: a
+     * smear is the accumulation of every step, in order, so it is written into
+     * the layer as it goes and the undo tiles are what make it reversible.
+     */
+    private fun applySmudge(layer: PaintLayer) {
+        if (smudgeConsumed >= strokePath.size) return
+        val radius = (activeSize / 2f).roundToInt().coerceIn(1, 96)
+        val segment = strokePath.subList(smudgeConsumed, strokePath.size).toList()
+        smudgeConsumed = strokePath.size
+
+        var left = document.width
+        var top = document.height
+        var right = -1
+        var bottom = -1
+        segment.forEach { point ->
+            val cx = point.x.roundToInt()
+            val cy = point.y.roundToInt()
+            left = minOf(left, cx - radius)
+            top = minOf(top, cy - radius)
+            right = maxOf(right, cx + radius)
+            bottom = maxOf(bottom, cy + radius)
+        }
+        left = left.coerceIn(0, document.width - 1)
+        top = top.coerceIn(0, document.height - 1)
+        right = right.coerceIn(0, document.width - 1)
+        bottom = bottom.coerceIn(0, document.height - 1)
+        if (right < left || bottom < top) return
+
+        undo.touch(layer, left, top, right, bottom)
+        smudgeCarry = PaintOps.smudge(layer, segment, radius, activeOpacity, smudgeCarry)
+
+        Compositor.repaint(document, flattened, left, top, right, bottom)
+        growStroke(left, top, right, bottom)
+        bumpRegion(left, top, right, bottom)
+    }
+
+    /** How far the blur tool reaches, in pixels, from the brush size. */
+    private val blurRadius: Int get() = (activeSize / 6f).roundToInt().coerceIn(1, 24)
+
+    private var smudgeConsumed = 0
+    private var smudgeCarry: Int? = null
+
+    /**
+     * Scratch space for the pre-stroke pixels of the region being redrawn.
+     *
+     * Held rather than allocated per frame: it grows to the largest region a
+     * stroke has needed and then stops, where allocating it each frame would
+     * hand the collector a few hundred kilobytes a second during every drag.
+     */
+    private var scratch = IntArray(0)
+
+    /** What the undo entry for this stroke is called. */
+    private fun strokeLabel(): String = when (tool) {
+        PaintTool.ERASER -> "Erase"
+        PaintTool.SMUDGE -> "Smudge"
+        PaintTool.BLUR -> "Blur"
+        else -> "Brush"
+    }
+
+    private fun growStroke(left: Int, top: Int, right: Int, bottom: Int) {
+        if (strokeBounds[2] < strokeBounds[0]) {
+            strokeBounds[0] = left
+            strokeBounds[1] = top
+            strokeBounds[2] = right
+            strokeBounds[3] = bottom
+            return
+        }
+        if (left < strokeBounds[0]) strokeBounds[0] = left
+        if (top < strokeBounds[1]) strokeBounds[1] = top
+        if (right > strokeBounds[2]) strokeBounds[2] = right
+        if (bottom > strokeBounds[3]) strokeBounds[3] = bottom
     }
 
     // -- One-shot tools ----------------------------------------------------
 
-    fun tap(x: Int, y: Int) {
+    /**
+     * A tap with a one-shot tool.
+     *
+     * Suspending because two of the three do real work over every pixel of the
+     * canvas - a flood fill on a 1536-square document is two and a third
+     * million pixels - and doing that on the frame thread is a visible freeze
+     * rather than a pause.
+     */
+    suspend fun tap(x: Int, y: Int) {
         when (tool) {
             PaintTool.BUCKET -> bucket(x, y)
             PaintTool.EYEDROPPER -> pick(x, y)
@@ -404,29 +622,67 @@ class PaintState(
         }
     }
 
-    private fun bucket(x: Int, y: Int) {
+    /**
+     * Runs [work] off the frame thread with a message on screen.
+     *
+     * The message is the point. An earlier version set `busy` and then did the
+     * work synchronously, which meant the overlay never painted: the frame that
+     * would have drawn it was the frame that was blocked. The app simply froze
+     * for a few seconds and looked crashed. Compose state is only written
+     * either side of the `withContext`, never inside it, so nothing observable
+     * is touched from another thread.
+     */
+    private suspend fun <T> heavy(message: String, work: () -> T): T {
+        busy = message
+        return try {
+            withContext(Dispatchers.Default) { work() }
+        } finally {
+            busy = null
+        }
+    }
+
+    /**
+     * Recomposites off-thread, then uploads and repaints on the caller's.
+     *
+     * Flattening is the expensive half and has no reason to be on the frame
+     * thread; the upload has to be paired with the state write that triggers
+     * the repaint, so it stays here.
+     */
+    private suspend fun refreshInBackground() {
+        withContext(Dispatchers.Default) {
+            flattened = Compositor.flatten(document, flattened)
+        }
+        pushToSurface()
+        revision++
+        layerRevision++
+    }
+
+    private suspend fun bucket(x: Int, y: Int) {
         val layer = document.active ?: return
         if (layer.locked) return
-        undo.begin("Fill", layer)
-        undo.touchAll(layer)
-        val mask = RegionFill.flood(
-            source = if (contiguous) layer.pixels else layer.pixels,
-            width = document.width,
-            height = document.height,
-            startX = x,
-            startY = y,
-            tolerance = tolerance,
-            contiguous = contiguous,
-            feather = 0,
-        )
-        // Grown by one pixel before filling, because an anti-aliased outline's
-        // half-transparent pixels sit just outside any sane tolerance and a
-        // fill that stops at them leaves a pale halo tracing every line.
-        val grown = RegionFill.expand(mask, document.width, document.height, 1)
-        RegionFill.apply(layer, grown, colour, 1f)
-        undo.commit(layer)
+        heavy("Filling") {
+            undo.begin("Fill", layer)
+            undo.touchAll(layer)
+            val mask = RegionFill.flood(
+                source = layer.pixels,
+                width = document.width,
+                height = document.height,
+                startX = x,
+                startY = y,
+                tolerance = tolerance,
+                contiguous = contiguous,
+                feather = 0,
+            )
+            // Grown by one pixel before filling, because an anti-aliased
+            // outline's half-transparent pixels sit just outside any sane
+            // tolerance and a fill that stops at them leaves a pale halo
+            // tracing every line.
+            val grown = RegionFill.expand(mask, document.width, document.height, 1)
+            RegionFill.apply(layer, grown, colour, 1f)
+            undo.commit(layer)
+        }
         rememberColour()
-        bumpAll()
+        refreshInBackground()
     }
 
     private fun pick(x: Int, y: Int) {
@@ -440,14 +696,16 @@ class PaintState(
         tool = if (previousTool == PaintTool.EYEDROPPER) PaintTool.BRUSH else previousTool
     }
 
-    private fun magicErase(x: Int, y: Int) {
+    private suspend fun magicErase(x: Int, y: Int) {
         val layer = document.active ?: return
         if (layer.locked) return
-        undo.begin("Magic erase", layer)
-        undo.touchAll(layer)
-        MagicEraser.erase(layer, x, y, tolerance, contiguous, featherEdges)
-        undo.commit(layer)
-        bumpAll()
+        heavy("Erasing that colour") {
+            undo.begin("Magic erase", layer)
+            undo.touchAll(layer)
+            MagicEraser.erase(layer, x, y, tolerance, contiguous, featherEdges)
+            undo.commit(layer)
+        }
+        refreshInBackground()
     }
 
     // -- Big operations ----------------------------------------------------
@@ -455,47 +713,46 @@ class PaintState(
     /**
      * Runs the auto cutout on the active layer.
      *
-     * Deliberately synchronous and deliberately behind a "working" flag: on a
-     * large photograph this is a second or two of real arithmetic, and pushing
-     * it onto a background thread would mean the layer being rewritten while a
-     * stroke might be running on it. Blocking with an honest message is better
-     * than a race that corrupts somebody's drawing.
+     * Seconds of real arithmetic on a large photograph, so it runs off the
+     * frame thread behind a message that can actually paint. Input to the
+     * canvas is refused while [busy] is set, which is what keeps a stroke from
+     * running on a layer that is being rewritten underneath it.
      */
-    fun autoCutout(invert: Boolean = false) {
+    suspend fun autoCutout(invert: Boolean = false) {
         val layer = document.active ?: return
         if (layer.locked) return
-        busy = "Working out the background"
-        try {
-            val options = AutoCutout.Options(keep = cutoutKeep, edgeSoftness = featherEdges + 1)
+        val options = AutoCutout.Options(keep = cutoutKeep, edgeSoftness = featherEdges + 1)
+        val confidence = heavy("Working out the background") {
             val mask = AutoCutout.mask(layer.pixels, document.width, document.height, options)
             undo.begin("Auto cutout", layer)
             undo.touchAll(layer)
             AutoCutout.apply(layer, mask, options, invert)
             undo.commit(layer)
-            cutoutConfidence = AutoCutout.confidence(mask, document.width, document.height)
-            bumpAll()
-        } finally {
-            busy = null
+            AutoCutout.confidence(mask, document.width, document.height)
         }
+        cutoutConfidence = confidence
+        refreshInBackground()
     }
 
     /** Erases the paper colour from a scan, keeping the ink's soft edges. */
-    fun liftLineArt() {
+    suspend fun liftLineArt() {
         val layer = document.active ?: return
         if (layer.locked) return
-        // Sampled from the corners: whatever the paper is, it is at the edges.
-        val corners = listOf(
-            layer[0, 0], layer[document.width - 1, 0],
-            layer[0, document.height - 1], layer[document.width - 1, document.height - 1],
-        ).filter { Pixels.alpha(it) > 0 }
-        val paper = if (corners.isEmpty()) 0xFFFFFFFF.toInt() else corners.maxBy {
-            Pixels.red(it) + Pixels.green(it) + Pixels.blue(it)
+        heavy("Lifting the line art") {
+            // Sampled from the corners: whatever the paper is, it is at the edges.
+            val corners = listOf(
+                layer[0, 0], layer[document.width - 1, 0],
+                layer[0, document.height - 1], layer[document.width - 1, document.height - 1],
+            ).filter { Pixels.alpha(it) > 0 }
+            val paper = if (corners.isEmpty()) 0xFFFFFFFF.toInt() else corners.maxBy {
+                Pixels.red(it) + Pixels.green(it) + Pixels.blue(it)
+            }
+            undo.begin("Lift line art", layer)
+            undo.touchAll(layer)
+            MagicEraser.liftLineArt(layer, paper)
+            undo.commit(layer)
         }
-        undo.begin("Lift line art", layer)
-        undo.touchAll(layer)
-        MagicEraser.liftLineArt(layer, paper)
-        undo.commit(layer)
-        bumpAll()
+        refreshInBackground()
     }
 
     // -- Layers ------------------------------------------------------------
@@ -533,18 +790,23 @@ class PaintState(
 
     fun setLayerOpacity(value: Int) {
         document.active?.opacity = value.coerceIn(0, 255)
-        bumpAll()
+        // `refresh` rather than `bumpAll`: the list has not changed shape, and
+        // rebuilding every row and its thumbnail on each frame of an opacity
+        // drag is most of why the panel used to stutter.
+        refresh()
     }
 
     fun setLayerBlend(mode: BlendMode) {
         document.active?.blendMode = mode
-        bumpAll()
+        refresh()
+        layerRevision++
     }
 
     fun toggleVisible(index: Int) {
         val layer = document.layers.getOrNull(index) ?: return
         layer.visible = !layer.visible
-        bumpAll()
+        refresh()
+        layerRevision++
     }
 
     fun toggleAlphaLock() {
