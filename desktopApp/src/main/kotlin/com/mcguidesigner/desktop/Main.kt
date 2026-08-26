@@ -224,6 +224,7 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
                                     onBack = { appState.goHome() },
                                     onExport = { bytes, name -> appState.savePaintPng(bytes, name) },
                                     onImportImage = { appState.importPaintImage() },
+                                    motion = appState.appearance.motion,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             }

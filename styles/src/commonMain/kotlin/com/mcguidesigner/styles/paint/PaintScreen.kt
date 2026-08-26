@@ -21,11 +21,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,6 +50,7 @@ import com.mcguidesigner.styles.paint.PaintIcons.sliders
 import com.mcguidesigner.styles.paint.PaintIcons.swap
 import com.mcguidesigner.styles.paint.PaintIcons.undo
 import com.mcguidesigner.styles.theme.LocalSkinPalette
+import com.mcguidesigner.styles.theme.MotionLevel
 
 /**
  * The paint editor.
@@ -67,6 +73,7 @@ fun PaintScreen(
     modifier: Modifier = Modifier,
     onExport: ((ByteArray, String) -> Unit)? = null,
     onImportImage: (() -> Unit)? = null,
+    motion: MotionLevel = MotionLevel.FULL,
 ) {
     val palette = LocalSkinPalette.current
 
@@ -76,12 +83,35 @@ fun PaintScreen(
     }
     LaunchedEffect(state.document) { state.attachSurface() }
 
+    // The entrance: chrome first, then the sheet grows into place behind it.
+    //
+    // Two curves from one clock rather than two animations, so they cannot
+    // drift apart. The chrome uses the first half and is therefore already
+    // settled while the canvas is still arriving, which is the order the
+    // reference moves in - and the right order regardless, because the frame
+    // has to exist before the thing inside it means anything.
+    val entrance = remember { Animatable(if (motion.scale <= 0f) 1f else 0f) }
+    LaunchedEffect(motion.scale) {
+        if (motion.scale <= 0f) {
+            entrance.snapTo(1f)
+        } else {
+            entrance.animateTo(
+                1f,
+                tween(durationMillis = (460 * motion.scale).toInt().coerceAtLeast(1), easing = FastOutSlowInEasing),
+            )
+        }
+    }
+    val progress = entrance.value
+    val chrome = (progress * 2f).coerceIn(0f, 1f)
+
     Box(modifier.fillMaxSize().background(palette.chromeBackground)) {
         Column(Modifier.fillMaxSize()) {
-            PaintTopBar(state)
+            Box(Modifier.graphicsLayer { alpha = chrome; translationY = (1f - chrome) * -24f }) {
+                PaintTopBar(state)
+            }
 
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                PaintCanvasView(state)
+                PaintCanvasView(state, entrance = progress, motion = motion)
 
                 // Popovers hang from the bar and sit over the canvas edge, as
                 // in the reference: they belong to the button that opened them,
@@ -130,8 +160,12 @@ fun PaintScreen(
                 }
             }
 
-            PaintSliderRows(state)
-            PaintBottomBar(state, onBack = onBack)
+            Box(Modifier.graphicsLayer { alpha = chrome; translationY = (1f - chrome) * 24f }) {
+                Column {
+                    PaintSliderRows(state)
+                    PaintBottomBar(state, onBack = onBack)
+                }
+            }
         }
 
         // Sheets rise from the bottom over everything, as they do in the

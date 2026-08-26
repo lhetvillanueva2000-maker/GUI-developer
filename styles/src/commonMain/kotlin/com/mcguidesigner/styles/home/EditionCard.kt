@@ -17,7 +17,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -145,12 +149,36 @@ private fun EditionButton(
 ) {
     val fill = palette.blendCta(pressed = pressed, hovered = hovered, enabled = true)
 
+    // The press ripple: a ring that expands from the button and fades.
+    //
+    // It exists because opening the editor is not instant - there is a screen
+    // to build behind it - and a button that reports nothing for a third of a
+    // second reads as a button that was not pressed. This is the acknowledgement
+    // that the tap landed, and it runs whether or not the next screen is ready.
+    val ripple = remember { Animatable(1f) }
+    LaunchedEffect(pressed) {
+        if (pressed) {
+            ripple.snapTo(0f)
+            ripple.animateTo(1f, tween(durationMillis = 520, easing = LinearOutSlowInEasing))
+        }
+    }
+
     Box(
         modifier
             .height(height)
             .clip(RoundedCornerShape(palette.cornerRadius.dp * 0.6f))
             .background(fill)
             .bevel(palette.bevelLight, palette.bevelDark, palette.borderWidth.dp)
+            .drawBehind {
+                val t = ripple.value
+                if (t >= 1f) return@drawBehind
+                val reach = size.minDimension * (0.35f + t * 1.5f)
+                drawCircle(
+                    color = palette.ctaText.copy(alpha = 0.32f * (1f - t)),
+                    radius = reach,
+                    center = Offset(size.width / 2f, size.height / 2f),
+                )
+            }
             .clickable(interactionSource = interaction, indication = null, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

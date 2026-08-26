@@ -82,24 +82,28 @@ object AppNotice {
      */
     val current = Notice(
         id = "whatsnew-${Branding.VERSION}",
-        headline = "${Branding.NAME} ${Branding.VERSION} — straight from your finger to the screen",
+        headline = "${Branding.NAME} ${Branding.VERSION} — scribble it away, and draw shapes by drawing them",
         points = listOf(
-            "The canvas bitmap is no longer touched while you draw. Writing one " +
-                "pixel of it invalidated the whole thing as far as the GPU was " +
-                "concerned — nine megabytes re-uploaded per frame — so narrowing " +
-                "the copy last time saved the copy and not the upload. The " +
-                "stroke is mirrored into a small patch instead, sized to the " +
-                "stroke rather than the document, and the two are reconciled " +
-                "once when your finger lifts.",
-            "Drawing no longer recomposes the screen. The repaint signal is read " +
-                "in the draw phase instead of the composable body, so a moving " +
-                "finger goes pointer event → pixels with no composition or " +
-                "layout in between.",
-            "Large brushes stopped rebuilding their mask on every dab. The size " +
-                "cache is quantised in log space now — half a percent of the " +
-                "radius, at any radius — and holds eight entries, so a taper or " +
-                "a symmetry stroke hits it instead of rebuilding a 400-pixel " +
-                "mask each time.",
+            "The magic eraser is a scribble now, not a tap, and it shows you a " +
+                "glowing rainbow trail while you do it. A tap could only ever " +
+                "take one colour, which is useless on a real object — a face is " +
+                "a dozen colours, a leaf is a gradient. Scribble across the " +
+                "thing and everything the scribble touches goes with it.",
+            "The trail is not decoration. Nothing is removed until you lift your " +
+                "finger, so without it the gesture would be invisible: you " +
+                "scribble, see nothing, let go, and something vanishes. It runs " +
+                "through the whole hue circle so it cannot be camouflaged by " +
+                "whatever is underneath it.",
+            "A Shape tool that reads what you drew. Rough box → rectangle; even " +
+                "sides → square; three corners → triangle; a loop → a circle, or " +
+                "an ellipse if it was squashed. Drawn at an angle, it stays at " +
+                "that angle. A scribble it cannot read is left exactly as drawn, " +
+                "which matters more than the recognition: quietly replacing your " +
+                "drawing with a confidently wrong triangle is the worse failure.",
+            "The screen animates the way it should. The launch button ripples " +
+                "under your thumb, the editor's chrome arrives first, and the " +
+                "canvas grows into place behind it. All of it respects the " +
+                "motion setting, so Reduced still cuts straight there.",
         ),
     )
 

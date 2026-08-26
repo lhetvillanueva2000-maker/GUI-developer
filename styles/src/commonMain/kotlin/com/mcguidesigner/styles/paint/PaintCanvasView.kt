@@ -6,6 +6,12 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
@@ -13,6 +19,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -21,6 +28,7 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.mcguidesigner.styles.theme.LocalSkinPalette
+import com.mcguidesigner.styles.theme.MotionLevel
 import kotlin.math.roundToInt
 
 /**
@@ -40,7 +48,13 @@ import kotlin.math.roundToInt
  * a delay to every single stroke to save a mistake that happens rarely.
  */
 @Composable
-fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
+fun PaintCanvasView(
+    state: PaintState,
+    modifier: Modifier = Modifier,
+    /** 0..1 entrance progress; the sheet scales up into place. */
+    entrance: Float = 1f,
+    motion: MotionLevel = MotionLevel.FULL,
+) {
     val palette = LocalSkinPalette.current
     val scope = rememberCoroutineScope()
 
@@ -51,6 +65,25 @@ fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
     // ever affects what is painted. Read inside the draw lambda instead, it
     // invalidates the draw phase alone, so a moving finger goes straight from
     // the pointer event to pixels on screen with nothing in between.
+
+    // A clock for the trail's travelling colours, running only while a gesture
+    // is on screen. An always-on infinite transition would keep the frame loop
+    // awake for the whole session to animate something that is usually not
+    // there.
+    var shimmer by remember { mutableFloatStateOf(0f) }
+    val gestureActive = state.overlay != PaintOverlay.NONE
+    LaunchedEffect(gestureActive, motion.allowsLoops) {
+        if (!gestureActive || !motion.allowsLoops) {
+            shimmer = 0f
+            return@LaunchedEffect
+        }
+        val started = withFrameMillis { it }
+        while (true) {
+            withFrameMillis { now ->
+                shimmer = (((now - started) % TRAIL_CYCLE_MS) / TRAIL_CYCLE_MS.toFloat())
+            }
+        }
+    }
 
     Box(
         modifier
@@ -77,10 +110,15 @@ fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
                     val canvasPoint = fit.toCanvas(first.position, state)
                     var lastCanvasPoint = canvasPoint
                     val strokeTool = state.tool.isStroke && state.tool != PaintTool.PAN
+                    val gestureTool = state.tool.isGesture
+                    var gesturing = false
 
                     if (strokeTool && fit.contains(canvasPoint, state)) {
                         state.strokeStart(canvasPoint.x, canvasPoint.y)
                         painting = true
+                    } else if (gestureTool && fit.contains(canvasPoint, state)) {
+                        state.gestureStart(canvasPoint.x, canvasPoint.y)
+                        gesturing = true
                     }
                     first.consume()
 
@@ -97,6 +135,11 @@ fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
                                 state.cancelStroke()
                                 cancelled = true
                                 painting = false
+                            }
+                            if (gesturing) {
+                                state.gestureCancel()
+                                cancelled = true
+                                gesturing = false
                             }
                             lastCentroid = centroid(down.map { it.position })
                             lastSpan = span(down.map { it.position })
@@ -120,6 +163,8 @@ fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
                             lastCanvasPoint = p
                             if (painting) {
                                 state.strokeMove(p.x, p.y)
+                            } else if (gesturing) {
+                                state.gestureMove(p.x, p.y)
                             } else if (!cancelled && state.tool == PaintTool.PAN) {
                                 state.pan += change.positionChange()
                             }
@@ -129,8 +174,9 @@ fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
 
                     when {
                         painting -> state.strokeEnd(lastCanvasPoint.x, lastCanvasPoint.y)
+                        gesturing -> scope.launch { state.gestureEnd() }
                         cancelled -> Unit
-                        !state.tool.isStroke -> {
+                        !state.tool.isStroke && !state.tool.isGesture -> {
                             if (fit.contains(canvasPoint, state)) {
                                 scope.launch {
                                     state.tap(canvasPoint.x.roundToInt(), canvasPoint.y.roundToInt())
@@ -146,9 +192,142 @@ fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
             @Suppress("UNUSED_EXPRESSION")
             state.revision
             val fit = fitOf(state, size.width.roundToInt(), size.height.roundToInt())
-            drawSheet(state, fit)
+            drawSheet(state, fit, entrance)
+            // Read so the trail repaints as it travels.
+            @Suppress("UNUSED_EXPRESSION")
+            state.overlayRevision
+            drawGestureOverlay(state, fit, shimmer, palette.accent)
         }
     }
+}
+
+/** How long the trail's colours take to travel once around, in milliseconds. */
+private const val TRAIL_CYCLE_MS = 2200L
+
+/**
+ * What the magic eraser and the shape tool show while a finger is down.
+ *
+ * The trail is the whole point of the eraser being a drag. Nothing is removed
+ * until the finger lifts, so without a trail the gesture is invisible: you
+ * scribble over an object, see nothing at all, let go, and something vanishes.
+ * The trail is the tool telling you what it is about to take.
+ *
+ * It is drawn in travelling colour rather than one flat highlight because a
+ * single colour over a photograph disappears wherever the photograph happens to
+ * be that colour. A band that runs through the whole hue circle cannot be
+ * camouflaged by anything underneath it - and it also reads instantly as "the
+ * app is considering this", which a plain line does not.
+ *
+ * Three passes: a wide soft glow, the colour band, and a bright core. That is
+ * what gives it depth rather than looking like a coloured pencil line.
+ */
+private fun DrawScope.drawGestureOverlay(
+    state: PaintState,
+    fit: CanvasFit,
+    shimmer: Float,
+    accent: Color,
+) {
+    if (state.overlay == PaintOverlay.NONE) return
+    val path = state.overlayPath
+    if (path.isEmpty()) return
+
+    fun toScreen(point: com.mcguidesigner.core.paint.StrokePoint) =
+        Offset(fit.left + point.x * fit.scale, fit.top + point.y * fit.scale)
+
+    if (state.overlay == PaintOverlay.SHAPE) {
+        // The recognised shape, previewed over the rough drag, so the guess is
+        // visible before committing to it.
+        drawTrail(path.map(::toScreen), shimmer, width = 5f, glow = 0.35f)
+        state.shapeGuess?.let { guess ->
+            if (guess.shape == com.mcguidesigner.core.paint.RecognisedShape.FREEHAND) return@let
+            val outline = guess.points.map(::toScreen)
+            if (outline.size < 2) return@let
+            val closed = if (guess.closed) outline + outline.first() else outline
+            for (i in 0 until closed.size - 1) {
+                drawLine(accent.copy(alpha = 0.9f), closed[i], closed[i + 1], strokeWidth = 3f, cap = StrokeCap.Round)
+            }
+            outline.forEach { corner ->
+                drawCircle(accent, radius = 5f, center = corner)
+                drawCircle(Color.White, radius = 2f, center = corner)
+            }
+        }
+        return
+    }
+
+    val width = (state.activeSize * fit.scale).coerceIn(10f, 220f)
+    drawTrail(path.map(::toScreen), shimmer, width = width, glow = 0.55f)
+}
+
+/**
+ * A band of travelling colour along [points].
+ *
+ * The hue depends on distance along the path *plus* the clock, so the colours
+ * slide along the stroke rather than sitting still on it - which is what makes
+ * it read as active rather than merely coloured.
+ */
+private fun DrawScope.drawTrail(
+    points: List<Offset>,
+    shimmer: Float,
+    width: Float,
+    glow: Float,
+) {
+    if (points.size < 2) {
+        // A tap, or the very first event of a drag: still show something, or
+        // the tool looks dead for the first frame.
+        points.firstOrNull()?.let { drawCircle(hueAt(shimmer), radius = width / 2f, center = it) }
+        return
+    }
+
+    // Cumulative length, so the colour advances with distance rather than with
+    // the number of events - otherwise a slow drag rainbows faster than a quick
+    // one over the same line.
+    var travelled = 0f
+    val distances = FloatArray(points.size)
+    for (i in 1 until points.size) {
+        travelled += (points[i] - points[i - 1]).getDistance()
+        distances[i] = travelled
+    }
+    val total = travelled.coerceAtLeast(1f)
+
+    // Pass one: the glow. Wide, soft, low alpha.
+    for (i in 1 until points.size) {
+        val hue = hueAt(distances[i] / total * 1.6f + shimmer)
+        drawLine(
+            color = hue.copy(alpha = glow * 0.35f),
+            start = points[i - 1],
+            end = points[i],
+            strokeWidth = width * 1.9f,
+            cap = StrokeCap.Round,
+        )
+    }
+    // Pass two: the band itself.
+    for (i in 1 until points.size) {
+        val hue = hueAt(distances[i] / total * 1.6f + shimmer)
+        drawLine(
+            color = hue.copy(alpha = 0.85f),
+            start = points[i - 1],
+            end = points[i],
+            strokeWidth = width,
+            cap = StrokeCap.Round,
+        )
+    }
+    // Pass three: a bright core, which is what stops it looking like a fat
+    // crayon and makes it look lit.
+    for (i in 1 until points.size) {
+        drawLine(
+            color = Color.White.copy(alpha = 0.55f),
+            start = points[i - 1],
+            end = points[i],
+            strokeWidth = (width * 0.28f).coerceAtLeast(1.5f),
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+/** A saturated colour at [turn] revolutions around the hue circle. */
+private fun hueAt(turn: Float): Color {
+    val degrees = ((turn % 1f) + 1f) % 1f * 360f
+    return Color(hsbToRgb(degrees, 0.85f, 1f))
 }
 
 private fun centroid(points: List<Offset>): Offset {
@@ -205,10 +384,13 @@ private fun CanvasFit.contains(canvasPoint: Offset, state: PaintState): Boolean 
         canvasPoint.x <= state.document.width + state.activeSize &&
         canvasPoint.y <= state.document.height + state.activeSize
 
-private fun DrawScope.drawSheet(state: PaintState, fit: CanvasFit) {
+private fun DrawScope.drawSheet(state: PaintState, fit: CanvasFit, entrance: Float) {
     val document = state.document
-    val width = document.width * fit.scale
-    val height = document.height * fit.scale
+    // The sheet grows into place rather than appearing at full size - see the
+    // entrance in PaintScreen. At rest this is exactly 1 and costs nothing.
+    val grow = 0.88f + 0.12f * entrance.coerceIn(0f, 1f)
+    val width = document.width * fit.scale * grow
+    val height = document.height * fit.scale * grow
 
     // A shadow so the sheet reads as a sheet rather than as a hole in the grey.
     drawRect(

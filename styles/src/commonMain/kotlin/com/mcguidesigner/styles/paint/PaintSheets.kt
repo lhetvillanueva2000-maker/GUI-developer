@@ -59,6 +59,7 @@ import com.mcguidesigner.styles.paint.PaintIcons.magicEraser
 import com.mcguidesigner.styles.paint.PaintIcons.mergeDown
 import com.mcguidesigner.styles.paint.PaintIcons.pan
 import com.mcguidesigner.styles.paint.PaintIcons.plus
+import com.mcguidesigner.styles.paint.PaintIcons.shapes
 import com.mcguidesigner.styles.paint.PaintIcons.smudge
 import com.mcguidesigner.styles.theme.LocalSkinPalette
 import kotlinx.coroutines.launch
@@ -644,8 +645,8 @@ fun ToolSheet(
 
         val tools = listOf(
             PaintTool.BRUSH, PaintTool.ERASER, PaintTool.BUCKET,
-            PaintTool.EYEDROPPER, PaintTool.MAGIC_ERASER, PaintTool.SMUDGE,
-            PaintTool.BLUR, PaintTool.PAN,
+            PaintTool.EYEDROPPER, PaintTool.MAGIC_ERASER, PaintTool.SHAPE,
+            PaintTool.SMUDGE, PaintTool.BLUR, PaintTool.PAN,
         )
         tools.chunked(4).forEach { row ->
             Row(
@@ -677,6 +678,7 @@ fun ToolSheet(
                                 PaintTool.BUCKET -> bucket(tint)
                                 PaintTool.EYEDROPPER -> dropper(tint)
                                 PaintTool.MAGIC_ERASER -> magicEraser(tint)
+                                PaintTool.SHAPE -> shapes(tint)
                                 PaintTool.SMUDGE -> smudge(tint)
                                 PaintTool.BLUR -> blur(tint)
                                 PaintTool.PAN -> pan(tint)
@@ -700,8 +702,12 @@ fun ToolSheet(
         when (state.tool) {
             PaintTool.SMUDGE -> ToolHint("Opacity is how far colour is dragged. Size is the smear's width.")
             PaintTool.BLUR -> ToolHint("Opacity is how much softening each pass applies. Size sets the reach.")
-            PaintTool.BUCKET, PaintTool.MAGIC_ERASER ->
+            PaintTool.BUCKET ->
                 ToolHint("Tap the canvas. Colour range and edge softness are in the selection panel.")
+            PaintTool.MAGIC_ERASER ->
+                ToolHint("Scribble over what you want gone. Everything the scribble touches goes with it.")
+            PaintTool.SHAPE ->
+                ToolHint("Draw it roughly and let go — it becomes the shape you drew, tidied up.")
             PaintTool.EYEDROPPER -> ToolHint("Tap to take a colour, then it hands you back to the brush.")
             PaintTool.PAN -> ToolHint("Drag to move the canvas. Two fingers do this from any tool.")
             else -> Unit

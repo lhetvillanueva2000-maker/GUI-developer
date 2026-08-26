@@ -18,7 +18,11 @@ import com.mcguidesigner.core.paint.PaintDocument
 import com.mcguidesigner.core.paint.PaintLayer
 import com.mcguidesigner.core.paint.PaintOps
 import com.mcguidesigner.core.paint.Pixels
+import com.mcguidesigner.core.paint.RecognisedShape
 import com.mcguidesigner.core.paint.RegionFill
+import com.mcguidesigner.core.paint.ScribbleSelection
+import com.mcguidesigner.core.paint.ShapeGuess
+import com.mcguidesigner.core.paint.ShapeRecogniser
 import com.mcguidesigner.core.paint.Stabilizer
 import com.mcguidesigner.core.paint.StrokeEngine
 import com.mcguidesigner.core.paint.StrokePoint
@@ -34,6 +38,7 @@ enum class PaintTool(val label: String) {
     BUCKET("Bucket"),
     EYEDROPPER("Eyedropper"),
     MAGIC_ERASER("Magic Eraser"),
+    SHAPE("Shape"),
     SMUDGE("Smudge"),
     BLUR("Blur"),
     PAN("Pan"),
@@ -41,7 +46,21 @@ enum class PaintTool(val label: String) {
 
     /** Whether this tool draws with the brush engine. */
     val isStroke: Boolean get() = this == BRUSH || this == ERASER || this == SMUDGE || this == BLUR
+
+    /**
+     * Whether this tool follows a drag but paints nothing while it does.
+     *
+     * The magic eraser and the shape tool both collect a path and show it as an
+     * overlay, then act once the finger lifts - the eraser because what it
+     * removes depends on everywhere the scribble went, the shape tool because
+     * what it draws depends on the shape of the whole drag. Neither can commit
+     * anything mid-gesture without being wrong most of the way through.
+     */
+    val isGesture: Boolean get() = this == MAGIC_ERASER || this == SHAPE
 }
+
+/** What the canvas is drawing over the artwork, if anything. */
+enum class PaintOverlay { NONE, SCRIBBLE, SHAPE }
 
 /** Which panel is open over the canvas, if any. */
 enum class PaintSheet { NONE, LAYERS, COLOUR, BRUSH, TOOLS, CUTOUT }
@@ -343,6 +362,138 @@ class PaintState(
         flattened = Compositor.flatten(document, flattened)
         pushToSurface()
         revision++
+    }
+
+    // -- The gesture overlay ------------------------------------------------
+    //
+    // What the magic eraser and the shape tool draw while a finger is down.
+    // Neither writes to the layer until the gesture ends, so this is the only
+    // thing on screen showing what is about to happen - which makes it part of
+    // the tool rather than decoration on top of one.
+
+    var overlay by mutableStateOf(PaintOverlay.NONE)
+        private set
+
+    /**
+     * The live path, in canvas coordinates.
+     *
+     * A plain list plus a counter rather than a `mutableStateOf(List)`: the
+     * path grows on every pointer event and replacing an immutable list each
+     * time would allocate a new one per frame for the collector to clean up.
+     */
+    val overlayPath = ArrayList<StrokePoint>()
+
+    var overlayRevision by mutableStateOf(0)
+        private set
+
+    /** What the shape tool currently thinks the drag is. Null until it is sure. */
+    var shapeGuess by mutableStateOf<ShapeGuess?>(null)
+        private set
+
+    /** Filled in after a scribble erase, so the result can be reported. */
+    var lastScribbleShape by mutableStateOf<String?>(null)
+
+    fun gestureStart(x: Float, y: Float) {
+        overlayPath.clear()
+        overlayPath.add(StrokePoint(x, y))
+        shapeGuess = null
+        overlay = if (tool == PaintTool.SHAPE) PaintOverlay.SHAPE else PaintOverlay.SCRIBBLE
+        overlayRevision++
+    }
+
+    fun gestureMove(x: Float, y: Float) {
+        if (overlay == PaintOverlay.NONE) return
+        val last = overlayPath.lastOrNull()
+        // Thinned: a fast drag delivers far more points than the recogniser or
+        // the trail can use, and the extras only slow both down.
+        if (last != null && distanceBetween(last.x, last.y, x, y) < 1.5f) return
+        overlayPath.add(StrokePoint(x, y))
+        if (overlay == PaintOverlay.SHAPE && overlayPath.size % 4 == 0) {
+            // Recognised live, so the preview settles as the shape closes
+            // rather than appearing from nowhere when the finger lifts.
+            shapeGuess = ShapeRecogniser.recognise(overlayPath)
+        }
+        overlayRevision++
+    }
+
+    suspend fun gestureEnd() {
+        val path = overlayPath.toList()
+        val mode = overlay
+        overlay = PaintOverlay.NONE
+        overlayPath.clear()
+        overlayRevision++
+        if (path.isEmpty()) {
+            shapeGuess = null
+            return
+        }
+        when (mode) {
+            PaintOverlay.SCRIBBLE -> scribbleErase(path)
+            PaintOverlay.SHAPE -> drawRecognisedShape(path)
+            PaintOverlay.NONE -> Unit
+        }
+        shapeGuess = null
+    }
+
+    fun gestureCancel() {
+        overlay = PaintOverlay.NONE
+        overlayPath.clear()
+        shapeGuess = null
+        overlayRevision++
+    }
+
+    /**
+     * Erases everything the scribble passed over.
+     *
+     * The band under the stroke scales with the brush size, so the same size
+     * slider that controls the brush controls how wide a swipe counts - there
+     * is no reason for this tool to have a second, separate width.
+     */
+    private suspend fun scribbleErase(path: List<StrokePoint>) {
+        val layer = document.active ?: return
+        if (layer.locked) return
+        val radius = (activeSize / 2f).roundToInt().coerceIn(2, 80)
+        val removed = heavy("Removing what you scribbled over") {
+            val mask = ScribbleSelection.select(
+                source = layer.pixels,
+                width = document.width,
+                height = document.height,
+                path = path,
+                radius = radius,
+                tolerance = tolerance,
+                contiguous = contiguous,
+                feather = featherEdges + 1,
+            )
+            undo.begin("Magic erase", layer)
+            undo.touchAll(layer)
+            val changed = ScribbleSelection.erase(layer, mask)
+            undo.commit(layer)
+            changed
+        }
+        lastScribbleShape = if (removed) null else "Nothing matched that scribble."
+        refreshInBackground()
+    }
+
+    /** Lays down whatever the drag turned out to be. */
+    private suspend fun drawRecognisedShape(path: List<StrokePoint>) {
+        val layer = document.active ?: return
+        if (layer.locked) return
+        val guess = ShapeRecogniser.recognise(path)
+        val outline = if (guess.shape == RecognisedShape.FREEHAND) path else ShapeRecogniser.toStrokePath(guess)
+
+        undo.begin(guess.shape.label, layer)
+        val b = brush
+        engine.clear()
+        outline.forEachIndexed { index, point ->
+            if (index == 0) engine.begin(point, b) else engine.extendTo(point, b, 0f)
+        }
+        if (engine.hasDirt) {
+            undo.touch(layer, engine.dirtyLeft, engine.dirtyTop, engine.dirtyRight, engine.dirtyBottom)
+        }
+        PaintOps.paint(layer, engine, colour, activeOpacity)
+        undo.commit(layer)
+        lastScribbleShape = guess.shape.label
+        rememberColour()
+        refreshInBackground()
     }
 
     // -- Strokes -----------------------------------------------------------
@@ -708,7 +859,6 @@ class PaintState(
         when (tool) {
             PaintTool.BUCKET -> bucket(x, y)
             PaintTool.EYEDROPPER -> pick(x, y)
-            PaintTool.MAGIC_ERASER -> magicErase(x, y)
             else -> Unit
         }
     }

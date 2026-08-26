@@ -501,6 +501,29 @@ object PaintIcons {
         )
     }
 
+    /** The shape tool: a square, a circle and a triangle overlapping. */
+    fun DrawScope.shapes(tint: Color) {
+        shape(tint, filled = false, weight = 0.075f) { w, h ->
+            moveTo(w * 0.08f, h * 0.30f)
+            lineTo(w * 0.56f, h * 0.30f)
+            lineTo(w * 0.56f, h * 0.78f)
+            lineTo(w * 0.08f, h * 0.78f)
+            close()
+        }
+        drawCircle(
+            tint,
+            radius = size.minDimension * 0.24f,
+            center = Offset(size.width * 0.70f, size.height * 0.34f),
+            style = Stroke(width = size.minDimension * 0.075f),
+        )
+        shape(tint, filled = false, weight = 0.075f) { w, h ->
+            moveTo(w * 0.70f, h * 0.52f)
+            lineTo(w * 0.94f, h * 0.92f)
+            lineTo(w * 0.46f, h * 0.92f)
+            close()
+        }
+    }
+
     /** Bounds helper for icons that want to fill their box exactly. */
     fun DrawScope.box(): Rect = Rect(Offset.Zero, size)
 }

@@ -157,6 +157,7 @@ fun AndroidApp(
                             paintLauncher.launch(name)
                         },
                         onImportImage = { paintImportLauncher.launch(arrayOf("image/*")) },
+                        motion = app.appearance.motion,
                         modifier = Modifier
                             .fillMaxSize()
                             .windowInsetsPadding(WindowInsets.safeDrawing),

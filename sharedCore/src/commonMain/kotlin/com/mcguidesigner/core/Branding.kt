@@ -31,7 +31,7 @@ object Branding {
      * broken build, which is exactly the kind of thing that rots unnoticed -
      * so it lives here, next to the name, with this comment on it.
      */
-    const val VERSION = "2.1.2"
+    const val VERSION = "2.2.0"
 
     /** The downloadable that installs it. */
     const val INSTALLER_NAME = "UILabs Installer"
