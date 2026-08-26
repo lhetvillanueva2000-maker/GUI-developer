@@ -20,6 +20,7 @@ import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 private const val RED = 0xFFFF0000.toInt()
@@ -144,6 +145,33 @@ class PaintEngineTest {
             }
         }
         assertTrue(partial > 8, "expected an anti-aliased rim, found $partial partial pixels")
+    }
+
+    @Test
+    fun `a large brush does not rebuild its mask on every dab`() {
+        // The quantisation is relative to the radius. A fixed step is fine at
+        // radius 2 and ruinous at radius 200, where a taper varies the radius
+        // continuously: every dab misses the cache and rebuilds a 400-square
+        // mask, which costs more than the dab it was meant to make cheap.
+        val a = BrushStamp.of(200f, BrushShape.DIP_PEN_SOFT.hardness)
+        val b = BrushStamp.of(200.4f, BrushShape.DIP_PEN_SOFT.hardness)
+        assertSame(a, b, "a 0.4px change on a 200px radius must reuse the mask")
+
+        // Small brushes still get fine steps - a fifth of a pixel matters there.
+        val small = BrushStamp.of(2f, BrushShape.DIP_PEN_SOFT.hardness)
+        val smaller = BrushStamp.of(1.2f, BrushShape.DIP_PEN_SOFT.hardness)
+        assertTrue(small !== smaller, "a small brush must still resolve finely")
+    }
+
+    @Test
+    fun `the stamp cache holds more than one entry`() {
+        // Symmetry alternates between tips and a taper walks the radius up and
+        // back down; a single-entry cache thrashes on both.
+        val first = BrushStamp.of(40f, BrushShape.DIP_PEN_SOFT.hardness)
+        BrushStamp.of(60f, BrushShape.DIP_PEN_SOFT.hardness)
+        BrushStamp.of(80f, BrushShape.DIP_PEN_SOFT.hardness)
+        val again = BrushStamp.of(40f, BrushShape.DIP_PEN_SOFT.hardness)
+        assertSame(first, again, "going back to an earlier size must still hit")
     }
 
     // -- Strokes -----------------------------------------------------------

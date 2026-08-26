@@ -191,6 +191,10 @@ class PaintState(
     fun release() {
         surface?.dispose()
         surface = null
+        patchSurface?.dispose()
+        patchSurface = null
+        patchWidth = 0
+        patchHeight = 0
     }
 
     private fun pushToSurface() {
@@ -204,6 +208,10 @@ class PaintState(
         flattened = Compositor.flatten(document)
         surface?.dispose()
         surface = PaintSurface(width, height)
+        patchSurface?.dispose()
+        patchSurface = null
+        patchWidth = 0
+        patchHeight = 0
         pushToSurface()
         zoom = 1f
         pan = Offset.Zero
@@ -226,6 +234,85 @@ class PaintState(
         val y1 = bottom.coerceIn(0, document.height - 1)
         if (x1 < x0 || y1 < y0) return
         surface?.updateRegion(flattened, x0, y0, x1 - x0 + 1, y1 - y0 + 1)
+        revision++
+    }
+
+    // -- The stroke patch ---------------------------------------------------
+    //
+    // Writing into the canvas bitmap invalidates it *entirely* as far as the
+    // renderer is concerned: the platform tracks a generation counter on the
+    // bitmap, not a dirty rectangle, so changing one pixel of a 1536-square
+    // canvas re-uploads nine megabytes to the GPU on the next frame. Narrowing
+    // the pixel copy - which 2.1.1 did - saves the copy and not the upload,
+    // which is why drawing still dragged.
+    //
+    // So during a stroke the canvas bitmap is not touched at all. The changed
+    // rectangle is mirrored into a second, small surface, and the canvas draws
+    // the big bitmap and then this patch on top of the stale area. Only the
+    // patch is re-uploaded per frame, and it is the size of the stroke rather
+    // than the size of the document. The two are reconciled once, when the
+    // finger lifts.
+
+    var patchSurface: PaintSurface? = null
+        private set
+
+    /** The document-space rectangle [patchSurface] currently mirrors. */
+    var patchLeft = 0
+        private set
+    var patchTop = 0
+        private set
+    var patchWidth = 0
+        private set
+    var patchHeight = 0
+        private set
+
+    val patchActive: Boolean get() = patchWidth > 0 && patchHeight > 0 && patchSurface != null
+
+    /**
+     * Mirrors the stroke's accumulated rectangle into the patch.
+     *
+     * Returns false when the stroke has grown large enough that the patch has
+     * stopped being a saving, at which point the caller falls back to writing
+     * into the canvas bitmap - no worse than before, and only for strokes that
+     * genuinely cover most of the document.
+     */
+    private fun updatePatch(): Boolean {
+        val left = strokeBounds[0]
+        val top = strokeBounds[1]
+        val right = strokeBounds[2]
+        val bottom = strokeBounds[3]
+        if (right < left || bottom < top) return false
+
+        val width = right - left + 1
+        val height = bottom - top + 1
+        val documentArea = document.width.toLong() * document.height
+        if (width.toLong() * height > documentArea / 2) return false
+
+        val current = patchSurface
+        if (current == null || current.width < width || current.height < height) {
+            current?.dispose()
+            // Rounded up in chunks so a growing stroke does not reallocate on
+            // every frame; a 128-pixel step is one reallocation per few dozen.
+            val capacityW = ((width + 127) / 128 * 128).coerceAtMost(document.width)
+            val capacityH = ((height + 127) / 128 * 128).coerceAtMost(document.height)
+            patchSurface = PaintSurface(capacityW, capacityH)
+        }
+        patchLeft = left
+        patchTop = top
+        patchWidth = width
+        patchHeight = height
+        patchSurface?.updateFrom(flattened, document.width, left, top, width, height)
+        revision++
+        return true
+    }
+
+    /** Folds the patch back into the canvas bitmap and puts it away. */
+    private fun retirePatch() {
+        if (patchWidth > 0 && patchHeight > 0) {
+            surface?.updateRegion(flattened, patchLeft, patchTop, patchWidth, patchHeight)
+        }
+        patchWidth = 0
+        patchHeight = 0
         revision++
     }
 
@@ -362,7 +449,10 @@ class PaintState(
         // stroke have not moved - so neither a full recomposite nor a full
         // upload is needed to finish a stroke. Only the layer panel's
         // thumbnails are stale, and they are only on screen if it is open.
-        if (right >= left && bottom >= top) bumpRegion(left, top, right, bottom)
+        if (right >= left && bottom >= top) {
+            surface?.updateRegion(flattened, left, top, right - left + 1, bottom - top + 1)
+        }
+        retirePatch()
         layerRevision++
     }
 
@@ -389,8 +479,9 @@ class PaintState(
                 }
             }
             Compositor.repaint(document, flattened, left, top, right, bottom)
-            bumpRegion(left, top, right, bottom)
+            surface?.updateRegion(flattened, left, top, right - left + 1, bottom - top + 1)
         }
+        retirePatch()
         engine.clear()
         undo.cancel()
         strokeLayer = null
@@ -472,7 +563,7 @@ class PaintState(
 
         Compositor.repaint(document, flattened, left, top, right, bottom)
         growStroke(left, top, right, bottom)
-        bumpRegion(left, top, right, bottom)
+        if (!updatePatch()) bumpRegion(left, top, right, bottom)
     }
 
     /**
@@ -524,7 +615,7 @@ class PaintState(
 
         Compositor.repaint(document, flattened, left, top, right, bottom)
         growStroke(left, top, right, bottom)
-        bumpRegion(left, top, right, bottom)
+        if (!updatePatch()) bumpRegion(left, top, right, bottom)
     }
 
     /**
@@ -563,7 +654,7 @@ class PaintState(
 
         Compositor.repaint(document, flattened, left, top, right, bottom)
         growStroke(left, top, right, bottom)
-        bumpRegion(left, top, right, bottom)
+        if (!updatePatch()) bumpRegion(left, top, right, bottom)
     }
 
     /** How far the blur tool reaches, in pixels, from the brush size. */

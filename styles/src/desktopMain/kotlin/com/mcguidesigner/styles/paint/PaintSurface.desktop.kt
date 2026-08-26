@@ -77,6 +77,34 @@ actual class PaintSurface actual constructor(
         }
     }
 
+    actual fun updateFrom(
+        pixels: IntArray,
+        sourceStride: Int,
+        sourceX: Int,
+        sourceY: Int,
+        width: Int,
+        height: Int,
+    ) {
+        val target = bitmap ?: return
+        val w = width.coerceIn(1, this.width)
+        val h = height.coerceIn(1, this.height)
+        if (sourceX < 0 || sourceY < 0) return
+        if ((sourceY + h - 1).toLong() * sourceStride + sourceX + w > pixels.size) return
+        for (row in 0 until h) {
+            val from = (sourceY + row) * sourceStride + sourceX
+            var b = row * this.width * 4
+            for (i in from until from + w) {
+                val p = pixels[i]
+                bytes[b] = (p and 0xFF).toByte()
+                bytes[b + 1] = ((p ushr 8) and 0xFF).toByte()
+                bytes[b + 2] = ((p ushr 16) and 0xFF).toByte()
+                bytes[b + 3] = ((p ushr 24) and 0xFF).toByte()
+                b += 4
+            }
+        }
+        target.installPixels(info, bytes, info.minRowBytes)
+    }
+
     actual fun image(): ImageBitmap = (bitmap ?: Bitmap().apply { allocPixels(info) }).asComposeImageBitmap()
 
     actual fun dispose() {

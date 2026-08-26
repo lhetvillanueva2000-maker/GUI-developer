@@ -45,6 +45,22 @@ expect class PaintSurface(width: Int, height: Int) {
     fun updateRegion(pixels: IntArray, x: Int, y: Int, width: Int, height: Int)
 
     /**
+     * Copies a window of a *larger* buffer into this surface's top-left corner.
+     *
+     * For the stroke patch: a small surface holding one rectangle cut out of
+     * the full canvas buffer. [sourceStride] is the width of the buffer being
+     * read, not of the window.
+     */
+    fun updateFrom(
+        pixels: IntArray,
+        sourceStride: Int,
+        sourceX: Int,
+        sourceY: Int,
+        width: Int,
+        height: Int,
+    )
+
+    /**
      * The renderer's view of the pixels.
      *
      * Valid until the next [update]; callers should not hold it across frames.

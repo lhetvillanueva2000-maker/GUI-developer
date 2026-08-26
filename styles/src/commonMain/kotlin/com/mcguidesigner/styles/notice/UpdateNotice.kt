@@ -82,31 +82,24 @@ object AppNotice {
      */
     val current = Notice(
         id = "whatsnew-${Branding.VERSION}",
-        headline = "${Branding.NAME} ${Branding.VERSION} — the canvas keeps up now",
+        headline = "${Branding.NAME} ${Branding.VERSION} — straight from your finger to the screen",
         points = listOf(
-            "Drawing was copying the entire canvas into the screen's bitmap on " +
-                "every frame — nine megabytes sixty times a second to show a " +
-                "change covering a few thousand pixels. Only the area under the " +
-                "brush is uploaded now, and layer opacity no longer rebuilds " +
-                "every thumbnail while you drag it.",
-            "The cutout, the bucket, the magic eraser and line-art lift ran on " +
-                "the frame thread, so the \"working\" message never had a frame " +
-                "to appear in and the app simply froze. They run in the " +
-                "background now, the message shows, and the canvas refuses " +
-                "touches while a layer is being rewritten.",
-            "Sliders and the colour wheel had a tap handler and a drag handler " +
-                "racing for the same touch, so quick taps landed on neither. " +
-                "One handler each: it jumps to where you touched, then follows.",
-            "Smudge and Blur are real tools rather than list entries. Smudge " +
-                "carries a colour reservoir along the stroke; blur reads from a " +
-                "snapshot so it softens instead of smearing along the scan order.",
-            "The cutout got better at the case that broke it: a subject cropped " +
-                "at the frame edge used to put its own colour into the " +
-                "background model and could come out inverted. Minor border " +
-                "colours are discarded, the result is checked against the one " +
-                "thing we know, and a guided filter pulls the matte onto the " +
-                "image's real edges. It also works at 512 instead of 320 now, " +
-                "which keeps thin features a coarser pass lost.",
+            "The canvas bitmap is no longer touched while you draw. Writing one " +
+                "pixel of it invalidated the whole thing as far as the GPU was " +
+                "concerned — nine megabytes re-uploaded per frame — so narrowing " +
+                "the copy last time saved the copy and not the upload. The " +
+                "stroke is mirrored into a small patch instead, sized to the " +
+                "stroke rather than the document, and the two are reconciled " +
+                "once when your finger lifts.",
+            "Drawing no longer recomposes the screen. The repaint signal is read " +
+                "in the draw phase instead of the composable body, so a moving " +
+                "finger goes pointer event → pixels with no composition or " +
+                "layout in between.",
+            "Large brushes stopped rebuilding their mask on every dab. The size " +
+                "cache is quantised in log space now — half a percent of the " +
+                "radius, at any radius — and holds eight entries, so a taper or " +
+                "a symmetry stroke hits it instead of rebuilding a 400-pixel " +
+                "mask each time.",
         ),
     )
 

@@ -3,6 +3,8 @@ package com.mcguidesigner.core.paint
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.exp
+import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -102,21 +104,47 @@ class BrushStamp private constructor(
         else coverage[y * diameter + x].toInt() and 0xFF
 
     companion object {
-        private var cachedKey: Long = -1L
-        private var cached: BrushStamp? = null
+        private const val CACHE = 8
+        private val keys = LongArray(CACHE) { -1L }
+        private val stamps = arrayOfNulls<BrushStamp>(CACHE)
+        private var next = 0
 
-        /** The stamp for [radius] and [hardness], from cache when possible. */
+        /**
+         * The stamp for [radius] and [hardness], from cache when possible.
+         *
+         * Two things here are load-bearing on a large brush.
+         *
+         * The quantisation is *relative* - roughly a two-hundredth of the
+         * radius - rather than a fixed twentieth of a pixel. A fixed step is
+         * fine at radius 2 and disastrous at radius 200, where a taper varies
+         * the radius continuously and every single dab misses the cache. Each
+         * miss rebuilds a 400-square mask with sixteen samples per rim pixel,
+         * which is more work than the dab it was meant to make cheap.
+         *
+         * And there are eight slots rather than one, because symmetry alternates
+         * between tips and a taper walks the radius up and back down; a
+         * single-entry cache thrashes on both.
+         */
         fun of(radius: Float, hardness: Float): BrushStamp {
-            // Quantised so that a size slider dragged through a hundred values
-            // does not build a hundred masks; a twentieth of a pixel is far
-            // below what anybody can see in a brush edge.
-            val rKey = (radius * 20f).roundToInt().toLong()
+            // Quantised in log space, which is what makes the step relative and
+            // - unlike scaling a step by the radius - a pure function of it.
+            // Deriving the step from the radius being quantised does not settle:
+            // 200 and 200.4 pick slightly different steps and land on different
+            // buckets, so the cache misses on exactly the pairs it exists for.
+            // One bucket per half percent of radius, all the way down.
+            val safe = radius.coerceAtLeast(0.5f)
+            val rKey = (ln(safe) * 200f).roundToInt()
+            val quantised = exp(rKey / 200f)
             val hKey = (hardness.coerceIn(0f, 1f) * 100f).roundToInt().toLong()
-            val key = (rKey shl 8) or hKey
-            cached?.let { if (cachedKey == key) return it }
-            val built = build(rKey / 20f, hKey / 100f)
-            cachedKey = key
-            cached = built
+            val key = (rKey.toLong() shl 8) or hKey
+
+            for (i in 0 until CACHE) {
+                if (keys[i] == key) stamps[i]?.let { return it }
+            }
+            val built = build(quantised, hKey / 100f)
+            keys[next] = key
+            stamps[next] = built
+            next = (next + 1) % CACHE
             return built
         }
 

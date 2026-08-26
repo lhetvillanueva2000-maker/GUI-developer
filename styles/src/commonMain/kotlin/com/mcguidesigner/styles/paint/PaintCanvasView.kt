@@ -6,11 +6,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -46,13 +42,15 @@ import kotlin.math.roundToInt
 @Composable
 fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
     val palette = LocalSkinPalette.current
-    var viewport by remember { mutableStateOf(IntSize.Zero) }
     val scope = rememberCoroutineScope()
 
-    // Read so that the canvas recomposes when the pixels change. The value
-    // itself is unused - see PaintState.revision.
-    @Suppress("UNUSED_EXPRESSION")
-    state.revision
+    // `state.revision` is deliberately *not* read here.
+    //
+    // Reading it in the composable body makes every frame of a stroke a full
+    // recomposition - composition, layout, then draw - for a change that only
+    // ever affects what is painted. Read inside the draw lambda instead, it
+    // invalidates the draw phase alone, so a moving finger goes straight from
+    // the pointer event to pixels on screen with nothing in between.
 
     Box(
         modifier
@@ -61,7 +59,6 @@ fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
             .pointerInput(state.document, state.tool) {
                 awaitEachGesture {
                     val first = awaitFirstDown(requireUnconsumed = false)
-                    viewport = IntSize(size.width, size.height)
                     // A long operation is rewriting the layer. Touching the
                     // canvas now would start a stroke on pixels that are being
                     // replaced underneath it.
@@ -145,7 +142,9 @@ fun PaintCanvasView(state: PaintState, modifier: Modifier = Modifier) {
             },
     ) {
         androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-            viewport = IntSize(size.width.roundToInt(), size.height.roundToInt())
+            // Read here, in the draw phase: this is what schedules the redraw.
+            @Suppress("UNUSED_EXPRESSION")
+            state.revision
             val fit = fitOf(state, size.width.roundToInt(), size.height.roundToInt())
             drawSheet(state, fit)
         }
@@ -218,16 +217,40 @@ private fun DrawScope.drawSheet(state: PaintState, fit: CanvasFit) {
         size = Size(width, height),
     )
 
+    val quality = if (state.pixelated) FilterQuality.None else FilterQuality.Medium
     val image = state.surface?.image()
     if (image != null) {
         drawImage(
             image = image,
             dstOffset = IntOffset(fit.left.roundToInt(), fit.top.roundToInt()),
             dstSize = IntSize(width.roundToInt(), height.roundToInt()),
-            filterQuality = if (state.pixelated) FilterQuality.None else FilterQuality.Medium,
+            filterQuality = quality,
         )
     } else {
         drawRect(Color.White, Offset(fit.left, fit.top), Size(width, height))
+    }
+
+    // The stroke in progress, over the part of the canvas bitmap that is
+    // deliberately stale. See PaintState's patch section: the big bitmap is
+    // not written to while a finger is down, because touching it at all costs
+    // a full re-upload of the whole thing.
+    if (state.patchActive) {
+        state.patchSurface?.let { patch ->
+            drawImage(
+                image = patch.image(),
+                srcOffset = IntOffset.Zero,
+                srcSize = IntSize(state.patchWidth, state.patchHeight),
+                dstOffset = IntOffset(
+                    (fit.left + state.patchLeft * fit.scale).roundToInt(),
+                    (fit.top + state.patchTop * fit.scale).roundToInt(),
+                ),
+                dstSize = IntSize(
+                    (state.patchWidth * fit.scale).roundToInt().coerceAtLeast(1),
+                    (state.patchHeight * fit.scale).roundToInt().coerceAtLeast(1),
+                ),
+                filterQuality = quality,
+            )
+        }
     }
 
     if (state.showGrid && fit.scale > 0.05f) {

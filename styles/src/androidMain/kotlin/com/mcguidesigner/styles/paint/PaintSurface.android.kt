@@ -46,6 +46,22 @@ actual class PaintSurface actual constructor(
         target.setPixels(pixels, y0 * this.width + x0, this.width, x0, y0, w, h)
     }
 
+    actual fun updateFrom(
+        pixels: IntArray,
+        sourceStride: Int,
+        sourceX: Int,
+        sourceY: Int,
+        width: Int,
+        height: Int,
+    ) {
+        val target = bitmap ?: return
+        val w = width.coerceIn(1, this.width)
+        val h = height.coerceIn(1, this.height)
+        if (sourceX < 0 || sourceY < 0) return
+        if ((sourceY + h - 1).toLong() * sourceStride + sourceX + w > pixels.size) return
+        target.setPixels(pixels, sourceY * sourceStride + sourceX, sourceStride, 0, 0, w, h)
+    }
+
     actual fun image(): ImageBitmap =
         wrapped ?: bitmap!!.asImageBitmap().also { wrapped = it }
 
