@@ -91,6 +91,7 @@ import com.mcguidesigner.desktop.widgets.NudgePad
 import com.mcguidesigner.desktop.widgets.ToolbarButton
 import com.mcguidesigner.desktop.widgets.ToolbarSeparator
 import com.mcguidesigner.desktop.widgets.WithTooltip
+import com.mcguidesigner.styles.canvas.DesignSurface
 import com.mcguidesigner.styles.editor.DocumentTabs
 import com.mcguidesigner.styles.settings.HelpScreen
 import com.mcguidesigner.styles.editor.TabInfo
@@ -197,7 +198,7 @@ fun DesktopEditor(
                         // code are three views of one document, not three screens.
                         Crossfade(targetState = state.viewMode, label = "viewMode") { mode ->
                             when (mode) {
-                                ViewMode.DESIGN -> DesignCanvasArea(
+                                ViewMode.DESIGN -> DesignSurface(
                                     controller = controller,
                                     state = state,
                                     textures = textures,

@@ -661,9 +661,9 @@ html[data-form="tablet"] .desk-only { display: none; }
       <span class="word">UI<span class="slot">LABS</span></span>
     </a>
     <nav aria-label="Sections">
+      <a href="app/">Open the editor</a>
       <a href="#targets">What it makes</a>
       <a href="#paint">Paint</a>
-      <a href="#about">About</a>
       <a href="#downloads">Downloads</a>
     </nav>
     <span class="spacer"></span>
@@ -705,7 +705,17 @@ html[data-form="tablet"] .desk-only { display: none; }
       </p>
 
       <div class="hero-actions">
-        <a class="btn btn-primary" id="cta"
+        <a class="btn btn-primary" href="app/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 4.5 19 12 5 19.5z"/>
+          </svg>
+          <span class="lines">
+            <span>Open the editor</span>
+            <span class="sub">Runs in this tab · nothing to install</span>
+          </span>
+        </a>
+        <a class="btn btn-ghost" id="cta"
            href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/latest">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -716,7 +726,6 @@ html[data-form="tablet"] .desk-only { display: none; }
             <span class="sub" id="cta-sub">All platforms · GitHub releases</span>
           </span>
         </a>
-        <a class="btn btn-ghost" href="#downloads">See every download</a>
       </div>
 
       <p class="detected">
@@ -725,6 +734,11 @@ html[data-form="tablet"] .desk-only { display: none; }
       </p>
 
       <ul class="assurances">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg>
+          Nothing is uploaded
+        </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg>
@@ -795,6 +809,70 @@ html[data-form="tablet"] .desk-only { display: none; }
     </div>
   </div>
 </div>
+
+<!-- ======================= RUN IT HERE ======================= -->
+<section id="run" style="background:var(--bg-deep)">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker">No install</p>
+      <h2>The whole editor runs in this tab</h2>
+      <p>
+        Not a demo, and not a cut-down preview. It is the same Kotlin that builds
+        the Windows, macOS, Linux and Android apps, compiled to WebAssembly and
+        drawing through the same renderer — so the screens are not lookalikes of
+        the app, they are the app.
+      </p>
+    </div>
+
+    <div class="grid grid-3">
+      <article class="card">
+        <h3>What runs</h3>
+        <p>
+          All of it. Java and Bedrock screens on the design canvas, with the same
+          drag, resize, rotate, marquee and snapping. The paint app, with layers,
+          blend modes, the scribble magic eraser and shape recognition. Every
+          export: resource packs, the project file, HTML + CSS, React, SwiftUI,
+          Flutter and Android XML.
+        </p>
+      </article>
+
+      <article class="card">
+        <h3>What a browser does differently</h3>
+        <p>
+          A page cannot write to your disk, so Save is a download and Open is a
+          file picker — and an export of more than one file arrives as a zip
+          rather than as fourteen separate downloads. Your document is kept in
+          the tab itself, so closing it and coming back finds the design where
+          you left it.
+        </p>
+      </article>
+
+      <article class="card">
+        <h3>What it needs</h3>
+        <p>
+          A browser with WebAssembly garbage collection: Chrome or Edge 119+,
+          Firefox 120+, Safari 18.4+. The page checks before it downloads
+          anything and says so plainly if the answer is no. The first visit
+          fetches a few megabytes; after that your browser has it cached.
+        </p>
+      </article>
+    </div>
+
+    <div class="hero-actions" style="margin-top:26px">
+      <a class="btn btn-primary" href="app/">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 4.5 19 12 5 19.5z"/>
+        </svg>
+        <span class="lines">
+          <span>Open the editor</span>
+          <span class="sub">Nothing is uploaded — it all stays in this tab</span>
+        </span>
+      </a>
+      <a class="btn btn-ghost" href="#downloads">Or install it properly</a>
+    </div>
+  </div>
+</section>
 
 <!-- ======================= TARGETS ======================= -->
 <section id="targets">
@@ -1116,9 +1194,11 @@ html[data-form="tablet"] .desk-only { display: none; }
     </div>
 
     <div class="notice for-ios">
-      <b>There is no iOS build.</b>
-      Apple does not allow installing an app outside the App Store, and UILabs is not
-      published there. Use the Android app, or any of the desktop packages above.
+      <b>There is nothing here to install on an iPhone or iPad.</b>
+      Apple does not allow installing an app from outside the App Store, and UILabs
+      is not published there. The browser build is the answer instead — it is the
+      same editor, and it runs in Safari 18.4 and up:
+      <a href="app/">open it here</a>.
     </div>
 
     <details class="dl-secondary">
@@ -1246,9 +1326,8 @@ html[data-form="tablet"] .desk-only { display: none; }
 
 <!-- Phones only: the primary action, reachable from anywhere on the page. -->
 <div class="dock" id="dock">
-  <span class="who" id="dock-who">Your device</span>
-  <a class="btn btn-primary" id="dock-cta"
-     href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/latest">Download</a>
+  <span class="who" id="dock-who">Runs in this tab</span>
+  <a class="btn btn-primary" href="app/">Open the editor</a>
 </div>
 
 <script>
@@ -1420,8 +1499,14 @@ html[data-form="tablet"] .desk-only { display: none; }
     var cta = document.getElementById("cta");
     var ctaLabel = document.getElementById("cta-label");
     var ctaSub = document.getElementById("cta-sub");
-    var dockCta = document.getElementById("dock-cta");
     var dockWho = document.getElementById("dock-who");
+
+    // The dock's button always opens the browser build, because that is the
+    // one action that works on every device this page can be read on. What it
+    // says beside it is the only part that changes.
+    dockWho.textContent = PICK[device.os]
+      ? "Runs in this tab"
+      : "The only way to run it here";
 
     if (chosen) {
       chosen.classList.add("is-recommended");
@@ -1446,23 +1531,13 @@ html[data-form="tablet"] .desk-only { display: none; }
       ctaSub.textContent = device.os === "macos"
         ? size + " · " + ext + " · Apple Silicon"
         : size + " · " + ext + " · " + shown;
-
-      dockCta.href = href;
-      dockCta.setAttribute("download", "");
-      dockCta.textContent = "Get it for " + OS_NAME[device.os];
-      dockWho.textContent = size + " · " + OS_NAME[device.os];
     } else {
       cta.href = RELEASES + "/latest";
       cta.removeAttribute("download");
       ctaLabel.textContent = "See every download";
       ctaSub.textContent = device.os === "ios" || device.os === "ipados"
-        ? "No " + OS_NAME[device.os] + " build — desktop or Android"
+        ? "No " + OS_NAME[device.os] + " build to install"
         : "All platforms · GitHub releases";
-
-      dockCta.href = "#downloads";
-      dockCta.removeAttribute("download");
-      dockCta.textContent = "See downloads";
-      dockWho.textContent = OS_NAME[device.os];
     }
   }
 

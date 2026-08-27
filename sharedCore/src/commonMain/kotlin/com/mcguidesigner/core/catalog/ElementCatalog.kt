@@ -766,11 +766,20 @@ object ElementCatalog {
 
     fun forEdition(edition: Edition): List<ElementDefinition> = definitions.filter { it.supports(edition) }
 
-    /** Palette contents grouped by category, filtered to [edition]. */
+    /**
+     * Palette contents grouped by category, filtered to [edition].
+     *
+     * Sorted by hand into a `LinkedHashMap` rather than with `toSortedMap`,
+     * which only exists on the JVM: `associate` preserves the order it is
+     * given, so the result iterates in category order exactly as before, and
+     * the function now compiles for every target rather than two of them.
+     */
     fun grouped(edition: Edition): Map<ElementCategory, List<ElementDefinition>> =
         forEdition(edition)
             .groupBy { it.category }
-            .toSortedMap(compareBy { it.ordinal })
+            .entries
+            .sortedBy { it.key.ordinal }
+            .associate { it.key to it.value }
 
     /** Types that exist in one edition only - used for parity warnings. */
     fun exclusiveTo(edition: Edition): List<ElementDefinition> =

@@ -34,6 +34,46 @@ dependencyResolutionManagement {
         }
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+
+        // Node and Yarn, for the browser build.
+        //
+        // Kotlin's wasm/JS toolchain fetches both as ordinary dependencies -
+        // `org.nodejs:node` and `com.yarnpkg:yarn` - and normally reaches its
+        // own repositories to do it. `repositoriesMode = PREFER_SETTINGS`
+        // above overrides that, which is why adding a wasm target otherwise
+        // fails the whole build with "Could not find org.nodejs:node", in
+        // modules that have nothing to do with the browser.
+        //
+        // Both are release archives with no POM, so the layout has to be spelt
+        // out and the metadata source restricted to the artifact itself.
+        ivy("https://nodejs.org/dist") {
+            name = "Node.js distributions"
+            patternLayout {
+                artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]")
+            }
+            metadataSources { artifact() }
+            content { includeModule("org.nodejs", "node") }
+        }
+        ivy("https://github.com/yarnpkg/yarn/releases/download") {
+            name = "Yarn distributions"
+            patternLayout {
+                artifact("v[revision]/[artifact](-v[revision]).[ext]")
+            }
+            metadataSources { artifact() }
+            content { includeModule("com.yarnpkg", "yarn") }
+        }
+        // Binaryen, which is `wasm-opt` - the pass that takes the release
+        // build of the browser app from tens of megabytes to a few. Fetched
+        // from the project's GitHub releases, and named after the tag rather
+        // than the version, which is why the pattern says `version_` twice.
+        ivy("https://github.com/WebAssembly/binaryen/releases/download") {
+            name = "Binaryen distributions"
+            patternLayout {
+                artifact("version_[revision]/[artifact]-version_[revision]-[classifier].[ext]")
+            }
+            metadataSources { artifact() }
+            content { includeModule("com.github.webassembly", "binaryen") }
+        }
     }
 }
 
@@ -76,6 +116,7 @@ include(":sharedCore")
 include(":styles")
 include(":exporters")
 include(":desktopApp")
+include(":webApp")
 
 if (androidEnabled) {
     include(":androidApp")

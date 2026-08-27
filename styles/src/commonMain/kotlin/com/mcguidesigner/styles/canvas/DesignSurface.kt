@@ -1,4 +1,4 @@
-package com.mcguidesigner.desktop
+package com.mcguidesigner.styles.canvas
 
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
@@ -40,13 +40,8 @@ import com.mcguidesigner.core.model.int
 import com.mcguidesigner.core.model.Rotation
 import com.mcguidesigner.core.model.PointF
 import com.mcguidesigner.core.model.ResizeHandle
-import com.mcguidesigner.styles.canvas.CanvasRuler
-import com.mcguidesigner.styles.canvas.CanvasTransform
-import com.mcguidesigner.styles.canvas.ROTATION_KNOB_DISTANCE
-import com.mcguidesigner.styles.canvas.GuiCanvas
 import com.mcguidesigner.styles.render.TextureCache
 import com.mcguidesigner.styles.theme.LocalSkinPalette
-import java.awt.Cursor
 
 private const val RULER_THICKNESS = 18
 
@@ -63,15 +58,17 @@ private enum class DragMode { NONE, MOVE, RESIZE, ROTATE, MARQUEE, PAN, GUIDE }
 private const val KNOB_GRAB_RADIUS = 14f
 
 /**
- * The design surface plus its desktop input handling.
+ * The design surface plus its pointer input handling.
  *
- * Mouse-first by design: hover highlighting, precise 1px drags, handle
+ * Pointer-first by design: hover highlighting, precise 1px drags, handle
  * resizing, marquee selection, middle/right-drag panning and Ctrl+wheel zoom.
- * The Android app implements the same operations with a completely different
- * gesture vocabulary.
+ * That is a mouse on the desktop and a mouse or trackpad in a browser, and the
+ * two want identical behaviour - so this lives here rather than in either
+ * shell. The Android app implements the same operations with a completely
+ * different gesture vocabulary, which is why it is not sharing this.
  */
 @Composable
-fun DesignCanvasArea(
+fun DesignSurface(
     controller: EditorController,
     state: EditorState,
     textures: TextureCache,
@@ -150,11 +147,19 @@ fun DesignCanvasArea(
     }
 }
 
+/**
+ * The pointer shape for the active tool.
+ *
+ * Compose's own three, rather than the platform's cursor constants this used
+ * to build by hand: `PointerIcon.Hand` resolves to exactly the same native
+ * cursor on the desktop, and the AWT ones do not exist in a browser - which is
+ * the whole reason this file could not be shared before.
+ */
 private fun cursorFor(state: EditorState): PointerIcon = when (state.tool) {
-    EditorTool.PAN -> PointerIcon(Cursor(Cursor.HAND_CURSOR))
-    EditorTool.MARQUEE -> PointerIcon(Cursor(Cursor.CROSSHAIR_CURSOR))
-    EditorTool.PLACE -> PointerIcon(Cursor(Cursor.CROSSHAIR_CURSOR))
-    else -> PointerIcon(Cursor(Cursor.DEFAULT_CURSOR))
+    EditorTool.PAN -> PointerIcon.Hand
+    EditorTool.MARQUEE -> PointerIcon.Crosshair
+    EditorTool.PLACE -> PointerIcon.Crosshair
+    else -> PointerIcon.Default
 }
 
 /**

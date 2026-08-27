@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import org.jetbrains.skia.Image
 
-/** Desktop decoding goes through Skia, which Compose already ships with. */
+/** Desktop and browser decoding both go through Skia, which Compose ships. */
 actual fun decodeImageBitmap(bytes: ByteArray): ImageBitmap? = runCatching {
     Image.makeFromEncoded(bytes).toComposeImageBitmap()
 }.getOrNull()

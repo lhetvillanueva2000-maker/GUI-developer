@@ -9,12 +9,36 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()
-  Content-Security-Policy: default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: data: https://api.github.com; worker-src 'self' blob:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 
-# The page is one file and it carries the version in it, so it must not be
-# served from a stale cache after a redeploy.
+# One policy for the whole site rather than a second, looser one under /app.
+# Netlify appends both when two rules match, browsers enforce the intersection
+# of every policy they are sent, and the strictest one wins - so a landing-page
+# policy without `wasm-unsafe-eval` would silently stop the editor from
+# starting, with the app's own correct policy sitting right there next to it.
+#
+# What it still forbids is everything that matters: no external origin can be
+# reached except the GitHub release API, nothing can be framed, no form can be
+# submitted, and no plugin content can load. `wasm-unsafe-eval` permits
+# compiling WebAssembly and nothing else - it does not bring back `eval`.
+
+# The page carries the version in it, so it must not be served from a stale
+# cache after a redeploy.
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
 
 /
+  Cache-Control: public, max-age=0, must-revalidate
+
+# The editor's own page, same reasoning. Its `.js` and `.wasm` are revalidated
+# rather than cached hard because their names do not carry a content hash: a
+# stale one would keep running an old build for ever. Revalidation is one
+# conditional request that answers 304 in a few hundred bytes.
+/app/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/app/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/app/*
   Cache-Control: public, max-age=0, must-revalidate

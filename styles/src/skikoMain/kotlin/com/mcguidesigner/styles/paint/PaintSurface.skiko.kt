@@ -8,7 +8,10 @@ import org.jetbrains.skia.ColorType
 import org.jetbrains.skia.ImageInfo
 
 /**
- * Desktop: a Skia raster bitmap.
+ * Skia: a raster bitmap. Shared by the desktop and the browser, because both
+ * of them draw through Skia and the code is character for character the same
+ * - Compose ships skiko for the JVM and skiko-wasm for wasmJs, exposing one
+ * API. Only Android differs, because there the native bitmap is Android's own.
  *
  * The colour type is BGRA rather than RGBA, which looks wrong and is not. An
  * 0xAARRGGBB Int written to memory on a little-endian machine lands as the
