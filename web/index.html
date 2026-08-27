@@ -1,0 +1,1550 @@
+<!doctype html>
+<html lang="en" data-os="unknown" data-form="unknown">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>UILabs — design game and app interfaces, visually</title>
+<meta name="description" content="A standalone visual designer for Minecraft Java and Bedrock screens, app interfaces and a full paint canvas. Windows, macOS, Linux and Android. Free, offline, no account.">
+<meta name="theme-color" content="#0E1116" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F6F8" media="(prefers-color-scheme: light)">
+<link rel="canonical" href="https://github.com/lhetvillanueva2000-maker/GUI-developer">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234CC15A'/%3E%3Crect x='6' y='7' width='20' height='18' rx='2' fill='%2306210B'/%3E%3Crect x='9' y='9.5' width='9' height='2' fill='%234CC15A' opacity='.55'/%3E%3Crect x='9' y='15' width='6' height='6' fill='%234CC15A'/%3E%3Crect x='17' y='15' width='6' height='6' fill='%234CC15A'/%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:title" content="UILabs — design game and app interfaces, visually">
+<meta property="og:description" content="Minecraft Java and Bedrock screens, app interfaces, and a paint canvas with a scribble-to-erase magic eraser. Free, offline, no account.">
+
+<style>
+/* ------------------------------------------------------------------ *
+ * Tokens.
+ *
+ * Light is defined on bare :root and dark overrides only the values
+ * that change, so a colour is never defined *only* inside a media
+ * query - which is how a page ends up with an unstyled flash or an
+ * unreadable half in one of the two themes. The manual toggle writes
+ * data-theme on <html> and wins over the system setting in both
+ * directions.
+ * ------------------------------------------------------------------ */
+:root {
+  --bg:        #F4F6F8;
+  --bg-deep:   #E8ECF1;
+  --surface:   #FFFFFF;
+  --surface-2: #F0F3F6;
+  --line:      #D8E0E8;
+  --line-soft: #E6EBF0;
+  --text:      #10151A;
+  --muted:     #55636F;
+  --accent:    #1F7A2E;   /* used as a fill, with --on-accent on top */
+  --accent-2:  #16632A;   /* used as text on --bg                   */
+  --on-accent: #FFFFFF;
+  --gold:      #8A6300;
+  --shadow:    0 1px 2px rgba(16,21,26,.07), 0 8px 24px rgba(16,21,26,.07);
+  --shadow-lg: 0 2px 6px rgba(16,21,26,.09), 0 24px 60px rgba(16,21,26,.13);
+  --bevel-hi:  rgba(255,255,255,.85);
+  --bevel-lo:  rgba(16,21,26,.16);
+  --radius:    14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #0E1116;
+    --bg-deep:   #080A0E;
+    --surface:   #161B22;
+    --surface-2: #1C232C;
+    --line:      #29323D;
+    --line-soft: #202832;
+    --text:      #E6EDF3;
+    --muted:     #9AA7B4;
+    --accent:    #4CC15A;
+    --accent-2:  #4CC15A;
+    --on-accent: #06210B;
+    --gold:      #E3B341;
+    --shadow:    0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.35);
+    --shadow-lg: 0 2px 6px rgba(0,0,0,.55), 0 24px 60px rgba(0,0,0,.5);
+    --bevel-hi:  rgba(255,255,255,.10);
+    --bevel-lo:  rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"] {
+  --bg:        #0E1116;
+  --bg-deep:   #080A0E;
+  --surface:   #161B22;
+  --surface-2: #1C232C;
+  --line:      #29323D;
+  --line-soft: #202832;
+  --text:      #E6EDF3;
+  --muted:     #9AA7B4;
+  --accent:    #4CC15A;
+  --accent-2:  #4CC15A;
+  --on-accent: #06210B;
+  --gold:      #E3B341;
+  --shadow:    0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.35);
+  --shadow-lg: 0 2px 6px rgba(0,0,0,.55), 0 24px 60px rgba(0,0,0,.5);
+  --bevel-hi:  rgba(255,255,255,.10);
+  --bevel-lo:  rgba(0,0,0,.45);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  /* Deliberately no overflow-x: hidden. It is the usual reflex for a
+     stray horizontal scrollbar, and it silently turns <body> into a
+     scroll container - which detaches position: sticky from the
+     viewport and drops the header into the middle of the page. There
+     is nothing overflowing to hide anyway; every wide thing on this
+     page scrolls inside its own box. */
+}
+h1, h2, h3 { line-height: 1.18; margin: 0; letter-spacing: -.02em; font-weight: 800; }
+p { margin: 0; }
+a { color: var(--accent-2); }
+code, .mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: .88em;
+}
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+.wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: 20px; }
+.skip {
+  position: absolute; left: -9999px; top: 0; z-index: 100;
+  background: var(--accent); color: var(--on-accent); padding: 12px 18px; border-radius: 0 0 10px 0;
+}
+.skip:focus { left: 0; }
+
+/* ------------------------------------------------------------------ *
+ * The bevel: a light edge top-left, a dark edge bottom-right. It is
+ * the one primitive both Minecraft GUIs are built out of, and the app
+ * draws every card and button with it, so the site does too.
+ * ------------------------------------------------------------------ */
+.bevel {
+  box-shadow: inset 2px 2px 0 var(--bevel-hi), inset -2px -2px 0 var(--bevel-lo);
+}
+
+/* ---------------------------- header ------------------------------ */
+.top {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--bg); /* fallback for browsers without color-mix() */
+  background: color-mix(in srgb, var(--bg) 93%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px);
+  border-bottom: 1px solid var(--line-soft);
+}
+.top .wrap { display: flex; align-items: center; gap: 12px; height: 60px; }
+.mark { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--text); }
+/* A 28px wordmark is a 28px tap target. The padding is what makes it
+   a thumb-sized one without making the mark itself any bigger. */
+.top .mark { padding: 10px 6px; margin-left: -6px; }
+.mark .glyph { width: 28px; height: 28px; flex: none; }
+.mark .word {
+  font-weight: 900; letter-spacing: .06em; font-size: 17px;
+  display: flex; align-items: center; gap: 5px;
+}
+/* The second half of the wordmark sits inside a slot, exactly as it
+   does on the app's home screen - filled dark, written light, so the
+   letters are legible whichever way the page is themed. */
+.mark .slot {
+  background: #1B222B; color: #EDF3F8;
+  padding: 2px 7px 3px; border-radius: 5px; font-size: 13px; letter-spacing: .14em;
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.10), inset -2px -2px 0 rgba(0,0,0,.5);
+}
+.top nav { display: none; margin-left: auto; gap: 4px; }
+.top nav a {
+  color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 600;
+  padding: 8px 12px; border-radius: 9px;
+}
+.top nav a:hover { color: var(--text); background: var(--surface-2); }
+.top .spacer { margin-left: auto; }
+.iconbtn {
+  margin-left: 0; flex: none;
+  width: 40px; height: 40px; display: grid; place-items: center;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--line); border-radius: 11px; cursor: pointer;
+}
+.iconbtn:hover { background: var(--surface-2); }
+.iconbtn svg { width: 18px; height: 18px; }
+:root[data-theme="dark"] .icon-moon, :root:not([data-theme="light"]) .icon-moon { display: none; }
+:root[data-theme="light"] .icon-moon { display: block; }
+:root[data-theme="light"] .icon-sun { display: none; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .icon-moon { display: block; }
+  :root:not([data-theme="dark"]) .icon-sun { display: none; }
+}
+
+/* ---------------------------- buttons ----------------------------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 52px; padding: 12px 22px;
+  border-radius: 12px; border: 0;
+  font: inherit; font-weight: 800; letter-spacing: .01em;
+  text-decoration: none; cursor: pointer;
+  transition: transform .14s ease, filter .14s ease, background .14s ease;
+}
+.btn-primary {
+  background: var(--accent); color: var(--on-accent);
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.22), inset -2px -2px 0 rgba(0,0,0,.28), var(--shadow);
+}
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-primary:active { transform: translateY(1px); filter: brightness(.94); }
+.btn-ghost {
+  background: var(--surface); color: var(--text); border: 1px solid var(--line);
+}
+.btn-ghost:hover { background: var(--surface-2); }
+.btn .sub { display: block; font-weight: 600; font-size: 12px; opacity: .82; letter-spacing: 0; }
+.btn .lines { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.25; min-width: 0; }
+/* One line each, and the file name truncates rather than reflowing the
+   button into three rows on a narrow screen. */
+.btn .lines > span { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.btn svg { width: 20px; height: 20px; flex: none; }
+
+/* ----------------------------- hero ------------------------------- */
+.hero { padding: 34px 0 8px; position: relative; }
+.hero::before {
+  content: ""; position: absolute; inset: -140px 0 auto; height: 420px; z-index: -1;
+  background:
+    radial-gradient(760px 320px at 18% 0%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 70%),
+    radial-gradient(560px 280px at 92% 8%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 12.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 16px;
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; padding: 5px 11px; letter-spacing: .06em;
+}
+.pill.live { color: var(--accent-2); border-color: color-mix(in srgb, var(--accent) 42%, var(--line)); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+h1 { font-size: clamp(2.2rem, 8.4vw, 3.4rem); }
+/* The line break in the headline is a desktop typesetting decision.
+   In a narrow column it only makes an orphan. */
+h1 br { display: none; }
+.lede { color: var(--muted); font-size: clamp(1.02rem, 3.6vw, 1.2rem); margin-top: 14px; max-width: 56ch; }
+.hero-actions { display: flex; flex-direction: column; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.hero-actions .btn { width: 100%; }
+/* Hidden until the script has actually worked something out. A line
+   that says "checking…" for ever, on a page with JavaScript turned
+   off, is worse than no line. */
+.detected { display: none; margin-top: 16px; font-size: 13px; color: var(--muted); }
+.detected.is-known { display: block; }
+.detected .dot { display: inline-block; margin-right: 8px; vertical-align: middle; }
+.detected b { color: var(--text); font-weight: 700; }
+.assurances {
+  list-style: none; margin: 22px 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13.5px; color: var(--muted);
+}
+.assurances li { display: flex; align-items: center; gap: 7px; }
+.assurances svg { width: 15px; height: 15px; color: var(--accent-2); flex: none; }
+
+/* --------------------------- the mocks ---------------------------- *
+ * Two of them, drawn in plain HTML and CSS. The phone frame is the
+ * only one a narrow screen builds; the desktop window is the only one
+ * a wide screen builds. They are not the same picture reflowed,
+ * because the two layouts of the app itself are not either.
+ * ------------------------------------------------------------------ */
+.mock-phone, .mock-desktop { --slot: #2A2118; }
+.mock-desktop { display: none; }
+
+.mock-phone {
+  margin: 32px auto 0; width: min(280px, 82vw);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 30px; padding: 10px; box-shadow: var(--shadow-lg);
+}
+.mock-phone .screen {
+  background: linear-gradient(#20160E, #12100E);
+  border-radius: 22px; padding: 14px 12px 16px; overflow: hidden;
+}
+.mock-phone .notch {
+  width: 76px; height: 5px; border-radius: 999px; background: rgba(255,255,255,.22);
+  margin: 0 auto 12px;
+}
+.mock-desktop {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg);
+}
+.mock-desktop .chrome {
+  display: flex; align-items: center; gap: 7px;
+  padding: 11px 14px; background: var(--surface-2); border-bottom: 1px solid var(--line-soft);
+}
+.mock-desktop .chrome i { width: 11px; height: 11px; border-radius: 50%; background: var(--line); }
+.mock-desktop .chrome b {
+  margin-left: 8px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .04em;
+}
+.mock-desktop .body { display: grid; grid-template-columns: 42px 1fr 152px; min-height: 296px; }
+.mock-desktop .rail {
+  background: var(--surface-2); border-right: 1px solid var(--line-soft);
+  padding: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 9px;
+}
+.mock-desktop .rail span {
+  width: 26px; height: 26px; border-radius: 7px; background: var(--line);
+}
+.mock-desktop .rail span.on { background: var(--accent); }
+/* The editor's own canvas: the backdrop with the measuring grid over
+   it, which in the app is off by default and on in this picture
+   because a picture of a design tool should show the tool. */
+.mock-desktop .stage {
+  background:
+    repeating-linear-gradient(0deg,  rgba(255,255,255,.05) 0 1px, transparent 1px 16px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 1px, transparent 1px 16px),
+    linear-gradient(#20160E, #12100E);
+  padding: 16px; display: grid; place-items: center;
+}
+.mock-desktop .inspector { border-left: 1px solid var(--line-soft); padding: 14px 12px; }
+.mock-desktop .inspector .row { margin-bottom: 12px; }
+.mock-desktop .inspector .k { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.mock-desktop .inspector .v {
+  margin-top: 4px; height: 22px; border-radius: 6px;
+  background: var(--surface-2); border: 1px solid var(--line-soft);
+}
+
+/* A Minecraft inventory panel, at whatever size it is given. */
+.panel {
+  background: #C6C6C6; padding: 9px; width: 100%;
+  box-shadow: inset 2px 2px 0 #FFFFFF, inset -2px -2px 0 #555555;
+}
+.panel .title { font-size: 9px; font-weight: 800; color: #3F3F3F; letter-spacing: .1em; margin-bottom: 7px; }
+.panel .grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 3px; }
+.panel .grid i {
+  aspect-ratio: 1; background: #8B8B8B;
+  box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #FFFFFF;
+}
+.panel .grid i.fill { background: #6B8C3A; }
+.panel .grid i.fill2 { background: #8C5A3A; }
+.panel .cta {
+  margin-top: 9px; height: 22px; background: #6E6E6E; display: grid; place-items: center;
+  box-shadow: inset 2px 2px 0 #FFFFFF, inset -2px -2px 0 #373737;
+  font-size: 9px; font-weight: 800; color: #FFFFFF; letter-spacing: .12em;
+}
+
+/* --------------------------- sections ----------------------------- */
+section { padding: 56px 0; }
+.section-head { max-width: 62ch; margin-bottom: 26px; }
+.section-head h2 { font-size: clamp(1.5rem, 5.6vw, 2.05rem); }
+.section-head p { color: var(--muted); margin-top: 10px; }
+.kicker {
+  font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--accent-2); margin-bottom: 10px;
+}
+.grid { display: grid; gap: 16px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 20px;
+}
+.card h3 { font-size: 1.06rem; }
+.card p { color: var(--muted); margin-top: 8px; font-size: 15px; }
+
+/* The three targets, each previewed in its own widget language. */
+.target { overflow: hidden; padding: 0; }
+/* One height for all three, so the three widget languages are compared
+   against each other rather than against three different box sizes. */
+.target .preview {
+  padding: 18px; border-bottom: 1px solid var(--line-soft);
+  min-height: 152px; display: flex; flex-direction: column; justify-content: center;
+}
+.target .meta { padding: 18px 20px 20px; }
+.target .tag {
+  display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+}
+.w-java .preview { background: #322F2C; }
+.w-java .btn-demo {
+  background: #6E6E6E; color: #FFF; height: 34px; display: grid; place-items: center;
+  font-size: 11px; font-weight: 800; letter-spacing: .12em;
+  box-shadow: inset 2px 2px 0 #FFFFFF, inset -2px -2px 0 #373737;
+}
+.w-java .slots { display: flex; gap: 4px; margin-bottom: 12px; }
+.w-java .slots i {
+  width: 26px; height: 26px; background: #8B8B8B;
+  box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #FFFFFF;
+}
+.w-bedrock .preview { background: #1E2A38; }
+.w-bedrock .btn-demo {
+  background: #4C6B8A; color: #FFF; height: 36px; border-radius: 6px;
+  display: grid; place-items: center; font-size: 11px; font-weight: 800; letter-spacing: .1em;
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.34), inset -2px -2px 0 rgba(0,0,0,.42);
+}
+.w-bedrock .slots { display: flex; gap: 5px; margin-bottom: 12px; }
+.w-bedrock .slots i {
+  width: 26px; height: 26px; border-radius: 6px; background: #33475C;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,.4), inset -2px -2px 0 rgba(255,255,255,.22);
+}
+.w-other .preview { background: var(--surface-2); }
+.w-other .btn-demo {
+  background: var(--accent); color: var(--on-accent); height: 36px; border-radius: 9px;
+  display: grid; place-items: center; font-size: 12px; font-weight: 700; letter-spacing: .01em;
+}
+.w-other .slots { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
+.w-other .slots i {
+  height: 26px; border-radius: 8px; background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+/* ------------------------- paint feature -------------------------- */
+.split { display: grid; gap: 22px; }
+.demo-frame {
+  background: linear-gradient(150deg, #171C24, #0C0F14);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px; display: grid; place-items: center; min-height: 240px;
+}
+.demo-frame svg { width: 100%; height: auto; max-width: 380px; display: block; }
+.trail { stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.trail-glow { stroke-width: 22; opacity: .30; filter: blur(6px); }
+.trail-mid  { stroke-width: 11; opacity: .70; }
+.trail-core { stroke-width: 4;  opacity: .95; }
+.draws { stroke-dasharray: 1100; stroke-dashoffset: 1100; animation: draw 3.6s ease-in-out infinite; }
+@keyframes draw {
+  0%   { stroke-dashoffset: 1100; }
+  55%  { stroke-dashoffset: 0; }
+  85%  { stroke-dashoffset: 0; opacity: .95; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+.rough  { animation: swapA 4s ease-in-out infinite; }
+.crisp  { animation: swapB 4s ease-in-out infinite; }
+@keyframes swapA { 0%,42% { opacity: 1 } 58%,100% { opacity: 0 } }
+@keyframes swapB { 0%,42% { opacity: 0 } 58%,100% { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) {
+  .draws { stroke-dashoffset: 0; }
+  .rough { opacity: 0; }
+  .crisp { opacity: 1; }
+}
+/* ---------------------------- chips ------------------------------- */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin: 0; list-style: none; scrollbar-width: thin; }
+.chips li {
+  flex: none; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; padding: 8px 14px; font-size: 13.5px; font-weight: 650; white-space: nowrap;
+}
+
+/* --------------------------- downloads ---------------------------- */
+.dl {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 18px; display: flex; flex-direction: column; gap: 12px; position: relative;
+}
+.dl.is-recommended { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.dl .ribbon {
+  display: none; position: absolute; top: -11px; left: 16px;
+  background: var(--accent); color: var(--on-accent);
+  font-size: 11px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 999px;
+}
+.dl.is-recommended .ribbon { display: block; }
+.dl .head { display: flex; align-items: center; gap: 11px; }
+.dl .head svg { width: 22px; height: 22px; flex: none; color: var(--text); }
+.dl .head b { font-size: 15.5px; }
+.dl .note { color: var(--muted); font-size: 13.5px; }
+.dl .file {
+  color: var(--muted); word-break: break-all; background: var(--surface-2);
+  border: 1px solid var(--line-soft); border-radius: 8px; padding: 6px 9px;
+}
+.dl .btn { width: 100%; min-height: 46px; margin-top: auto; }
+.dl-secondary summary {
+  cursor: pointer; font-weight: 700; padding: 14px 0; list-style: none;
+  display: flex; align-items: center; gap: 8px;
+}
+.dl-secondary summary::-webkit-details-marker { display: none; }
+.dl-secondary summary::before { content: "▸"; color: var(--muted); }
+.dl-secondary[open] summary::before { content: "▾"; }
+
+/* --------------------------- accordions --------------------------- */
+.acc { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.acc + .acc { margin-top: 12px; }
+.acc > summary {
+  cursor: pointer; padding: 16px 18px; font-weight: 750; list-style: none;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 54px;
+}
+.acc > summary::-webkit-details-marker { display: none; }
+.acc > summary::after { content: "+"; color: var(--muted); font-size: 20px; font-weight: 400; }
+.acc[open] > summary::after { content: "–"; }
+.acc .inner { padding: 0 18px 18px; color: var(--muted); }
+.acc .inner p + p { margin-top: 10px; }
+.acc .inner code {
+  display: inline-block; background: var(--surface-2); border: 1px solid var(--line-soft);
+  border-radius: 6px; padding: 3px 7px; word-break: break-all;
+}
+
+/* -------------------------- sticky bar ---------------------------- *
+ * Phones only. On a phone the primary action has to be reachable from
+ * anywhere on the page without scrolling back to the top; on a desktop
+ * a bar pinned over the content is just something covering the words.
+ * ------------------------------------------------------------------ */
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+  display: none; gap: 12px; align-items: center;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: var(--bg); /* fallback for browsers without color-mix() */
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(14px); border-top: 1px solid var(--line);
+}
+.dock .btn { flex: 1; min-height: 48px; }
+.dock .who { font-size: 12px; color: var(--muted); flex: none; max-width: 34%; line-height: 1.3; }
+@media (max-width: 719px) { .dock { display: flex; } body { padding-bottom: 78px; } }
+html[data-form="phone"] .dock { display: flex; }
+html[data-form="phone"] body { padding-bottom: 78px; }
+
+/* ---------------------------- footer ------------------------------ */
+footer {
+  border-top: 1px solid var(--line-soft); padding: 34px 0 44px;
+  color: var(--muted); font-size: 14px;
+}
+footer .cols { display: grid; gap: 20px; }
+footer a { color: var(--muted); }
+footer a:hover { color: var(--text); }
+footer .links { display: flex; flex-wrap: wrap; gap: 16px; }
+footer .links a { padding: 8px 0; }
+
+/* Shown only when JS knows the device is one of these. */
+.for-ios, .for-touch, .for-pointer { display: none; }
+html[data-os="ios"] .for-ios, html[data-os="ipados"] .for-ios { display: block; }
+html[data-form="phone"] .for-touch, html[data-form="tablet"] .for-touch { display: inline; }
+html[data-form="desktop"] .for-pointer { display: inline; }
+.notice {
+  border: 1px solid var(--gold);
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--line));
+  background: var(--surface);
+  background: color-mix(in srgb, var(--gold) 10%, var(--surface));
+  border-radius: var(--radius); padding: 16px 18px; margin-top: 20px; font-size: 14.5px;
+}
+.notice b { display: block; margin-bottom: 4px; color: var(--text); }
+
+.keys {
+  margin-top: 26px; display: flex; flex-wrap: wrap; gap: 10px 26px;
+  color: var(--muted); font-size: 14.5px;
+}
+.keys kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px; background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--line); border-bottom-width: 2px;
+  border-radius: 6px; padding: 2px 7px; margin-right: 6px;
+}
+
+/* ================================================================== *
+ * TABLET — 720px and up.
+ * ================================================================== */
+@media (min-width: 720px) {
+  .wrap { padding-inline: 32px; }
+  .hero { padding-top: 56px; }
+  .hero-actions { flex-direction: row; }
+  .hero-actions .btn { width: auto; }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .dl-grid { grid-template-columns: repeat(2, 1fr); }
+  footer .cols { grid-template-columns: 1.4fr 1fr; align-items: start; }
+}
+
+/* ================================================================== *
+ * DESKTOP / LAPTOP — 1024px and up.
+ *
+ * This is where the page stops being a column and becomes a layout:
+ * two-column hero with the editor window beside it, a real nav in the
+ * header, three-up grids, and hover states that a touch screen would
+ * only ever show stuck on.
+ * ================================================================== */
+@media (min-width: 1024px) {
+  body { font-size: 17px; }
+  .top .wrap { height: 68px; }
+  .top nav { display: flex; }
+  .top .spacer { display: none; }
+  .iconbtn { margin-left: 10px; }
+
+  .hero { padding: 74px 0 20px; }
+  .hero .wrap {
+    display: grid; grid-template-columns: minmax(0, 1.14fr) minmax(0, .86fr);
+    gap: 48px; align-items: center;
+  }
+  h1 { font-size: clamp(2.6rem, 3.4vw, 3.4rem); }
+  h1 br { display: inline; }
+  .lede { font-size: 1.12rem; }
+  .mock-phone { display: none; }
+  .mock-desktop { display: block; margin-top: 0; }
+
+  section { padding: 84px 0; }
+  .grid { gap: 20px; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .dl-grid { grid-template-columns: repeat(3, 1fr); }
+  .split { grid-template-columns: 1.05fr .95fr; gap: 44px; align-items: center; }
+  .split.reverse .demo-frame { order: 2; }
+
+  .card { padding: 26px; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--line); }
+  .target:hover { transform: translateY(-3px); }
+
+  /* On a desktop every explanation is simply open - there is room for
+     it, and a click to reveal a paragraph is a click for nothing. The
+     script closes them again when it knows it is on a phone. */
+  .acc > summary::after { display: none; }
+  .acc > summary { cursor: default; }
+  .acc { border: 0; background: transparent; }
+  .acc + .acc { margin-top: 4px; }
+  .acc > summary { padding: 0 0 6px; font-size: 1.06rem; font-weight: 800; }
+  .acc .inner { padding: 0 0 20px; }
+
+  .chips { flex-wrap: wrap; overflow: visible; }
+  footer .cols { grid-template-columns: 1.6fr 1fr 1fr; }
+}
+
+@media (min-width: 1280px) {
+  .hero .wrap { gap: 72px; }
+}
+
+/* ================================================================== *
+ * WHAT THE DEVICE ACTUALLY IS, rather than how wide the window is.
+ *
+ * Everything above is driven by viewport width, which is the right
+ * default and the only thing available before the script runs. These
+ * rules are the correction for the case the width alone gets wrong: a
+ * phone turned sideways is over 800 CSS pixels across and would
+ * otherwise be handed the laptop layout - a two-column hero and a
+ * three-up grid on a screen four inches tall.
+ *
+ * They win by specificity rather than by order, so it does not matter
+ * that the media queries come first in the file.
+ * ================================================================== */
+html[data-form="phone"] .hero .wrap { display: block; }
+html[data-form="phone"] .mock-desktop { display: none; }
+html[data-form="phone"] .mock-phone { display: block; }
+html[data-form="phone"] .top nav { display: none; }
+html[data-form="phone"] .top .spacer { display: block; }
+html[data-form="phone"] .grid-3,
+html[data-form="phone"] .grid-2,
+html[data-form="phone"] .dl-grid,
+html[data-form="phone"] .split { grid-template-columns: 1fr; }
+html[data-form="phone"] .split.reverse .demo-frame { order: 0; }
+html[data-form="phone"] .chips { flex-wrap: nowrap; overflow-x: auto; }
+html[data-form="phone"] .card:hover,
+html[data-form="phone"] .target:hover { transform: none; }
+/* The accordions are real accordions again on a phone, where they are
+   the only way three explanations fit without becoming a scroll. */
+html[data-form="phone"] .acc {
+  border: 1px solid var(--line); background: var(--surface); margin-top: 12px;
+}
+html[data-form="phone"] .acc > summary {
+  padding: 16px 18px; font-size: 1rem; cursor: pointer;
+}
+html[data-form="phone"] .acc > summary::after { display: block; }
+html[data-form="phone"] .acc .inner { padding: 0 18px 18px; }
+
+.desk-only { display: none; }
+@media (min-width: 1024px) { .desk-only { display: block; } }
+html[data-form="desktop"] .desk-only { display: block; }
+html[data-form="phone"] .desk-only,
+html[data-form="tablet"] .desk-only { display: none; }
+</style>
+</head>
+
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="mark" href="#top">
+      <svg class="glyph" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="currentColor" style="color:var(--accent)"/>
+        <rect x="6" y="7" width="20" height="18" rx="2" fill="var(--on-accent)"/>
+        <rect x="9" y="9.5" width="9" height="2" fill="var(--accent)" opacity=".55"/>
+        <rect x="9" y="15" width="6" height="6" fill="var(--accent)"/>
+        <rect x="17" y="15" width="6" height="6" fill="var(--accent)"/>
+      </svg>
+      <span class="word">UI<span class="slot">LABS</span></span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#targets">What it makes</a>
+      <a href="#paint">Paint</a>
+      <a href="#about">About</a>
+      <a href="#downloads">Downloads</a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="iconbtn" id="theme" type="button" aria-label="Switch between light and dark">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>
+      </svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ======================= HERO ======================= -->
+<div class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">
+        <span class="pill live"><span class="dot"></span>Version <span data-version>2.2.0</span></span>
+        <span class="pill">Free</span>
+        <span class="pill">No account</span>
+      </p>
+
+      <!-- The spaces around the break matter: it is hidden on a narrow
+           screen, and without them the two words would run together. -->
+      <h1>Design game and app <br> interfaces, visually.</h1>
+
+      <p class="lede">
+        Blockbench does 3D models for Minecraft and Blender does 3D for everything else.
+        UILabs is the equivalent for the flat side — menus, HUDs, inventories, forms and
+        panels — for Minecraft Java, Minecraft Bedrock, and ordinary apps. It exports the
+        format your target actually reads.
+      </p>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary" id="cta"
+           href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/latest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+          </svg>
+          <span class="lines">
+            <span id="cta-label">Download UILabs</span>
+            <span class="sub" id="cta-sub">All platforms · GitHub releases</span>
+          </span>
+        </a>
+        <a class="btn btn-ghost" href="#downloads">See every download</a>
+      </div>
+
+      <p class="detected">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="detected-text">Checking what you are reading this on…</span>
+      </p>
+
+      <ul class="assurances">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg>
+          Works offline
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg>
+          No telemetry
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg>
+          Java runtime included
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg>
+          Open source
+        </li>
+      </ul>
+    </div>
+
+    <!-- Phone build of the picture. -->
+    <div class="mock-phone" aria-hidden="true">
+      <div class="screen">
+        <div class="notch"></div>
+        <div class="panel">
+          <div class="title">CHEST</div>
+          <div class="grid">
+            <i></i><i class="fill"></i><i></i><i></i><i class="fill2"></i><i></i><i></i><i></i><i></i>
+            <i></i><i></i><i class="fill"></i><i></i><i></i><i></i><i class="fill2"></i><i></i><i></i>
+            <i></i><i></i><i></i><i></i><i class="fill"></i><i></i><i></i><i></i><i></i>
+          </div>
+          <div class="cta">EXPORT</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Laptop / desktop build of the picture. -->
+    <div class="mock-desktop" aria-hidden="true">
+      <div class="chrome">
+        <i></i><i></i><i></i><b>UILabs — untitled.mcgui — Java Edition</b>
+      </div>
+      <div class="body">
+        <div class="rail">
+          <span class="on"></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="stage">
+          <div class="panel" style="max-width:340px">
+            <div class="title">CHEST</div>
+            <div class="grid">
+              <i></i><i class="fill"></i><i></i><i></i><i class="fill2"></i><i></i><i></i><i></i><i></i>
+              <i></i><i></i><i class="fill"></i><i></i><i></i><i></i><i class="fill2"></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i><i class="fill"></i><i></i><i></i><i></i><i></i>
+            </div>
+            <div class="cta">EXPORT</div>
+          </div>
+        </div>
+        <div class="inspector">
+          <div class="row"><div class="k">Element</div><div class="v"></div></div>
+          <div class="row"><div class="k">X · Y</div><div class="v"></div></div>
+          <div class="row"><div class="k">Width · Height</div><div class="v"></div></div>
+          <div class="row"><div class="k">Anchor</div><div class="v"></div></div>
+          <div class="row"><div class="k">Texture</div><div class="v"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= TARGETS ======================= -->
+<section id="targets">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker">Three targets</p>
+      <h2>Each one drawn in its own widget language</h2>
+      <p>
+        A card is not a themed surface with a name printed on it. Java comes out flat,
+        square and hard-edged; Bedrock comes out soft-cornered with a light-over-dark
+        border; Other UIs is flat, neutral and — deliberately — has no text shadow at all,
+        because carrying that habit over is the clearest possible tell that a mock-up came
+        out of a Minecraft tool.
+      </p>
+    </div>
+
+    <div class="grid grid-3">
+      <article class="card target w-java">
+        <div class="preview">
+          <div class="slots"><i></i><i></i><i></i></div>
+          <div class="btn-demo">OPEN JAVA</div>
+        </div>
+        <div class="meta">
+          <span class="tag">Minecraft · Java</span>
+          <h3>Java Edition</h3>
+          <p>
+            Inventory slots, hotbars, chest panels, tooltips and buttons at their real
+            pixel sizes. Exports a resource pack the game loads as-is.
+          </p>
+        </div>
+      </article>
+
+      <article class="card target w-bedrock">
+        <div class="preview">
+          <div class="slots"><i></i><i></i><i></i></div>
+          <div class="btn-demo">OPEN BEDROCK</div>
+        </div>
+        <div class="meta">
+          <span class="tag">Minecraft · Bedrock</span>
+          <h3>Bedrock Edition</h3>
+          <p>
+            The same screens in Bedrock's own visual identity, with its rounded corners
+            and 2px bevel, and its own export pipeline.
+          </p>
+        </div>
+      </article>
+
+      <article class="card target w-other">
+        <div class="preview">
+          <div class="slots"><i></i><i></i></div>
+          <div class="btn-demo">Open Other UIs</div>
+        </div>
+        <div class="meta">
+          <span class="tag">Apps · Web · Tools</span>
+          <h3>Other UIs</h3>
+          <p>
+            Not Minecraft at all. Sign-in forms, settings pages, dashboards — anything with
+            buttons and text fields rather than inventory slots.
+          </p>
+        </div>
+      </article>
+    </div>
+
+    <p class="kicker" style="margin-top:34px">Exports</p>
+    <ul class="chips">
+      <li>Resource pack</li>
+      <li>.mcgui project</li>
+      <li>HTML + CSS</li>
+      <li>React JSX</li>
+      <li>SwiftUI</li>
+      <li>Flutter</li>
+      <li>Android XML</li>
+      <li>PNG</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= PAINT ======================= -->
+<section id="paint" style="background:var(--bg-deep)">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker">New in <span data-version>2.2.0</span></p>
+      <h2>A paint canvas, with a magic eraser you can see working</h2>
+      <p>
+        Layers, blend modes, pressure-aware brushes, symmetry, flood fill and a tile-based
+        undo history — plus two things worth showing rather than listing.
+      </p>
+    </div>
+
+    <div class="split">
+      <div class="demo-frame">
+        <svg viewBox="0 0 380 220" role="img" aria-label="A rainbow trail being scribbled across a shape">
+          <defs>
+            <linearGradient id="rainbow" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"   stop-color="#FF4D4D"/>
+              <stop offset="20%"  stop-color="#FFB84D"/>
+              <stop offset="40%"  stop-color="#4CC15A"/>
+              <stop offset="60%"  stop-color="#4DC9FF"/>
+              <stop offset="80%"  stop-color="#8A6BFF"/>
+              <stop offset="100%" stop-color="#FF4DA6"/>
+            </linearGradient>
+          </defs>
+          <rect x="46" y="42" width="288" height="136" rx="14" fill="#243040"/>
+          <circle cx="128" cy="110" r="42" fill="#3E5570"/>
+          <rect x="196" y="76" width="106" height="68" rx="10" fill="#3E5570"/>
+          <g stroke="url(#rainbow)" class="trail">
+            <path class="trail-glow draws" d="M72 148c34-26 44 18 74-8s26-52 62-40 30 56 66 34"/>
+            <path class="trail-mid  draws" d="M72 148c34-26 44 18 74-8s26-52 62-40 30 56 66 34"/>
+            <path class="trail-core draws" d="M72 148c34-26 44 18 74-8s26-52 62-40 30 56 66 34"/>
+          </g>
+        </svg>
+      </div>
+
+      <div>
+        <h3 style="font-size:1.3rem">Scribble across it, not at it</h3>
+        <p style="color:var(--muted);margin-top:10px">
+          A tap could only ever take one colour, which is useless on a real object — a face
+          is a dozen colours, a leaf is a gradient. Scribble across the thing and everything
+          the scribble touches goes with it.
+        </p>
+        <p style="color:var(--muted);margin-top:12px">
+          The rainbow trail is not decoration. Nothing is removed until you lift your
+          <span class="for-touch">finger</span><span class="for-pointer">pointer</span><span
+          id="digit-fallback">finger</span>, so without it the gesture would be invisible:
+          you scribble, see nothing, let go, and something vanishes. It runs through the
+          whole hue circle so it cannot be camouflaged by whatever is underneath it.
+        </p>
+      </div>
+    </div>
+
+    <div class="split reverse" style="margin-top:44px">
+      <div class="demo-frame">
+        <svg viewBox="0 0 380 220" role="img" aria-label="A roughly drawn box snapping to a clean rectangle">
+          <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path class="rough" stroke="#8FA3B8" stroke-width="4"
+                  d="M84 62c40-6 88-3 126 2 8 22 6 62 3 92-46 5-90 6-131 1-4-30-3-66 2-95z"/>
+            <rect class="crisp" x="84" y="60" width="132" height="98" rx="3"
+                  stroke="#4CC15A" stroke-width="4"/>
+            <path class="rough" stroke="#8FA3B8" stroke-width="4"
+                  d="M248 152c14-30 24-52 32-64 12 16 24 40 34 64-24 4-46 4-66 0z"/>
+            <path class="crisp" stroke="#4CC15A" stroke-width="4"
+                  d="M280 84 L316 152 L244 152 Z"/>
+          </g>
+        </svg>
+      </div>
+
+      <div>
+        <h3 style="font-size:1.3rem">Draw a shape by drawing it</h3>
+        <p style="color:var(--muted);margin-top:10px">
+          Rough box becomes a rectangle. Even sides become a square. Three corners become a
+          triangle. A loop becomes a circle, or an ellipse if it was squashed. Drawn at an
+          angle, it stays at that angle.
+        </p>
+        <p style="color:var(--muted);margin-top:12px">
+          A scribble it cannot read is left exactly as drawn — which matters more than the
+          recognition does. Quietly replacing your drawing with a confidently wrong triangle
+          is the worse failure.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= ABOUT ======================= -->
+<section id="about">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker">The short version</p>
+      <h2>What it is, who it is for, how to use it</h2>
+    </div>
+
+    <div class="grid grid-3">
+      <details class="acc" open>
+        <summary>What this is</summary>
+        <div class="inner">
+          <p>
+            A visual editor for interfaces. Blockbench does 3D models for Minecraft and
+            Blender does 3D for everything else; UILabs is the equivalent for the flat side
+            — menus, HUDs, inventories, forms and panels — in Minecraft and, through its
+            code exports, well beyond it.
+          </p>
+        </div>
+      </details>
+
+      <details class="acc" open>
+        <summary>Who it is for</summary>
+        <div class="inner">
+          <p>
+            Mod developers, app developers and UI designers who would rather place a panel
+            than count pixels in a JSON file. You lay the screen out by hand and it writes
+            the format the target actually reads, so the tedious half is done and the design
+            half is yours.
+          </p>
+        </div>
+      </details>
+
+      <details class="acc" open>
+        <summary>How to use it</summary>
+        <div class="inner">
+          <p>
+            Pick an edition. Drag components onto the canvas, nudge them with the arrow keys,
+            and group what repeats into a prefab. When it looks right, Export writes a
+            resource pack, a project file, or source in the language your target speaks.
+          </p>
+          <p>
+            Everything is saved on your device — no account, no upload, no telemetry.
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Only on a machine with a keyboard, because that is the only
+         place any of it is true. -->
+    <div class="keys desk-only">
+      <span><kbd>Ctrl</kbd><kbd>G</kbd>Show or hide the grid</span>
+      <span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd>Nudge by the step</span>
+      <span><kbd>Ctrl</kbd><kbd>Z</kbd>Undo</span>
+      <span><kbd>Ctrl</kbd><kbd>E</kbd>Export</span>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= DOWNLOADS ======================= -->
+<section id="downloads" style="background:var(--bg-deep)">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker">Downloads</p>
+      <h2>Version <span data-version>2.2.0</span></h2>
+      <p>
+        Each desktop package embeds its own Java runtime, so nothing has to be installed
+        first — which is also why they are around a hundred megabytes each. The one that
+        matches what you are reading this on is marked and moved to the front.
+      </p>
+    </div>
+
+    <div class="grid dl-grid" id="dl-grid">
+
+      <article class="dl" data-os="windows" data-file="UILabsInstaller-{v}.exe" data-bytes="100180480">
+        <span class="ribbon">Recommended for you</span>
+        <div class="head">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M3 5.6 10.4 4.5v7.1H3zM11.6 4.3 21 3v8.6h-9.4zM3 12.4h7.4v7.1L3 18.4zM11.6 12.4H21V21l-9.4-1.3z"/>
+          </svg>
+          <b>Windows</b>
+        </div>
+        <p class="note">Installer. Windows 10 or 11, 64-bit. No Java needed.</p>
+        <p class="file mono" data-filename>UILabsInstaller-2.2.0.exe</p>
+        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0.exe" download><span data-size>95.5 MB</span> · Download .exe</a>
+      </article>
+
+      <article class="dl" data-os="macos" data-file="UILabsInstaller-{v}-macos-aarch64.dmg" data-bytes="109869981">
+        <span class="ribbon">Recommended for you</span>
+        <div class="head">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M16.4 12.7c0-2.4 2-3.6 2.1-3.6-1.1-1.7-2.9-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9s-2-.9-3.2-.9c-1.7 0-3.2 1-4 2.5-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.5 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.4c.9-1.4 1.3-2.7 1.3-2.8-.1 0-2.5-1-2.2-4.1zM14 4.9c.7-.8 1.1-2 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4z"/>
+          </svg>
+          <b>macOS</b>
+        </div>
+        <p class="note">Apple Silicon — every Mac since late 2020. On an Intel Mac, use the .jar.</p>
+        <p class="file mono" data-filename>UILabsInstaller-2.2.0-macos-aarch64.dmg</p>
+        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0-macos-aarch64.dmg" download><span data-size>104.8 MB</span> · Download .dmg</a>
+      </article>
+
+      <article class="dl" data-os="android" data-file="UILabsInstaller-{v}.apk" data-bytes="9106604">
+        <span class="ribbon">Recommended for you</span>
+        <div class="head">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M6 9h12v8a2 2 0 0 1-2 2h-1v3h-2v-3h-2v3H9v-3H8a2 2 0 0 1-2-2zM4 9.5a1.4 1.4 0 0 1 2.8 0v5a1.4 1.4 0 0 1-2.8 0zM17.2 9.5a1.4 1.4 0 0 1 2.8 0v5a1.4 1.4 0 0 1-2.8 0zM7.6 7.6C8 5.6 9.8 4.2 12 4.2s4 1.4 4.4 3.4zM9.4 6.1a.6.6 0 1 0 0-1.2.6.6 0 0 0 0 1.2zm5.2 0a.6.6 0 1 0 0-1.2.6.6 0 0 0 0 1.2z"/>
+          </svg>
+          <b>Android</b>
+        </div>
+        <p class="note">Allow “install from unknown sources” when prompted. Android 8 and up.</p>
+        <p class="file mono" data-filename>UILabsInstaller-2.2.0.apk</p>
+        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0.apk" download><span data-size>8.7 MB</span> · Download .apk</a>
+      </article>
+
+      <article class="dl" data-os="linux" data-file="UILabsInstaller-{v}-amd64.deb" data-bytes="92480708">
+        <span class="ribbon">Recommended for you</span>
+        <div class="head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 4.5c0-1.4 1.3-2.5 3-2.5s3 1.1 3 2.5c0 2 .8 3 1.8 4.4 1.3 1.8 2.4 3.4 2.4 5.6 0 3.6-3.2 6.5-7.2 6.5S4.8 18.1 4.8 14.5c0-2.2 1.1-3.8 2.4-5.6C8.2 7.5 9 6.5 9 4.5z"/>
+            <path d="M10.2 7.2h.01M13.8 7.2h.01"/>
+          </svg>
+          <b>Linux</b>
+        </div>
+        <p class="note">Debian package, x86-64. Ubuntu, Debian, Mint and relatives.</p>
+        <p class="file mono" data-filename>UILabsInstaller-2.2.0-amd64.deb</p>
+        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0-amd64.deb" download><span data-size>88.2 MB</span> · Download .deb</a>
+      </article>
+
+      <article class="dl" data-os="any" data-file="UILabs-{v}.jar" data-bytes="78981166">
+        <span class="ribbon">Recommended for you</span>
+        <div class="head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/>
+          </svg>
+          <b>Any OS with a JVM</b>
+        </div>
+        <p class="note">Portable. Needs Java 17 or newer: <code>java -jar &lt;file&gt;</code>. Also the answer for Intel Macs.</p>
+        <p class="file mono" data-filename>UILabs-2.2.0.jar</p>
+        <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabs-2.2.0.jar" download><span data-size>75.3 MB</span> · Download .jar</a>
+      </article>
+
+      <article class="dl" data-os="none" data-file="uilabs-{v}.zip" data-bytes="609218744">
+        <span class="ribbon">Recommended for you</span>
+        <div class="head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="m3 7.5 9 4.5 9-4.5M12 12v9"/>
+          </svg>
+          <b>Everything at once</b>
+        </div>
+        <p class="note">Every installer above plus templates, docs, sample exports and full source. <code>MANIFEST.txt</code> lists every file with its SHA-256.</p>
+        <p class="file mono" data-filename>uilabs-2.2.0.zip</p>
+        <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/uilabs-2.2.0.zip" download><span data-size>581.0 MB</span> · Download .zip</a>
+      </article>
+    </div>
+
+    <div class="notice for-ios">
+      <b>There is no iOS build.</b>
+      Apple does not allow installing an app outside the App Store, and UILabs is not
+      published there. Use the Android app, or any of the desktop packages above.
+    </div>
+
+    <details class="dl-secondary">
+      <summary>Other files in this release</summary>
+      <div class="grid dl-grid">
+        <article class="dl" data-os="none" data-file="UILabsInstaller-{v}.msi" data-bytes="99613259">
+          <span class="ribbon">Recommended for you</span>
+          <div class="head"><b>Windows · .msi</b></div>
+          <p class="note">For deploying with Group Policy or Intune rather than clicking through an installer.</p>
+          <p class="file mono" data-filename>UILabsInstaller-2.2.0.msi</p>
+          <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0.msi" download><span data-size>95.0 MB</span> · Download .msi</a>
+        </article>
+        <article class="dl" data-os="none" data-file="UILabsInstaller-{v}-macos-aarch64.pkg" data-bytes="104857080">
+          <span class="ribbon">Recommended for you</span>
+          <div class="head"><b>macOS · .pkg</b></div>
+          <p class="note">The same app as the .dmg, as an installer package. Apple Silicon.</p>
+          <p class="file mono" data-filename>UILabsInstaller-2.2.0-macos-aarch64.pkg</p>
+          <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0-macos-aarch64.pkg" download><span data-size>100.0 MB</span> · Download .pkg</a>
+        </article>
+        <article class="dl" data-os="none" data-file="UILabsDebug-{v}.apk" data-bytes="12046779">
+          <span class="ribbon">Recommended for you</span>
+          <div class="head"><b>Android · test build</b></div>
+          <p class="note">Installs <em>alongside</em> the normal app. Adds a Diagnostics screen that shows every failure with its full stack trace, and copies the lot to the clipboard.</p>
+          <p class="file mono" data-filename>UILabsDebug-2.2.0.apk</p>
+          <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsDebug-2.2.0.apk" download><span data-size>11.5 MB</span> · Download .apk</a>
+        </article>
+        <article class="dl" data-os="none" data-file="UILabs-{v}.aab" data-bytes="8548175">
+          <span class="ribbon">Recommended for you</span>
+          <div class="head"><b>Google Play bundle</b></div>
+          <p class="note">For uploading to Play. <strong>Not</strong> installable on a phone.</p>
+          <p class="file mono" data-filename>UILabs-2.2.0.aab</p>
+          <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabs-2.2.0.aab" download><span data-size>8.2 MB</span> · Download .aab</a>
+        </article>
+      </div>
+    </details>
+
+    <p style="margin-top:26px;color:var(--muted);font-size:14.5px">
+      Every file is attached to the
+      <a href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/latest">GitHub release</a>,
+      which is also where to look if this page is out of date.
+    </p>
+  </div>
+</section>
+
+<!-- ======================= FIRST LAUNCH ======================= -->
+<section id="notes">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker">First launch</p>
+      <h2>What your OS will say, and why</h2>
+      <p>
+        UILabs is not signed with a paid commercial certificate, so each platform warns
+        about it once. None of these warnings mean anything is wrong with the file.
+      </p>
+    </div>
+
+    <details class="acc" open>
+      <summary>macOS — “cannot be opened because the developer cannot be verified”</summary>
+      <div class="inner">
+        <p>
+          The .dmg is not signed with an Apple Developer certificate, so Gatekeeper blocks
+          the first launch. Open it once with <strong>right-click → Open</strong> and choose
+          <strong>Open</strong>, or clear the quarantine flag:
+        </p>
+        <p><code>xattr -dr com.apple.quarantine "/Applications/UILabs.app"</code></p>
+        <p>Every launch after the first is normal.</p>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Windows — SmartScreen says the publisher is unknown</summary>
+      <div class="inner">
+        <p>
+          Choose <strong>More info → Run anyway</strong>. Removing that warning needs a paid
+          code-signing certificate from a commercial CA, which this project does not have.
+        </p>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Android — Play Protect offers to scan the APK</summary>
+      <div class="inner">
+        <p>
+          That prompt appears for anything installed outside the Play Store, whatever it is
+          signed with. The only thing that removes it is publishing on Play itself.
+        </p>
+        <p>
+          Upgrading is a normal install over the top; the release APK carries the same
+          signing key across versions, so it updates in place rather than asking you to
+          uninstall first.
+        </p>
+      </div>
+    </details>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap cols">
+    <div>
+      <a class="mark" href="#top" style="margin-bottom:10px">
+        <span class="word">UI<span class="slot">LABS</span></span>
+      </a>
+      <p>Design game and app interfaces, visually.</p>
+      <p style="margin-top:8px">
+        Everything is saved on your device — no account, no upload, no telemetry.
+      </p>
+    </div>
+    <div>
+      <p style="color:var(--text);font-weight:700;margin-bottom:8px">Project</p>
+      <div class="links" style="flex-direction:column;gap:2px">
+        <a href="https://github.com/lhetvillanueva2000-maker/GUI-developer">Source on GitHub</a>
+        <a href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases">All releases</a>
+        <a href="https://github.com/lhetvillanueva2000-maker/GUI-developer/issues">Report a problem</a>
+      </div>
+    </div>
+    <div>
+      <p style="color:var(--text);font-weight:700;margin-bottom:8px">This build</p>
+      <p>Version <span data-version>2.2.0</span></p>
+      <p id="footer-detected">—</p>
+    </div>
+  </div>
+</footer>
+
+<!-- Phones only: the primary action, reachable from anywhere on the page. -->
+<div class="dock" id="dock">
+  <span class="who" id="dock-who">Your device</span>
+  <a class="btn btn-primary" id="dock-cta"
+     href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/latest">Download</a>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var REPO = "lhetvillanueva2000-maker/GUI-developer";
+  var VERSION = "2.2.0";
+  var RELEASES = "https://github.com/" + REPO + "/releases";
+  var root = document.documentElement;
+
+  /* ---------------------------------------------------------------- *
+   * Theme.
+   *
+   * Nothing is written to <html> unless the reader has actually chosen
+   * a side, so the default really is "whatever the system says" rather
+   * than a guess frozen on first visit.
+   * ---------------------------------------------------------------- */
+  var stored = null;
+  try { stored = localStorage.getItem("uilabs-theme"); } catch (e) { /* private mode */ }
+  if (stored === "dark" || stored === "light") root.setAttribute("data-theme", stored);
+
+  document.getElementById("theme").addEventListener("click", function () {
+    var systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var isDark = root.getAttribute("data-theme")
+      ? root.getAttribute("data-theme") === "dark"
+      : systemDark;
+    var next = isDark ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("uilabs-theme", next); } catch (e) { /* ignore */ }
+  });
+
+  /* ---------------------------------------------------------------- *
+   * What is this being read on?
+   *
+   * userAgentData first because it is the answer the browser actually
+   * intends to give; the user-agent string only as a fallback, and in
+   * an order that matters - an Android UA also contains "Linux", and
+   * an iPad reports itself as a Macintosh, which is why touch points
+   * are part of the test.
+   *
+   * The phone/tablet split uses the *smallest* side of the screen,
+   * which does not change when the device is rotated - the same rule
+   * the app itself uses, so a phone held sideways is still a phone
+   * here just as it is there.
+   * ---------------------------------------------------------------- */
+  function detect() {
+    var uad = navigator.userAgentData || null;
+    var ua = navigator.userAgent || "";
+    var plat = (uad && uad.platform) || "";
+    var touch = navigator.maxTouchPoints || 0;
+
+    var os = "unknown";
+    if (/Android/i.test(ua) || /Android/i.test(plat)) os = "android";
+    else if (/iPhone|iPod/i.test(ua)) os = "ios";
+    else if (/iPad/i.test(ua) || (/Macintosh/i.test(ua) && touch > 1)) os = "ipados";
+    else if (/CrOS/i.test(ua)) os = "chromeos";
+    else if (/Win/i.test(plat) || /Windows/i.test(ua)) os = "windows";
+    else if (/macOS|Mac/i.test(plat) || /Mac OS X|Macintosh/i.test(ua)) os = "macos";
+    else if (/Linux/i.test(plat) || /Linux|X11/i.test(ua)) os = "linux";
+
+    var narrow = Math.min(screen.width || 0, screen.height || 0) || window.innerWidth;
+    var coarse = window.matchMedia("(pointer: coarse)").matches;
+    var mobileHint = uad && typeof uad.mobile === "boolean"
+      ? uad.mobile
+      : /Mobi|Android|iPhone|iPod/i.test(ua);
+
+    var form;
+    if (os === "android" || os === "ios") form = (mobileHint || narrow < 600) ? "phone" : "tablet";
+    else if (os === "ipados") form = "tablet";
+    else if (coarse && narrow < 600) form = "phone";
+    else if (coarse && narrow < 900) form = "tablet";
+    else form = "desktop";
+
+    return { os: os, form: form, touch: coarse };
+  }
+
+  var device = detect();
+  root.setAttribute("data-os", device.os);
+  root.setAttribute("data-form", device.form);
+
+  var OS_NAME = {
+    windows: "Windows", macos: "macOS", linux: "Linux", android: "Android",
+    ios: "iPhone", ipados: "iPad", chromeos: "ChromeOS", unknown: "an unrecognised system"
+  };
+  var FORM_NAME = { phone: "Phone layout", tablet: "Tablet layout", desktop: "Desktop layout" };
+
+  /* Which download this device should be offered. ChromeOS runs Android
+     apps, so it gets the APK; iOS gets nothing, because nothing exists. */
+  var PICK = {
+    windows: "windows", macos: "macos", linux: "linux",
+    android: "android", chromeos: "android",
+    ios: null, ipados: null, unknown: null
+  };
+
+  /* ---------------------------------------------------------------- *
+   * Downloads.
+   *
+   * The file names live on the cards as patterns with the version
+   * punched out, so there is one list rather than one per element, and
+   * the live-release check below only has to substitute into it.
+   * ---------------------------------------------------------------- */
+  var cards = [].slice.call(document.querySelectorAll(".dl"));
+
+  function human(bytes) {
+    if (!bytes) return "";
+    var mb = bytes / 1048576;
+    return (mb >= 1024 ? (mb / 1024).toFixed(2) + " GB" : mb.toFixed(1) + " MB");
+  }
+
+  var shown = VERSION;
+
+  function paint(version, assets) {
+    shown = version;
+    document.querySelectorAll("[data-version]").forEach(function (el) {
+      el.textContent = version;
+    });
+
+    cards.forEach(function (card) {
+      var pattern = card.getAttribute("data-file") || "";
+      var name = pattern.replace("{v}", version);
+      var asset = null;
+
+      if (assets) {
+        asset = assets.filter(function (a) { return a.name === name; })[0] || null;
+        if (!asset) {
+          // The version moved but the shape of the name did not: match
+          // the pattern with any version in the middle rather than
+          // sending somebody to a file that is no longer attached.
+          var rx = new RegExp("^" + pattern
+            .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+            .replace("\\{v\\}", "[0-9][0-9.]*") + "$");
+          asset = assets.filter(function (a) { return rx.test(a.name); })[0] || null;
+        }
+      }
+
+      var link = card.querySelector("[data-dl]");
+      var label = card.querySelector("[data-filename]");
+      var size = card.querySelector("[data-size]");
+
+      if (asset) {
+        link.href = asset.browser_download_url;
+        if (label) label.textContent = asset.name;
+        if (size) size.textContent = human(asset.size);
+      } else {
+        link.href = RELEASES + "/download/v" + version + "/" + name;
+        if (label) label.textContent = name;
+        if (size && card.getAttribute("data-bytes")) {
+          size.textContent = human(parseInt(card.getAttribute("data-bytes"), 10));
+        }
+      }
+      link.setAttribute("download", "");
+    });
+
+    recommend();
+  }
+
+  /* Mark the card that matches this device, move it to the front, and
+     point the two call-to-action buttons straight at it. */
+  function recommend() {
+    var want = PICK[device.os];
+    var chosen = null;
+
+    cards.forEach(function (c) { c.classList.remove("is-recommended"); });
+    if (want) {
+      chosen = cards.filter(function (c) { return c.getAttribute("data-os") === want; })[0] || null;
+    }
+
+    var cta = document.getElementById("cta");
+    var ctaLabel = document.getElementById("cta-label");
+    var ctaSub = document.getElementById("cta-sub");
+    var dockCta = document.getElementById("dock-cta");
+    var dockWho = document.getElementById("dock-who");
+
+    if (chosen) {
+      chosen.classList.add("is-recommended");
+      var grid = document.getElementById("dl-grid");
+      if (chosen.parentNode === grid) grid.insertBefore(chosen, grid.firstChild);
+
+      var href = chosen.querySelector("[data-dl]").href;
+      var file = chosen.querySelector("[data-filename]").textContent;
+      var size = chosen.querySelector("[data-size]").textContent;
+
+      // Extension and size rather than the whole file name: on macOS
+      // the name runs to forty characters, which stretches the button
+      // wide enough to push the one beside it onto its own line.
+      var ext = (file.match(/\.[a-z0-9]+$/i) || [""])[0];
+
+      cta.href = href;
+      cta.setAttribute("download", "");
+      ctaLabel.textContent = "Download for " + OS_NAME[device.os];
+      // Safari does not report the CPU, so a Mac cannot be told apart
+      // from an Intel one here. Saying which this build is beats
+      // handing an Intel Mac a binary that will not start.
+      ctaSub.textContent = device.os === "macos"
+        ? size + " · " + ext + " · Apple Silicon"
+        : size + " · " + ext + " · " + shown;
+
+      dockCta.href = href;
+      dockCta.setAttribute("download", "");
+      dockCta.textContent = "Get it for " + OS_NAME[device.os];
+      dockWho.textContent = size + " · " + OS_NAME[device.os];
+    } else {
+      cta.href = RELEASES + "/latest";
+      cta.removeAttribute("download");
+      ctaLabel.textContent = "See every download";
+      ctaSub.textContent = device.os === "ios" || device.os === "ipados"
+        ? "No " + OS_NAME[device.os] + " build — desktop or Android"
+        : "All platforms · GitHub releases";
+
+      dockCta.href = "#downloads";
+      dockCta.removeAttribute("download");
+      dockCta.textContent = "See downloads";
+      dockWho.textContent = OS_NAME[device.os];
+    }
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Say out loud what was worked out, so it is checkable rather than
+   * something the page merely claims to do.
+   * ---------------------------------------------------------------- */
+  function announce() {
+    var bits = FORM_NAME[device.form] + " · " + OS_NAME[device.os];
+    var el = document.getElementById("detected-text");
+    el.parentNode.classList.add("is-known");
+    el.innerHTML = "";
+    el.appendChild(document.createTextNode("Detected: "));
+    var b = document.createElement("b");
+    b.textContent = bits;
+    el.appendChild(b);
+    el.appendChild(document.createTextNode(
+      device.form === "desktop"
+        ? " — you are getting the wide layout."
+        : " — you are getting the touch layout."
+    ));
+    document.getElementById("footer-detected").textContent = bits;
+
+    // A Chromium browser can be asked for the CPU as well, which is the
+    // one thing that decides between the Apple Silicon .dmg and the
+    // portable .jar. Safari cannot answer it, so macOS is offered the
+    // .dmg with the Intel caveat printed on the card either way.
+    var uad = navigator.userAgentData;
+    if (uad && uad.getHighEntropyValues) {
+      uad.getHighEntropyValues(["architecture", "bitness"]).then(function (h) {
+        if (!h || !h.architecture) return;
+        var arch = h.architecture === "arm" ? (h.bitness === "64" ? "ARM64" : "ARM") :
+                   h.architecture === "x86" ? (h.bitness === "64" ? "x86-64" : "x86") :
+                   h.architecture;
+        b.textContent = bits + " · " + arch;
+        document.getElementById("footer-detected").textContent = bits + " · " + arch;
+      }).catch(function () { /* nothing to add */ });
+    }
+  }
+
+  /* On a phone the explanations collapse, because a phone screen is a
+     column and eight open paragraphs is a scroll. Everything ships
+     open in the markup, so a reader with no JavaScript at all still
+     sees the whole page. */
+  function collapseOnPhone() {
+    if (device.form !== "phone") return;
+    document.querySelectorAll("details.acc").forEach(function (d, i) {
+      if (i > 0) d.removeAttribute("open");
+    });
+  }
+
+  /* One word, and only one, changes with the input device. */
+  var fallbackWord = document.getElementById("digit-fallback");
+  if (fallbackWord && device.form !== "unknown") fallbackWord.style.display = "none";
+
+  paint(VERSION, null);
+  announce();
+  collapseOnPhone();
+
+  /* ---------------------------------------------------------------- *
+   * Ask GitHub what the latest release actually is.
+   *
+   * Everything above already works without this: the page ships with
+   * the real names, sizes and links for the version it was built for.
+   * This is only so the page does not go stale the moment a new
+   * release is cut - and if the request fails, is rate-limited, or is
+   * blocked, nothing changes and nothing is reported, because the
+   * baked-in answer was never wrong, only possibly old.
+   * ---------------------------------------------------------------- */
+  if (window.fetch) {
+    fetch("https://api.github.com/repos/" + REPO + "/releases/latest", {
+      headers: { "Accept": "application/vnd.github+json" }
+    })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error(r.status)); })
+      .then(function (rel) {
+        var tag = String(rel.tag_name || "").replace(/^v/, "");
+        if (!/^[0-9]+\.[0-9]+/.test(tag)) return;
+        paint(tag, Array.isArray(rel.assets) ? rel.assets : null);
+      })
+      .catch(function () { /* keep what shipped */ });
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# Netlify configuration for the download page in web/.
+#
+# This file is only read when Netlify is pointed at the repository itself -
+# Site configuration > Build & deploy, with the base directory left at the
+# repository root. There is nothing to build: the page is a single
+# self-contained HTML file with no dependencies, no bundler and no assets, so
+# the "build" is publishing the folder.
+#
+# Dragging the web/ folder onto app.netlify.com/drop does not read this file
+# at all. The headers it would otherwise set live in web/_headers, which
+# Netlify reads from inside the published directory either way.
+
+[build]
+  publish = "web"
+  command = ""
+
+[build.environment]
+  # Nothing in web/ needs a toolchain. Saying so keeps Netlify from
+  # provisioning a Node or JVM image for a directory of static files.
+  NETLIFY_USE_YARN = "false"
