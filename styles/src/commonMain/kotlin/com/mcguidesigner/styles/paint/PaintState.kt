@@ -112,7 +112,10 @@ class PaintState(
     var layerRevision by mutableStateOf(0)
         private set
 
-    private var flattened = Compositor.flatten(document)
+    // `blankFlatten`, not `flatten`: the document was built two lines ago and
+    // has nothing on it, so compositing it is a full pass over every pixel to
+    // discover that. See Compositor.blankFlatten.
+    private var flattened = Compositor.blankFlatten(document)
     private var engine = StrokeEngine(document.width, document.height)
     private val stabilizer = Stabilizer()
 
@@ -198,6 +201,25 @@ class PaintState(
     /** The composited pixels, for the renderer. Do not mutate. */
     val pixels: IntArray get() = flattened
 
+    // -- The cost meter -----------------------------------------------------
+    //
+    // How many pixels the tools have re-blended. Not a statistic and not
+    // diagnostics: it is what `StrokeCostTest` measures, and it is measured in
+    // pixels rather than milliseconds because a millisecond budget on a shared
+    // CI runner is a coin toss and this number is identical on every machine.
+    //
+    // The regression it guards is the one that made drawing feel like wading:
+    // every tool recomputes from the pre-stroke original, and doing that over
+    // the whole accumulated rectangle of the stroke made the cost of a line
+    // quadratic in its length.
+
+    var blendedPixels: Long = 0L
+        private set
+
+    fun resetBlendCounter() {
+        blendedPixels = 0L
+    }
+
     // -- Lifecycle ---------------------------------------------------------
 
     fun attachSurface() {
@@ -224,7 +246,7 @@ class PaintState(
         document = PaintDocument.blank(width, height, background)
         undo.clear()
         engine = StrokeEngine(width, height)
-        flattened = Compositor.flatten(document)
+        flattened = Compositor.blankFlatten(document)
         surface?.dispose()
         surface = PaintSurface(width, height)
         patchSurface?.dispose()
@@ -288,14 +310,33 @@ class PaintState(
     val patchActive: Boolean get() = patchWidth > 0 && patchHeight > 0 && patchSurface != null
 
     /**
-     * Mirrors the stroke's accumulated rectangle into the patch.
+     * Mirrors the stroke into the patch, copying only what changed.
+     *
+     * The patch covers everything the stroke has touched, because the canvas
+     * bitmap underneath it is stale over exactly that area. But only a
+     * brush-sized piece of it changes per event, so only that piece is copied -
+     * placed at its offset within the patch rather than rewritten from the
+     * corner. Copying the whole rectangle every frame, which is what this did
+     * before, moves a million pixels per frame by the middle of a long stroke
+     * to show a change covering a few thousand.
+     *
+     * The patch keeps a fixed origin for as long as it can. A stroke that grows
+     * down and right - most of them - only ever adds a band along an edge,
+     * which is filled once. A stroke that doubles back above or left of its own
+     * origin cannot keep the anchor, so the patch is rebuilt; that is rare and
+     * costs one full copy.
      *
      * Returns false when the stroke has grown large enough that the patch has
      * stopped being a saving, at which point the caller falls back to writing
      * into the canvas bitmap - no worse than before, and only for strokes that
      * genuinely cover most of the document.
      */
-    private fun updatePatch(): Boolean {
+    private fun updatePatch(
+        stepLeft: Int,
+        stepTop: Int,
+        stepRight: Int,
+        stepBottom: Int,
+    ): Boolean {
         val left = strokeBounds[0]
         val top = strokeBounds[1]
         val right = strokeBounds[2]
@@ -307,20 +348,69 @@ class PaintState(
         val documentArea = document.width.toLong() * document.height
         if (width.toLong() * height > documentArea / 2) return false
 
-        val current = patchSurface
-        if (current == null || current.width < width || current.height < height) {
-            current?.dispose()
-            // Rounded up in chunks so a growing stroke does not reallocate on
-            // every frame; a 128-pixel step is one reallocation per few dozen.
-            val capacityW = ((width + 127) / 128 * 128).coerceAtMost(document.width)
-            val capacityH = ((height + 127) / 128 * 128).coerceAtMost(document.height)
-            patchSurface = PaintSurface(capacityW, capacityH)
+        val surface = patchSurface
+        val anchorMoved = patchWidth == 0 || left < patchLeft || top < patchTop
+        val outgrown = surface == null ||
+            surface.width < (right - patchLeft + 1) ||
+            surface.height < (bottom - patchTop + 1)
+
+        if (anchorMoved || outgrown) {
+            if (surface == null || anchorMoved || outgrown) {
+                surface?.dispose()
+                // Rounded up in chunks so a growing stroke does not reallocate
+                // on every frame; a 128-pixel step is one reallocation per few
+                // dozen.
+                val capacityW = ((width + 127) / 128 * 128).coerceAtMost(document.width)
+                val capacityH = ((height + 127) / 128 * 128).coerceAtMost(document.height)
+                patchSurface = PaintSurface(capacityW, capacityH)
+            }
+            patchLeft = left
+            patchTop = top
+            patchWidth = width
+            patchHeight = height
+            // A fresh surface holds nothing, so this one copy is not optional.
+            patchSurface?.updateFrom(flattened, document.width, left, top, 0, 0, width, height)
+            revision++
+            return true
         }
-        patchLeft = left
-        patchTop = top
-        patchWidth = width
-        patchHeight = height
-        patchSurface?.updateFrom(flattened, document.width, left, top, width, height)
+
+        // The anchor held. Fill whatever the rectangle just gained along its
+        // right and bottom edges, because those pixels have never been copied
+        // and the patch is drawn over them.
+        val newWidth = right - patchLeft + 1
+        val newHeight = bottom - patchTop + 1
+        if (newWidth > patchWidth) {
+            patchSurface?.updateFrom(
+                flattened, document.width,
+                patchLeft + patchWidth, patchTop,
+                patchWidth, 0,
+                newWidth - patchWidth, patchHeight,
+            )
+        }
+        if (newHeight > patchHeight) {
+            patchSurface?.updateFrom(
+                flattened, document.width,
+                patchLeft, patchTop + patchHeight,
+                0, patchHeight,
+                newWidth, newHeight - patchHeight,
+            )
+        }
+        patchWidth = newWidth
+        patchHeight = newHeight
+
+        // And the pixels this event actually changed.
+        val sx = stepLeft.coerceAtLeast(patchLeft)
+        val sy = stepTop.coerceAtLeast(patchTop)
+        val sw = stepRight - sx + 1
+        val sh = stepBottom - sy + 1
+        if (sw > 0 && sh > 0) {
+            patchSurface?.updateFrom(
+                flattened, document.width,
+                sx, sy,
+                sx - patchLeft, sy - patchTop,
+                sw, sh,
+            )
+        }
         revision++
         return true
     }
@@ -680,11 +770,15 @@ class PaintState(
     }
 
     private fun applyPaintOrErase(layer: PaintLayer) {
-        if (!engine.hasDirt) return
-        val left = engine.dirtyLeft
-        val top = engine.dirtyTop
-        val right = engine.dirtyRight
-        val bottom = engine.dirtyBottom
+        // The step, not the whole stroke. A pixel whose coverage did not change
+        // this event blends to the value it already holds, so revisiting it
+        // costs time and changes nothing - see StrokeEngine.stepLeft.
+        if (!engine.hasStep) return
+        val left = engine.stepLeft
+        val top = engine.stepTop
+        val right = engine.stepRight
+        val bottom = engine.stepBottom
+        engine.consumeStep()
         undo.touch(layer, left, top, right, bottom)
 
         val ceiling = (activeOpacity.coerceIn(0f, 1f) * 255f).roundToInt()
@@ -697,6 +791,7 @@ class PaintState(
         if (scratch.size < needed) scratch = IntArray(needed)
         undo.readOriginalInto(layer, left, top, right, bottom, scratch)
 
+        blendedPixels += regionWidth.toLong() * (bottom - top + 1)
         for (y in top..bottom) {
             val row = y * document.width
             val scratchRow = (y - top) * regionWidth
@@ -714,7 +809,7 @@ class PaintState(
 
         Compositor.repaint(document, flattened, left, top, right, bottom)
         growStroke(left, top, right, bottom)
-        if (!updatePatch()) bumpRegion(left, top, right, bottom)
+        if (!updatePatch(left, top, right, bottom)) bumpRegion(left, top, right, bottom)
     }
 
     /**
@@ -726,12 +821,13 @@ class PaintState(
      * every blur stroke against its own boundary.
      */
     private fun applyBlur(layer: PaintLayer) {
-        if (!engine.hasDirt) return
+        if (!engine.hasStep) return
         val radius = blurRadius
-        val left = engine.dirtyLeft
-        val top = engine.dirtyTop
-        val right = engine.dirtyRight
-        val bottom = engine.dirtyBottom
+        val left = engine.stepLeft
+        val top = engine.stepTop
+        val right = engine.stepRight
+        val bottom = engine.stepBottom
+        engine.consumeStep()
         undo.touch(layer, left, top, right, bottom)
 
         val readLeft = (left - radius).coerceAtLeast(0)
@@ -747,6 +843,7 @@ class PaintState(
         undo.readOriginalInto(layer, readLeft, readTop, readRight, readBottom, scratch)
 
         val ceiling = (activeOpacity.coerceIn(0f, 1f) * 255f).roundToInt()
+        blendedPixels += (right - left + 1).toLong() * (bottom - top + 1)
         for (y in top..bottom) {
             val row = y * document.width
             for (x in left..right) {
@@ -766,7 +863,7 @@ class PaintState(
 
         Compositor.repaint(document, flattened, left, top, right, bottom)
         growStroke(left, top, right, bottom)
-        if (!updatePatch()) bumpRegion(left, top, right, bottom)
+        if (!updatePatch(left, top, right, bottom)) bumpRegion(left, top, right, bottom)
     }
 
     /**
@@ -805,7 +902,7 @@ class PaintState(
 
         Compositor.repaint(document, flattened, left, top, right, bottom)
         growStroke(left, top, right, bottom)
-        if (!updatePatch()) bumpRegion(left, top, right, bottom)
+        if (!updatePatch(left, top, right, bottom)) bumpRegion(left, top, right, bottom)
     }
 
     /** How far the blur tool reaches, in pixels, from the brush size. */

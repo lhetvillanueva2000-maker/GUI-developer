@@ -264,6 +264,15 @@ private fun DrawScope.drawGestureOverlay(
  * The hue depends on distance along the path *plus* the clock, so the colours
  * slide along the stroke rather than sitting still on it - which is what makes
  * it read as active rather than merely coloured.
+ *
+ * Drawn as a fixed number of segments rather than one per point. A scribble
+ * across a canvas arrives as several hundred points, and three coloured passes
+ * over every one of them is a couple of thousand draw calls per frame for a
+ * decoration - which made the trail itself the thing that stuttered, on a
+ * gesture whose whole purpose is to feel responsive. Sampling the path at
+ * [TRAIL_SEGMENTS] evenly spaced positions gives the same band: the segments
+ * are a few pixels long on screen at that count, well under the width of the
+ * line being drawn, so nothing is visibly straightened.
  */
 private fun DrawScope.drawTrail(
     points: List<Offset>,
@@ -289,40 +298,53 @@ private fun DrawScope.drawTrail(
     }
     val total = travelled.coerceAtLeast(1f)
 
+    // The sample indices, chosen once and shared by all three passes. Always
+    // includes the first and last point, so the trail starts and ends exactly
+    // where the finger did.
+    val steps = minOf(TRAIL_SEGMENTS, points.size - 1)
+    val sampled = IntArray(steps + 1)
+    for (s in 0..steps) {
+        sampled[s] = ((points.size - 1).toLong() * s / steps).toInt()
+    }
+
+    fun pass(strokeWidth: Float, alpha: Float, white: Boolean) {
+        for (s in 1..steps) {
+            val a = sampled[s - 1]
+            val b = sampled[s]
+            if (a == b) continue
+            val colour = if (white) {
+                Color.White.copy(alpha = alpha)
+            } else {
+                hueAt(distances[b] / total * 1.6f + shimmer).copy(alpha = alpha)
+            }
+            drawLine(
+                color = colour,
+                start = points[a],
+                end = points[b],
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round,
+            )
+        }
+    }
+
     // Pass one: the glow. Wide, soft, low alpha.
-    for (i in 1 until points.size) {
-        val hue = hueAt(distances[i] / total * 1.6f + shimmer)
-        drawLine(
-            color = hue.copy(alpha = glow * 0.35f),
-            start = points[i - 1],
-            end = points[i],
-            strokeWidth = width * 1.9f,
-            cap = StrokeCap.Round,
-        )
-    }
+    pass(width * 1.9f, glow * 0.35f, white = false)
     // Pass two: the band itself.
-    for (i in 1 until points.size) {
-        val hue = hueAt(distances[i] / total * 1.6f + shimmer)
-        drawLine(
-            color = hue.copy(alpha = 0.85f),
-            start = points[i - 1],
-            end = points[i],
-            strokeWidth = width,
-            cap = StrokeCap.Round,
-        )
-    }
+    pass(width, 0.85f, white = false)
     // Pass three: a bright core, which is what stops it looking like a fat
     // crayon and makes it look lit.
-    for (i in 1 until points.size) {
-        drawLine(
-            color = Color.White.copy(alpha = 0.55f),
-            start = points[i - 1],
-            end = points[i],
-            strokeWidth = (width * 0.28f).coerceAtLeast(1.5f),
-            cap = StrokeCap.Round,
-        )
-    }
+    pass((width * 0.28f).coerceAtLeast(1.5f), 0.55f, white = true)
 }
+
+/**
+ * How many segments the trail is drawn with, however long the path is.
+ *
+ * Sixty-four is enough that the joins are invisible at any plausible trail
+ * width - a scribble spanning a whole phone screen samples every twenty pixels,
+ * against a band that is rarely narrower than ten - and it caps the trail's
+ * cost at 192 draw calls a frame no matter how long the scribble grows.
+ */
+private const val TRAIL_SEGMENTS = 64
 
 /** A saturated colour at [turn] revolutions around the hue circle. */
 private fun hueAt(turn: Float): Color {
@@ -438,14 +460,37 @@ private fun DrawScope.drawSheet(state: PaintState, fit: CanvasFit, entrance: Flo
     if (state.showGrid && fit.scale > 0.05f) {
         val step = state.gridStep * fit.scale
         if (step >= 6f) {
-            var x = fit.left
-            while (x <= fit.left + width) {
-                drawLine(Color(0x22000000), Offset(x, fit.top), Offset(x, fit.top + height))
+            // Clipped to the window, not to the sheet. Zoomed in, the sheet is
+            // several times the size of the screen, and drawing the lines that
+            // fall outside it is hundreds of draw calls a frame that land
+            // nowhere - the cost of the grid used to rise with the zoom, which
+            // is exactly backwards.
+            val viewRight = size.width
+            val viewBottom = size.height
+            val firstX = fit.left + kotlin.math.floor(((0f - fit.left) / step).coerceAtLeast(0f)) * step
+            var x = firstX
+            val lastX = minOf(fit.left + width, viewRight)
+            while (x <= lastX) {
+                if (x >= 0f) {
+                    drawLine(
+                        Color(0x22000000),
+                        Offset(x, maxOf(fit.top, 0f)),
+                        Offset(x, minOf(fit.top + height, viewBottom)),
+                    )
+                }
                 x += step
             }
-            var y = fit.top
-            while (y <= fit.top + height) {
-                drawLine(Color(0x22000000), Offset(fit.left, y), Offset(fit.left + width, y))
+            val firstY = fit.top + kotlin.math.floor(((0f - fit.top) / step).coerceAtLeast(0f)) * step
+            var y = firstY
+            val lastY = minOf(fit.top + height, viewBottom)
+            while (y <= lastY) {
+                if (y >= 0f) {
+                    drawLine(
+                        Color(0x22000000),
+                        Offset(maxOf(fit.left, 0f), y),
+                        Offset(minOf(fit.left + width, viewRight), y),
+                    )
+                }
                 y += step
             }
         }

@@ -45,17 +45,26 @@ expect class PaintSurface(width: Int, height: Int) {
     fun updateRegion(pixels: IntArray, x: Int, y: Int, width: Int, height: Int)
 
     /**
-     * Copies a window of a *larger* buffer into this surface's top-left corner.
+     * Copies a window of a *larger* buffer into this surface at [destX], [destY].
      *
      * For the stroke patch: a small surface holding one rectangle cut out of
      * the full canvas buffer. [sourceStride] is the width of the buffer being
      * read, not of the window.
+     *
+     * The destination offset is what makes the patch incremental. The patch
+     * covers everything the stroke has touched, but only a brush-sized piece of
+     * that changes per event, so the copy is that piece placed where it belongs
+     * rather than the whole rectangle again - which by the middle of a long
+     * stroke is a million pixels moved per frame to show a change covering a
+     * few thousand.
      */
     fun updateFrom(
         pixels: IntArray,
         sourceStride: Int,
         sourceX: Int,
         sourceY: Int,
+        destX: Int,
+        destY: Int,
         width: Int,
         height: Int,
     )

@@ -21,8 +21,20 @@ actual class PaintSurface actual constructor(
     actual val width: Int,
     actual val height: Int,
 ) {
-    private var bitmap: Bitmap? =
+    /**
+     * Null when there is no real Android graphics stack underneath.
+     *
+     * Every method below already tolerates that, because a disposed surface is
+     * the same situation; the constructor was the only place that could not,
+     * and it threw. That mattered in exactly one place and it was the wrong
+     * place to lose: a plain JVM unit test, where `Bitmap.createBitmap` is an
+     * unimplemented stub, so any test that drove a stroke died on the first
+     * frame. The paint engine is arithmetic and deserves to be testable without
+     * a device attached.
+     */
+    private var bitmap: Bitmap? = runCatching {
         Bitmap.createBitmap(maxOf(1, width), maxOf(1, height), Bitmap.Config.ARGB_8888)
+    }.getOrNull()
 
     private var wrapped: ImageBitmap? = bitmap?.asImageBitmap()
 
@@ -51,19 +63,29 @@ actual class PaintSurface actual constructor(
         sourceStride: Int,
         sourceX: Int,
         sourceY: Int,
+        destX: Int,
+        destY: Int,
         width: Int,
         height: Int,
     ) {
         val target = bitmap ?: return
-        val w = width.coerceIn(1, this.width)
-        val h = height.coerceIn(1, this.height)
-        if (sourceX < 0 || sourceY < 0) return
+        if (sourceX < 0 || sourceY < 0 || destX < 0 || destY < 0) return
+        val w = width.coerceAtMost(this.width - destX)
+        val h = height.coerceAtMost(this.height - destY)
+        if (w <= 0 || h <= 0) return
         if ((sourceY + h - 1).toLong() * sourceStride + sourceX + w > pixels.size) return
-        target.setPixels(pixels, sourceY * sourceStride + sourceX, sourceStride, 0, 0, w, h)
+        target.setPixels(pixels, sourceY * sourceStride + sourceX, sourceStride, destX, destY, w, h)
     }
 
-    actual fun image(): ImageBitmap =
-        wrapped ?: bitmap!!.asImageBitmap().also { wrapped = it }
+    actual fun image(): ImageBitmap {
+        wrapped?.let { return it }
+        val target = checkNotNull(bitmap) {
+            "This PaintSurface has no bitmap: either it was disposed, or there " +
+                "is no Android graphics stack here. Nothing should be asking a " +
+                "disposed surface to draw."
+        }
+        return target.asImageBitmap().also { wrapped = it }
+    }
 
     actual fun dispose() {
         wrapped = null

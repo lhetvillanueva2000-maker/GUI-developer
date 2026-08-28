@@ -85,17 +85,20 @@ actual class PaintSurface actual constructor(
         sourceStride: Int,
         sourceX: Int,
         sourceY: Int,
+        destX: Int,
+        destY: Int,
         width: Int,
         height: Int,
     ) {
         val target = bitmap ?: return
-        val w = width.coerceIn(1, this.width)
-        val h = height.coerceIn(1, this.height)
-        if (sourceX < 0 || sourceY < 0) return
+        if (sourceX < 0 || sourceY < 0 || destX < 0 || destY < 0) return
+        val w = width.coerceAtMost(this.width - destX)
+        val h = height.coerceAtMost(this.height - destY)
+        if (w <= 0 || h <= 0) return
         if ((sourceY + h - 1).toLong() * sourceStride + sourceX + w > pixels.size) return
         for (row in 0 until h) {
             val from = (sourceY + row) * sourceStride + sourceX
-            var b = row * this.width * 4
+            var b = ((destY + row) * this.width + destX) * 4
             for (i in from until from + w) {
                 val p = pixels[i]
                 bytes[b] = (p and 0xFF).toByte()

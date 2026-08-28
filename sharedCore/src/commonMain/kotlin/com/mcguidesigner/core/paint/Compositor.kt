@@ -26,6 +26,27 @@ object Compositor {
     }
 
     /**
+     * The flattened result of a document known to have nothing drawn on it.
+     *
+     * Only the background, because that is all an untouched document is. It
+     * exists because [flatten] cannot know that: a fresh layer is visible and
+     * fully opaque and merely happens to be transparent everywhere, so the
+     * layer loop runs over all two and a third million pixels of a new
+     * 1536-square canvas to establish that none of them contribute - between
+     * tapping the paint tool and the screen appearing, for a result already
+     * sitting in the buffer.
+     *
+     * Only for a caller that has just built the document itself and therefore
+     * knows. Calling it on a document with artwork on it returns a blank sheet.
+     */
+    fun blankFlatten(document: PaintDocument, into: IntArray? = null): IntArray {
+        val size = document.width * document.height
+        val out = if (into != null && into.size == size) into else IntArray(size)
+        out.fill(document.background.colour)
+        return out
+    }
+
+    /**
      * Recomposites only the rectangle a stroke has touched.
      *
      * The reason the canvas can keep up with a finger. A full flatten of a

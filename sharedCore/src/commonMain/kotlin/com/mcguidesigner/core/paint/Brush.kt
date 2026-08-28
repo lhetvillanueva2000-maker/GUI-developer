@@ -284,10 +284,37 @@ class StrokeEngine(private val width: Int, private val height: Int) {
     companion object {
         /** Enough for the widest radial symmetry the ruler offers, plus room. */
         const val MAX_CHANNELS = 32
+
+        /** Stands in until the first stamp allocates the real one. */
+        private val EMPTY_COVERAGE = ByteArray(0)
     }
 
-    /** Coverage laid down by the stroke in progress, 0..255 per pixel. */
-    private val coverage = ByteArray(width * height)
+    /**
+     * Coverage laid down by the stroke in progress, 0..255 per pixel.
+     *
+     * Allocated on the first stamp rather than with the engine. It is one byte
+     * per pixel of the document - two and a third megabytes on a 1536-square
+     * canvas - and the engine is built while the paint screen is being opened,
+     * where every megabyte is time the person spends looking at nothing. By the
+     * time a stroke starts the screen is up and the allocation is invisible.
+     */
+    private var coverage: ByteArray = EMPTY_COVERAGE
+
+    /**
+     * Allocates the buffer, once, at the first stamp.
+     *
+     * A plain field rather than a lazy getter because [coverageAt] is read once
+     * per pixel by every tool, and a null check on that path costs more over a
+     * stroke than the allocation it would be guarding.
+     */
+    private fun ensureCoverage(): ByteArray {
+        var buffer = coverage
+        if (buffer.size != width * height) {
+            buffer = ByteArray(width * height)
+            coverage = buffer
+        }
+        return buffer
+    }
 
     private var minX = 0
     private var minY = 0
@@ -311,12 +338,50 @@ class StrokeEngine(private val width: Int, private val height: Int) {
     private var started = false
     private var travelled = 0f
 
+    /**
+     * The rectangle stamped since the last [consumeStep].
+     *
+     * Kept alongside the cumulative one because the two answer different
+     * questions, and confusing them is what made drawing quadratic. The
+     * cumulative rectangle is "everything this stroke has touched", which is
+     * what the undo step and the on-screen patch need to cover. This one is
+     * "what changed just now", which is all any tool has to recompute: a pixel
+     * whose coverage did not move this event blends to the byte-identical
+     * value it already holds, so revisiting it is pure waste - and under the
+     * old code a stroke revisited its entire bounding box on every event, which
+     * put a quarter of a million pixels through the blender sixty times a
+     * second by the middle of a diagonal swipe.
+     */
+    private var stepMinX = 0
+    private var stepMinY = 0
+    private var stepMaxX = -1
+    private var stepMaxY = -1
+
     val isActive: Boolean get() = started
     val dirtyLeft: Int get() = minX
     val dirtyTop: Int get() = minY
     val dirtyRight: Int get() = maxX
     val dirtyBottom: Int get() = maxY
     val hasDirt: Boolean get() = maxX >= minX && maxY >= minY
+
+    val stepLeft: Int get() = stepMinX
+    val stepTop: Int get() = stepMinY
+    val stepRight: Int get() = stepMaxX
+    val stepBottom: Int get() = stepMaxY
+    val hasStep: Boolean get() = stepMaxX >= stepMinX && stepMaxY >= stepMinY
+
+    /**
+     * Marks the current step as dealt with.
+     *
+     * Called by whoever has just recomputed those pixels. Anything stamped
+     * after this belongs to the next step.
+     */
+    fun consumeStep() {
+        stepMinX = width
+        stepMinY = height
+        stepMaxX = -1
+        stepMaxY = -1
+    }
 
     /**
      * Starts a stroke and lays the first dab down immediately.
@@ -425,6 +490,7 @@ class StrokeEngine(private val width: Int, private val height: Int) {
         val y1 = min(height - 1, top + stamp.diameter - 1)
         if (x1 < x0 || y1 < y0) return
 
+        val buffer = ensureCoverage()
         for (y in y0..y1) {
             val row = y * width
             val sy = y - top
@@ -433,8 +499,8 @@ class StrokeEngine(private val width: Int, private val height: Int) {
                 if (c == 0) continue
                 val contribution = Pixels.mul(c, flow8)
                 val index = row + x
-                val existing = coverage[index].toInt() and 0xFF
-                if (contribution > existing) coverage[index] = contribution.toByte()
+                val existing = buffer[index].toInt() and 0xFF
+                if (contribution > existing) buffer[index] = contribution.toByte()
             }
         }
         grow(x0, y0, x1, y1)
@@ -466,19 +532,30 @@ class StrokeEngine(private val width: Int, private val height: Int) {
     /** Exposed for [finish], which is inline and cannot see private state. */
     val canvasWidth: Int get() = width
 
-    fun coverageAt(index: Int): Int = coverage[index].toInt() and 0xFF
+    /**
+     * Coverage at [index], or zero before anything has been stamped.
+     *
+     * The bounds check is what lets the buffer be allocated at the first stamp
+     * rather than with the engine - see [ensureCoverage].
+     */
+    fun coverageAt(index: Int): Int {
+        val buffer = coverage
+        return if (index < buffer.size) buffer[index].toInt() and 0xFF else 0
+    }
 
     fun clear() {
-        if (hasDirt) {
+        val buffer = coverage
+        if (hasDirt && buffer.size == width * height) {
             for (y in minY..maxY) {
                 val from = y * width + minX
-                coverage.fill(0, from, from + (maxX - minX + 1))
+                buffer.fill(0, from, from + (maxX - minX + 1))
             }
         }
         minX = width
         minY = height
         maxX = -1
         maxY = -1
+        consumeStep()
         started = false
         travelled = 0f
         carry.fill(0f)
@@ -490,6 +567,11 @@ class StrokeEngine(private val width: Int, private val height: Int) {
         if (y0 < minY) minY = y0
         if (x1 > maxX) maxX = x1
         if (y1 > maxY) maxY = y1
+
+        if (x0 < stepMinX) stepMinX = x0
+        if (y0 < stepMinY) stepMinY = y0
+        if (x1 > stepMaxX) stepMaxX = x1
+        if (y1 > stepMaxY) stepMaxY = y1
     }
 }
 
