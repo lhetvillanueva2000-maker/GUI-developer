@@ -73,10 +73,29 @@ kotlin {
  * chunk, a dropped source map - stops being deployed as well, instead of
  * lingering in the folder for ever.
  */
+/**
+ * Empties the two output directories before a publish.
+ *
+ * Webpack names the emitted `.wasm` files after a hash of their contents and
+ * writes them into a directory it does not clear, so every rebuild leaves the
+ * previous build's file sitting next to the new one. Nothing references them
+ * and nothing removes them, and `Sync` below faithfully copies the lot - which
+ * is how `web/app` ended up carrying four megabytes of dead wasm for every
+ * build anybody had ever run.
+ */
+val cleanWebDistribution by tasks.registering(Delete::class) {
+    delete(layout.buildDirectory.dir("dist/wasmJs/productionExecutable"))
+    delete(layout.buildDirectory.dir("kotlin-webpack/wasmJs/productionExecutable"))
+}
+
+listOf("wasmJsBrowserProductionWebpack", "wasmJsBrowserDistribution").forEach { name ->
+    tasks.named(name) { mustRunAfter(cleanWebDistribution) }
+}
+
 val publishWebApp by tasks.registering(Sync::class) {
     group = "distribution"
     description = "Copies the browser build into web/app, ready to deploy."
-    dependsOn(tasks.named("wasmJsBrowserDistribution"))
+    dependsOn(cleanWebDistribution, tasks.named("wasmJsBrowserDistribution"))
     from(layout.buildDirectory.dir("dist/wasmJs/productionExecutable"))
     into(rootProject.layout.projectDirectory.dir("web/app"))
 }

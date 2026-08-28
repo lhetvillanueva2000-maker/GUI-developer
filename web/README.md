@@ -108,18 +108,38 @@ browser; `main()` runs; the composition builds; the frame clock ticks; the
 canvas is created and sized; and the loading screen comes down from inside the
 first composed frame, which it could not do if any of that had failed.
 
-**Not verified: that it puts pixels on the screen.** The machine this was built
-on has no GPU. Its only WebGL is SwiftShader, Chromium's software rasteriser,
-and Skia's GL backend throws inside its first frame there. The thing that
-settles what that means: a stock three-line Compose page — a `Box` with a green
-background and nothing else — fails there in exactly the same way, at exactly
-the same point. So the fault is the software rasteriser, not this app. A real
-GPU is the ordinary case and there is every reason to expect it to draw, but
-"every reason to expect" is not "watched it happen", so **open it once on a
-real machine before handing the link to anybody.**
+**Verified: it draws.** A `Box` filling the viewport with a colour renders
+correctly here, at the right size, with no error. So the WebAssembly module,
+the WebGL context, Skia's raster pipeline and Compose's frame loop are all
+working end to end.
 
-Two things were added because of what that investigation turned up, and both
-matter on real hardware:
+**Not verified: text.** Anything containing text throws on its first frame.
+Six experiments narrowed it down and none of them moved it:
+
+| Tried | Result |
+| --- | --- |
+| `Box` with a background colour, nothing else | **renders** |
+| `Box` + Material3 `Text` | throws |
+| `Box` + `BasicText` (no Material, no typography) | throws |
+| Starting 2.5 seconds late, to rule out a race with skiko's runtime | throws |
+| A real 760KB TrueType font fetched and passed in explicitly | throws |
+| `WEBGL_debug_renderer_info` polyfilled | no change |
+
+So it is text *shaping*, below the font layer, and it is the same for a stock
+three-line Compose page as for this app — which is what points at this
+container rather than at anything written here. This machine is a headless
+server whose only WebGL is SwiftShader, Chromium's software rasteriser.
+
+It has therefore **not been watched working on a real graphics card**, and
+until it has, the site presents it as a preview rather than as the main way in:
+the landing page leads with the installers, the browser build is the second
+button, and the section explaining it says plainly that a blank page is the bug
+and not the reader's machine. **Open it once on a real machine.** If text
+appears, the preview labelling can come off in a one-line change to
+`web/index.html`.
+
+Two things were added along the way, and both matter on real hardware whatever
+the answer to the above turns out to be:
 
 - **`WEBGL_debug_renderer_info` is polyfilled** in `app/index.html`. Skia asks
   the WebGL context which GPU it is running on during start-up, and that
@@ -130,8 +150,8 @@ matter on real hardware:
   which the reader sees as a page that loads and then stays blank. The shim
   answers `"Unknown"` only when the browser will not answer at all, so it
   changes nothing where the extension exists and defeats no privacy
-  protection. It did *not* rescue the software rasteriser here — that failure
-  is something else — but it is a real failure mode on real browsers.
+  protection. It did *not* fix the text failure here — that is something else
+  — but it is a documented failure mode on real browsers and it costs nothing.
 - **A render watchdog.** If the app starts and then something throws, a panel
   explains that the browser could not give the page a graphics context,
   suggests turning hardware acceleration back on, and points at the

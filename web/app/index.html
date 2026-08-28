@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="color-scheme" content="dark light">
+<title>UILabs — running in your browser</title>
+<meta name="description" content="The UILabs editor, compiled to WebAssembly and running in the page. Nothing is uploaded; everything stays in this tab.">
+<meta name="theme-color" content="#0E1116">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234CC15A'/%3E%3Crect x='6' y='7' width='20' height='18' rx='2' fill='%2306210B'/%3E%3Crect x='9' y='9.5' width='9' height='2' fill='%234CC15A' opacity='.55'/%3E%3Crect x='9' y='15' width='6' height='6' fill='%234CC15A'/%3E%3Crect x='17' y='15' width='6' height='6' fill='%234CC15A'/%3E%3C/svg%3E">
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: #0E1116; color: #E6EDF3;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    /* The canvas is the app. Letting the browser treat a drag on it as a
+       page gesture means panning the design scrolls the page instead. */
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+  canvas { display: block; outline: none; }
+
+  /* The loading screen, removed by main() once Compose has mounted - see
+     Main.kt. It is markup rather than a spinner drawn by the app because the
+     app is the thing that has not arrived yet. */
+  #boot {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; background: #0E1116; text-align: center; padding: 24px;
+  }
+  #boot .word {
+    display: flex; align-items: center; gap: 7px;
+    font-weight: 900; letter-spacing: .06em; font-size: 22px;
+  }
+  #boot .slot {
+    background: #1B222B; color: #EDF3F8; padding: 3px 9px 4px; border-radius: 6px;
+    font-size: 17px; letter-spacing: .14em;
+    box-shadow: inset 2px 2px 0 rgba(255,255,255,.10), inset -2px -2px 0 rgba(0,0,0,.5);
+  }
+  #boot p { margin: 0; color: #9AA7B4; font-size: 14px; max-width: 44ch; line-height: 1.6; }
+  #boot .bar {
+    width: 200px; height: 4px; border-radius: 999px; background: #1C232C; overflow: hidden;
+  }
+  #boot .bar i {
+    display: block; height: 100%; width: 40%; border-radius: 999px; background: #4CC15A;
+    animation: slide 1.4s ease-in-out infinite;
+  }
+  @keyframes slide {
+    0%   { transform: translateX(-110%); }
+    100% { transform: translateX(360%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #boot .bar i { animation: none; width: 100%; }
+  }
+  #boot a { color: #4CC15A; }
+  #boot .fail { color: #E3B341; display: none; }
+
+  /* Shown if the app starts and then fails to draw - see the watchdog below. */
+  #trouble {
+    position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 20;
+    display: none; margin-inline: auto; max-width: 620px;
+    background: #1C232C; color: #E6EDF3; border: 1px solid #E3B341;
+    border-radius: 12px; padding: 14px 16px; font-size: 14px; line-height: 1.55;
+    box-shadow: 0 20px 50px rgba(0,0,0,.55);
+  }
+  #trouble b { display: block; margin-bottom: 4px; color: #E3B341; }
+  #trouble a { color: #4CC15A; }
+  #trouble button {
+    margin-top: 10px; background: #262E38; color: #E6EDF3; border: 1px solid #39424E;
+    border-radius: 8px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="boot">
+  <div class="word">UI<span class="slot">LABS</span></div>
+  <div class="bar"><i></i></div>
+  <p id="boot-note">
+    Loading the editor. It is a few megabytes of WebAssembly, and only on the
+    first visit — after that your browser has it cached.
+  </p>
+  <p class="fail" id="boot-fail">
+    This browser could not start the editor. It needs WebAssembly with garbage
+    collection, which means Chrome or Edge 119+, Firefox 120+, or Safari 18.4+.
+    The desktop and Android builds have no such requirement —
+    <a href="../">see the downloads</a>.
+  </p>
+</div>
+
+<div id="trouble" role="status">
+  <b>The editor started but is not drawing.</b>
+  It renders through WebGL, and some machines cannot give a browser tab a
+  working graphics context — a very old GPU, a driver the browser has
+  blocklisted, or hardware acceleration switched off in the browser's settings.
+  Turning hardware acceleration back on usually fixes it. Failing that, the
+  desktop and Android builds do not go through the browser at all:
+  <a href="../#downloads">see the downloads</a>.
+  <br><button type="button" id="trouble-dismiss">Dismiss and keep trying</button>
+</div>
+
+<script>
+  // ------------------------------------------------------------------
+  // WEBGL_debug_renderer_info, put back.
+  //
+  // Skia's WebGL backend asks the context which GPU it is running on
+  // during start-up, through this extension. The extension is also a
+  // fingerprinting vector, so a growing number of browsers withhold it:
+  // Firefox with resistFingerprinting, Brave on its default shields,
+  // Safari in Lockdown Mode, Android's WebView, and every headless
+  // Chromium. When it is missing, `getParameter` is being handed a
+  // constant it does not recognise, raises INVALID_ENUM, and the render
+  // pipeline falls over on its first frame - which the reader sees as a
+  // page that loads and then stays blank for ever.
+  //
+  // The answer is to answer. Nothing downstream does anything with the
+  // GPU string except log it, so returning "Unknown" satisfies the probe
+  // and costs nothing. The real extension is preferred wherever it is
+  // offered, so on a browser that does expose it this changes nothing at
+  // all - and no fingerprinting protection is defeated, because what is
+  // handed back is a constant rather than the truth.
+  // ------------------------------------------------------------------
+  (function () {
+    var VENDOR = 0x9245;    // UNMASKED_VENDOR_WEBGL
+    var RENDERER = 0x9246;  // UNMASKED_RENDERER_WEBGL
+    var types = [window.WebGLRenderingContext, window.WebGL2RenderingContext];
+
+    for (var i = 0; i < types.length; i++) {
+      if (!types[i] || !types[i].prototype) continue;
+      var proto = types[i].prototype;
+      if (proto.__uilabsDebugInfoShim) continue;
+      proto.__uilabsDebugInfoShim = true;
+
+      (function (proto) {
+        var realGetExtension = proto.getExtension;
+        var realGetParameter = proto.getParameter;
+
+        proto.getExtension = function (name) {
+          var real = realGetExtension.call(this, name);
+          if (real || name !== "WEBGL_debug_renderer_info") return real;
+          return { UNMASKED_VENDOR_WEBGL: VENDOR, UNMASKED_RENDERER_WEBGL: RENDERER };
+        };
+
+        proto.getParameter = function (parameter) {
+          if (parameter === VENDOR || parameter === RENDERER) {
+            // Only stand in when the browser genuinely will not answer;
+            // a context that has the extension gives its own answer.
+            if (!realGetExtension.call(this, "WEBGL_debug_renderer_info")) {
+              return "Unknown";
+            }
+          }
+          return realGetParameter.call(this, parameter);
+        };
+      })(proto);
+    }
+  })();
+
+  // The one thing worth checking before a multi-megabyte download: whether
+  // this browser can run the result at all. Kotlin/Wasm needs the garbage
+  // collection proposal, and a browser without it fails deep inside the
+  // module with a message nobody can act on.
+  (function () {
+    var ok = false;
+    try {
+      // A minimal module whose type section uses a GC type. If the browser
+      // cannot validate it, it cannot run the app.
+      ok = typeof WebAssembly === "object" &&
+        WebAssembly.validate(new Uint8Array([
+          0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 95, 1, 120, 0
+        ]));
+    } catch (e) {
+      ok = false;
+    }
+    if (!ok) {
+      document.getElementById("boot-note").style.display = "none";
+      document.querySelector("#boot .bar").style.display = "none";
+      document.getElementById("boot-fail").style.display = "block";
+      return;
+    }
+    var script = document.createElement("script");
+    script.type = "application/javascript";
+    script.src = "uilabs.js";
+    script.onerror = function () {
+      document.getElementById("boot-note").textContent =
+        "The editor could not be downloaded. Check the connection and reload.";
+    };
+    document.head.appendChild(script);
+  })();
+
+  // The render watchdog.
+  //
+  // Passing the WebAssembly check above only proves the code can run, not that
+  // it can draw: the editor renders through Skia on WebGL, and a machine can
+  // have a perfectly modern browser and still not be able to hand a tab a
+  // usable graphics context - an old GPU, a blocklisted driver, hardware
+  // acceleration switched off. When that happens the page has already taken
+  // its loading screen down and what is left is a blank rectangle with no
+  // explanation, which looks exactly like a broken site.
+  //
+  // So: if the app has started and something has since thrown, say so. The
+  // dismiss button is there because the diagnosis is a guess, not a
+  // certainty - it must not be able to hide an editor that is working.
+  (function () {
+    var started = false;
+    var threw = false;
+
+    window.addEventListener("error", function () { threw = true; }, true);
+    window.addEventListener("unhandledrejection", function () { threw = true; });
+
+    var panel = document.getElementById("trouble");
+    document.getElementById("trouble-dismiss").addEventListener("click", function () {
+      panel.style.display = "none";
+    });
+
+    // The app removes #boot from its first composed frame - see Main.kt.
+    var poll = setInterval(function () {
+      if (!document.getElementById("boot")) { started = true; clearInterval(poll); }
+    }, 250);
+
+    setTimeout(function () {
+      clearInterval(poll);
+      if (started && threw) panel.style.display = "block";
+    }, 12000);
+  })();
+</script>
+</body>
+</html>
