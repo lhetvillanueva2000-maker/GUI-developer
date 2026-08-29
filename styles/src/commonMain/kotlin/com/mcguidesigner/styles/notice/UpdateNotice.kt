@@ -82,28 +82,41 @@ object AppNotice {
      */
     val current = Notice(
         id = "whatsnew-${Branding.VERSION}",
-        headline = "${Branding.NAME} ${Branding.VERSION} — scribble it away, and draw shapes by drawing them",
+        headline = "${Branding.NAME} ${Branding.VERSION} — the preview runs now, and the paint canvas has a ruler",
         points = listOf(
-            "The magic eraser is a scribble now, not a tap, and it shows you a " +
-                "glowing rainbow trail while you do it. A tap could only ever " +
-                "take one colour, which is useless on a real object — a face is " +
-                "a dozen colours, a leaf is a gradient. Scribble across the " +
-                "thing and everything the scribble touches goes with it.",
-            "The trail is not decoration. Nothing is removed until you lift your " +
-                "finger, so without it the gesture would be invisible: you " +
-                "scribble, see nothing, let go, and something vanishes. It runs " +
-                "through the whole hue circle so it cannot be camouflaged by " +
-                "whatever is underneath it.",
-            "A Shape tool that reads what you drew. Rough box → rectangle; even " +
-                "sides → square; three corners → triangle; a loop → a circle, or " +
-                "an ellipse if it was squashed. Drawn at an angle, it stays at " +
-                "that angle. A scribble it cannot read is left exactly as drawn, " +
-                "which matters more than the recognition: quietly replacing your " +
-                "drawing with a confidently wrong triangle is the worse failure.",
-            "The screen animates the way it should. The launch button ripples " +
-                "under your thumb, the editor's chrome arrives first, and the " +
-                "canvas grows into place behind it. All of it respects the " +
-                "motion setting, so Reduced still cuts straight there.",
+            "The Preview tab is Preview / Demo, and the screen actually works. " +
+                "Press a button and it presses. Flip a switch, tick a box, drag " +
+                "a slider, cycle a dropdown, type into a field, scroll a list, " +
+                "pinch to zoom. The whole point of a preview is finding out " +
+                "whether the layout works when somebody uses it, and a picture " +
+                "cannot answer that.",
+            "Nothing you do in the demo touches the document. It never dirties " +
+                "the project, never enters the undo history, and Reset puts every " +
+                "widget back the way you drew it. The five state buttons are " +
+                "still there for pinning everything to hover or pressed or " +
+                "disabled at once, which is how you check a skin.",
+            "A ruler in the paint canvas, and it is nine rulers: straight edge, " +
+                "parallel, cross, circle, ellipse, radial, and one, two and " +
+                "three-point perspective. Each holds a stroke to its shape " +
+                "through the point you started at — so where you begin chooses " +
+                "which line or which circle, and the ruler only decides the " +
+                "direction. A finger cannot draw a straight line and now it does " +
+                "not have to.",
+            "A real selection: box, ellipse, lasso and magic wand, with expand, " +
+                "contract, soften, invert, and add / subtract / intersect. " +
+                "Everything is confined to it — the brush, the eraser, the " +
+                "bucket, blur, smudge, fill, clear and the cutout. A selection " +
+                "only some tools respect is worse than none, because it teaches " +
+                "you not to trust it. Soften it and what you draw fades out at " +
+                "the edge instead of stopping dead.",
+            "The canvas zooms four times deeper — to 64x, where one design pixel " +
+                "is a tile whose halves you can actually see. At the old ceiling " +
+                "a pixel was smaller than the fingertip aiming at it.",
+            "Scroll containers finally clip what does not fit, and their " +
+                "scrollbars show where the list actually is instead of always " +
+                "saying \"at the top\". The desktop / mobile layout switch is " +
+                "gone: a safe-area margin is now just a margin, drawn when you " +
+                "set one.",
         ),
     )
 

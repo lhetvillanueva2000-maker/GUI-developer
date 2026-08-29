@@ -161,7 +161,7 @@ the answer to the above turns out to be:
 ## Keeping the downloads current
 
 The landing page ships with the real file names, sizes and links for the
-version it was built for — 2.2.0 — so it is correct offline and on first paint.
+version it was built for — 2.3.0 — so it is correct offline and on first paint.
 On load it also asks the GitHub API for the latest release and, if there is a
 newer one, rewrites the version, the file names, the sizes and the links to
 match. If that request fails, is rate-limited or is blocked, nothing changes

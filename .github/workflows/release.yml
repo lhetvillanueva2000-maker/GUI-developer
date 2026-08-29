@@ -430,66 +430,115 @@ jobs:
 
           ## What's new in $VERSION
 
-          ### A third target: Other UIs
+          ### The preview runs
 
-          The home screen now offers **Other UIs** alongside Java and Bedrock. It is
-          for interfaces that are not Minecraft at all — apps, websites, tools,
-          anything with buttons and text fields rather than inventory slots.
+          The **Preview** tab is now **Preview / Demo**, and the screen in it
+          actually works.
 
-          It has its own skin: flat, neutral, rounded corners, 36px controls, a
-          filled accent for the primary action and **no text shadow**. Both
-          Minecraft skins shadow their text because the game does, and carrying
-          that habit over would be the clearest possible tell that a mock-up came
-          out of a Minecraft tool.
+          Press a button and it presses — and sliding off it before you let go
+          cancels it, the way every real button behaves. Toggles flip.
+          Checkboxes tick. A tab deselects its neighbours, which is the thing
+          that makes a tab strip a tab strip and the thing a still preview
+          always gets wrong. Dropdowns cycle through every option. Sliders jump
+          to where you tap and then follow your finger. Text fields take the
+          keyboard and keep what you type, and a search field's clear cross
+          clears it. Lists scroll — on the wheel, or by dragging — and stop at
+          their ends. The whole screen pinches and wheels to any zoom.
 
-          Three starter screens come with it — a sign-in form, a settings page and
-          a dashboard. Inventory slots, hotbars, chest panels and tooltips are not
-          offered here, because they are furniture from a different building.
+          The reason to open a preview is to find out whether the layout works
+          when somebody *uses* it: is that button big enough to hit, does the
+          list reach its last row, is the switch obviously on when it is on,
+          does the layout still hold once the text field has something in it.
+          None of that is visible in a picture, and all of it is visible the
+          moment the screen responds.
 
-          What it exports is what was already the right answer for it: the project
-          file and **HTML+CSS, React JSX, SwiftUI, Flutter and Android XML**. There
-          is no resource pack, because there is no game to load one.
+          **Nothing the demo does touches the document.** Every change lives in
+          a layer over the top, so pressing a button in a preview does not
+          dirty the project, does not enter the undo history, and does not
+          survive **Reset**. The five state buttons are still beside **Live**
+          for pinning *every* widget to hover, or pressed, or disabled at once
+          — which is the only way to inspect a skin you drew, since no amount
+          of pointing at one widget will show you the rest.
 
-          ### The grid is off by default
+          ### A ruler in the paint canvas — nine of them
 
-          It is a measuring aid, and it was being drawn over every design from the
-          moment it was created — including in every screenshot anybody took to
-          show their work off. **Snapping does not depend on it**: the grid can be
-          invisible and still be snapped to, which is what most people want. The
-          toggle is **Ctrl+G**, or **⋮ ▸ Show grid** on a phone.
+          A ruler is not a tool you draw with. It is a thing you put down and
+          then draw *against*, and everything drawn while it is there comes out
+          straight, or round, or converging on a vanishing point. On a
+          touchscreen that is the difference between line art being possible
+          and not.
+
+          | Ruler | What it does |
+          | --- | --- |
+          | **Straight edge** | every stroke lands on one line |
+          | **Parallel** | each stroke becomes its own line at the ruler's angle |
+          | **Cross** | each stroke locks to whichever axis it set off along |
+          | **Circle** | each stroke rides the circle it started on |
+          | **Ellipse** | the same, squashed — a circle seen at an angle |
+          | **Radial** | strokes run out from the centre along the nearest spoke |
+          | **1, 2, 3-point** | perspective |
+
+          They all work the same way, and it is the part worth knowing: the
+          snap is onto the shape **through the point the stroke began at**. You
+          choose which of the parallel lines, or which concentric circle, by
+          where you start — the ruler only decides the direction. Snapping to
+          one fixed line instead would mean moving the ruler between every
+          stroke.
+
+          Symmetry still composes with all of it: a mirrored stroke held to a
+          ruler is mirrored and held.
+
+          ### A real selection
+
+          Three ways to make one — a **box or ellipse marquee**, a freehand
+          **lasso**, and a **magic wand** — then **expand**, **contract**,
+          **soften**, **invert**, **all**, **none** and *everything on this
+          layer*, with **New / Add / Subtract / Intersect** deciding how the
+          next one meets the last. That is a setting rather than a modifier
+          key, because there is no modifier key on a phone.
+
+          The lasso closes its own loop, so letting go without carefully
+          returning to the start still gives you a region. The wand runs the
+          same flood the bucket does, deliberately: "what would the bucket
+          fill" and "what does the wand select" have to be the same question,
+          or the two tools contradict each other.
+
+          And then the part that matters. **Everything** is confined to it: the
+          brush, the eraser, the bucket, blur, smudge, fill, clear and the auto
+          cutout. A selection that only some tools respect is worse than no
+          selection at all, because it teaches you not to trust it. Because it
+          is stored as coverage rather than as a shape, a **softened** selection
+          *fades* what you draw into it instead of cutting it off at a line.
+
+          ### The canvas zooms four times deeper
+
+          To **64x**, up from 16. These canvases are tiny — a Java chest screen
+          is 176 by 166 — so the unit of work is one pixel, and at 16x a pixel
+          was about the size of a full stop at arm's length and smaller than
+          the fingertip aiming at it. At 64x it is a large tile whose halves
+          are unambiguous.
 
           ### Fixes
 
-          - **Saving a PNG produced a zero-byte file.** The image was rendered
-            first and held in memory while the system file picker was the
-            foreground activity — and a phone short on memory destroys the
-            backgrounded activity, taking the bytes with it. The document had
-            already been created by then, so what landed on disk was empty and
-            nothing was reported. The destination is now chosen first and the
-            image rendered only once a file exists.
-          - **Empty image data is refused** with a visible message instead of
-            written, since writing it recreates the same silent empty file.
-          - **Starter templates for the new target arrived with warnings on them**,
-            because they were seeded with Java's property defaults — which gave
-            every text-bearing element a font value that is not legal in its own
-            target. Caught by a test that now holds every bundled template to a
-            clean strict-mode validation.
-
-          ### The test build
-
-          `UILabsDebug-$VERSION.apk` is the same code as the release, built as a
-          separate package (`com.mcguidesigner.android.debug`) so it installs
-          **alongside** the normal app instead of replacing it. It appears in the
-          launcher as **UILabs DEBUG**.
-
-          What it adds: **⋮ ▸ Diagnostics** shows everything that has failed this
-          session with its real message and full stack trace, and **Copy
-          everything** puts the lot on the clipboard with the app version, Android
-          version and device model already attached. A crash is written to disk on
-          the way out and is waiting on that screen the next time the app opens.
-
-          It is not signed with the release key, so it will not upgrade over the
-          normal app and vice versa - which is the point.
+          - **Scroll containers never clipped their contents.** The element has
+            always been described as a clipped, scrollable region and the
+            renderer drew all of it: a twelve-row list in a six-row window
+            painted twelve rows, straight over whatever was laid out beneath
+            it. So the one element whose whole purpose is holding more than it
+            can show was the one element that could not show that.
+          - **Every scrollbar thumb was pinned to the top of its track**,
+            whatever the region was scrolled to — in all three skins. They now
+            all draw it from one shared calculation.
+          - **The grid cost more the further you zoomed in**, because it walked
+            the whole sheet from its corner and most of the loop drew lines
+            outside the window that were then thrown away.
+          - **The desktop / mobile switch is gone.** It decided a starting
+            canvas size and whether the safe-area overlay was drawn, and it had
+            spread to fourteen files to do it. A safe area is a margin the
+            design must keep clear — a phone's rounded corners are the usual
+            reason to want one, but a TV's overscan and a window's title bar
+            are the same problem — so it now follows whether a margin has
+            actually been set. **Projects saved by older versions still open.**
 
           ### First launch notes
 

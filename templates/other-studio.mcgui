@@ -10,7 +10,6 @@
     "gridSize": 8,
     "backdrop": "SOLID",
     "backdropColor": 4279506716,
-    "targetForm": "desktop",
     "safeArea": {
       "left": 0,
       "top": 0,

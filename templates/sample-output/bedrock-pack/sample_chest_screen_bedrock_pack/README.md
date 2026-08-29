@@ -35,5 +35,4 @@ On Windows the `com.mojang` folder lives under
 
 ## Canvas
 
-Authored at 176x166 for
-desktop layouts.
+Authored at 176x166.

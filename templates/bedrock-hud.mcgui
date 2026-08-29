@@ -10,7 +10,6 @@
     "gridSize": 4,
     "backdrop": "GAME_WORLD",
     "backdropColor": 3222278168,
-    "targetForm": "mobile",
     "safeArea": {
       "left": 12,
       "top": 8,

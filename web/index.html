@@ -663,6 +663,7 @@ html[data-form="tablet"] .desk-only { display: none; }
     <nav aria-label="Sections">
       <a href="#run">Try in browser</a>
       <a href="#targets">What it makes</a>
+      <a href="#demo">New in 2.3</a>
       <a href="#paint">Paint</a>
       <a href="#downloads">Downloads</a>
     </nav>
@@ -688,7 +689,7 @@ html[data-form="tablet"] .desk-only { display: none; }
   <div class="wrap">
     <div>
       <p class="eyebrow">
-        <span class="pill live"><span class="dot"></span>Version <span data-version>2.2.0</span></span>
+        <span class="pill live"><span class="dot"></span>Version <span data-version>2.3.0</span></span>
         <span class="pill">Free</span>
         <span class="pill">No account</span>
       </p>
@@ -964,11 +965,150 @@ html[data-form="tablet"] .desk-only { display: none; }
   </div>
 </section>
 
+<!-- ======================= DEMO ======================= -->
+<section id="demo">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker">New in <span data-version>2.3.0</span></p>
+      <h2>The preview runs</h2>
+      <p>
+        A picture of a screen answers one question — does it look right. People open the
+        preview to answer a different one: does it <em>work</em>. Is that button big enough
+        to hit, does the list reach its last row, is the switch obviously on when it is on,
+        does the layout still hold once the text field has something in it. None of that is
+        visible in a still.
+      </p>
+    </div>
+
+    <div class="split">
+      <div class="demo-frame">
+        <svg viewBox="0 0 380 220" role="img"
+             aria-label="A mock interface with a pressed button, a switch turned on and a slider part way along">
+          <rect x="34" y="26" width="312" height="168" rx="12" fill="#243040"/>
+
+          <!-- tab strip: one selected, its neighbours not -->
+          <rect x="50" y="42" width="70" height="22" rx="5" fill="#4DC9FF" opacity="0.85"/>
+          <rect x="124" y="42" width="70" height="22" rx="5" fill="#31435A"/>
+          <rect x="198" y="42" width="70" height="22" rx="5" fill="#31435A"/>
+
+          <!-- a button, held down -->
+          <rect x="50" y="80" width="112" height="30" rx="6" fill="#2A5A38"/>
+          <rect x="50" y="82" width="112" height="28" rx="6" fill="#4CC15A"/>
+
+          <!-- a switch, on -->
+          <rect x="180" y="84" width="48" height="24" rx="12" fill="#4CC15A"/>
+          <circle cx="216" cy="96" r="9" fill="#F2F6FA"/>
+
+          <!-- a slider, part way along -->
+          <rect x="50" y="128" width="252" height="8" rx="4" fill="#31435A"/>
+          <rect x="50" y="128" width="150" height="8" rx="4" fill="#4DC9FF"/>
+          <circle cx="200" cy="132" r="10" fill="#F2F6FA"/>
+
+          <!-- a list, scrolled: the thumb is not at the top -->
+          <rect x="50" y="152" width="252" height="30" rx="6" fill="#1D2836"/>
+          <rect x="58" y="158" width="150" height="6" rx="3" fill="#3E5570"/>
+          <rect x="58" y="170" width="196" height="6" rx="3" fill="#3E5570"/>
+          <rect x="292" y="152" width="6" height="30" rx="3" fill="#1D2836"/>
+          <rect x="292" y="166" width="6" height="12" rx="3" fill="#8FA3B8"/>
+        </svg>
+      </div>
+
+      <div>
+        <h3 style="font-size:1.3rem">Press it, and it presses</h3>
+        <p style="color:var(--muted);margin-top:10px">
+          Buttons press and release — and sliding off one before you let go cancels it, the
+          way every real button behaves. Toggles flip. Checkboxes tick. A tab deselects its
+          neighbours. Dropdowns cycle through every option. Sliders jump to where you tap
+          and then follow your finger. Text fields take the keyboard. Lists scroll and stop
+          at their ends. The whole screen pinches and wheels to any zoom.
+        </p>
+        <p style="color:var(--muted);margin-top:12px">
+          <strong>Nothing it does touches the document.</strong> Every change lives in a
+          layer over the top, so pressing a button in a preview never dirties the project,
+          never enters the undo history, and does not survive Reset. The five state buttons
+          are still there for pinning <em>every</em> widget to hover, or pressed, or
+          disabled at once — which is how you check a skin you drew.
+        </p>
+      </div>
+    </div>
+
+    <div class="split reverse" style="margin-top:44px">
+      <div class="demo-frame">
+        <svg viewBox="0 0 380 220" role="img"
+             aria-label="Wobbly strokes on the left, the same strokes held to a ruler on the right">
+          <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+            <!-- freehand: what the hand actually did -->
+            <path stroke="#8FA3B8" d="M34 74c14-10 24 8 38-2s24 10 38 0 24 8 38-2"/>
+            <path stroke="#8FA3B8" d="M34 116c14 10 24-8 38 2s24-10 38 0 24-8 38 2"/>
+            <path stroke="#8FA3B8" d="M34 158c14-10 24 8 38-2s24 10 38 0 24 8 38-2"/>
+
+            <!-- the ruler, and the same three strokes on it -->
+            <path stroke="#4DC9FF" stroke-width="1.5" opacity="0.45" d="M204 74h164M204 116h164M204 158h164"/>
+            <path stroke="#4CC15A" d="M224 74h124"/>
+            <path stroke="#4CC15A" d="M224 116h124"/>
+            <path stroke="#4CC15A" d="M224 158h124"/>
+          </g>
+          <circle cx="188" cy="116" r="5" fill="#4DC9FF"/>
+        </svg>
+      </div>
+
+      <div>
+        <h3 style="font-size:1.3rem">A ruler in the paint canvas — nine of them</h3>
+        <p style="color:var(--muted);margin-top:10px">
+          Straight edge, parallel, cross, circle, ellipse, radial, and one, two and
+          three-point perspective. A ruler is not a tool you draw with; it is a thing you
+          put down and then draw <em>against</em>. A finger cannot draw a straight line, and
+          now it does not have to.
+        </p>
+        <p style="color:var(--muted);margin-top:12px">
+          Each holds a stroke to its shape <strong>through the point you started at</strong>
+          — so where you begin chooses which of the parallel lines, or which concentric
+          circle, and the ruler only decides the direction. Snapping to one fixed line
+          instead would mean moving the ruler between every stroke.
+        </p>
+      </div>
+    </div>
+
+    <div class="split" style="margin-top:44px">
+      <div class="demo-frame">
+        <svg viewBox="0 0 380 220" role="img"
+             aria-label="Wide brush strokes crossing the canvas but appearing only inside an ellipse">
+          <defs>
+            <clipPath id="sel"><ellipse cx="190" cy="110" rx="112" ry="70"/></clipPath>
+          </defs>
+          <rect x="34" y="26" width="312" height="168" rx="12" fill="#1D2836"/>
+          <g clip-path="url(#sel)" stroke="#4CC15A" stroke-width="16" stroke-linecap="round">
+            <path d="M20 62h340M20 96h340M20 130h340M20 164h340"/>
+          </g>
+          <ellipse cx="190" cy="110" rx="112" ry="70" fill="none"
+                   stroke="#F2F6FA" stroke-width="1.5" stroke-dasharray="6 6"/>
+        </svg>
+      </div>
+
+      <div>
+        <h3 style="font-size:1.3rem">A selection everything obeys</h3>
+        <p style="color:var(--muted);margin-top:10px">
+          Box, ellipse, lasso and magic wand, then expand, contract, soften, invert, and
+          add / subtract / intersect. The lasso closes its own loop, so letting go without
+          carefully returning to the start still gives you a region.
+        </p>
+        <p style="color:var(--muted);margin-top:12px">
+          And then the part that matters: <strong>everything</strong> is confined to it —
+          the brush, the eraser, the bucket, blur, smudge, fill, clear and the auto cutout.
+          A selection only some tools respect is worse than none, because it teaches you not
+          to trust it. Soften it and what you draw fades out at the edge instead of stopping
+          dead.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ======================= PAINT ======================= -->
 <section id="paint" style="background:var(--bg-deep)">
   <div class="wrap">
     <div class="section-head">
-      <p class="kicker">New in <span data-version>2.2.0</span></p>
+      <p class="kicker">Paint mode</p>
       <h2>A paint canvas, with a magic eraser you can see working</h2>
       <p>
         Layers, blend modes, pressure-aware brushes, symmetry, flood fill and a tile-based
@@ -1114,7 +1254,7 @@ html[data-form="tablet"] .desk-only { display: none; }
   <div class="wrap">
     <div class="section-head">
       <p class="kicker">Downloads</p>
-      <h2>Version <span data-version>2.2.0</span></h2>
+      <h2>Version <span data-version>2.3.0</span></h2>
       <p>
         Each desktop package embeds its own Java runtime, so nothing has to be installed
         first — which is also why they are around a hundred megabytes each. The one that
@@ -1133,8 +1273,8 @@ html[data-form="tablet"] .desk-only { display: none; }
           <b>Windows</b>
         </div>
         <p class="note">Installer. Windows 10 or 11, 64-bit. No Java needed.</p>
-        <p class="file mono" data-filename>UILabsInstaller-2.2.0.exe</p>
-        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0.exe" download><span data-size>95.5 MB</span> · Download .exe</a>
+        <p class="file mono" data-filename>UILabsInstaller-2.3.0.exe</p>
+        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabsInstaller-2.3.0.exe" download><span data-size>95.5 MB</span> · Download .exe</a>
       </article>
 
       <article class="dl" data-os="macos" data-file="UILabsInstaller-{v}-macos-aarch64.dmg" data-bytes="109869981">
@@ -1146,8 +1286,8 @@ html[data-form="tablet"] .desk-only { display: none; }
           <b>macOS</b>
         </div>
         <p class="note">Apple Silicon — every Mac since late 2020. On an Intel Mac, use the .jar.</p>
-        <p class="file mono" data-filename>UILabsInstaller-2.2.0-macos-aarch64.dmg</p>
-        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0-macos-aarch64.dmg" download><span data-size>104.8 MB</span> · Download .dmg</a>
+        <p class="file mono" data-filename>UILabsInstaller-2.3.0-macos-aarch64.dmg</p>
+        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabsInstaller-2.3.0-macos-aarch64.dmg" download><span data-size>104.8 MB</span> · Download .dmg</a>
       </article>
 
       <article class="dl" data-os="android" data-file="UILabsInstaller-{v}.apk" data-bytes="9106604">
@@ -1159,8 +1299,8 @@ html[data-form="tablet"] .desk-only { display: none; }
           <b>Android</b>
         </div>
         <p class="note">Allow “install from unknown sources” when prompted. Android 8 and up.</p>
-        <p class="file mono" data-filename>UILabsInstaller-2.2.0.apk</p>
-        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0.apk" download><span data-size>8.7 MB</span> · Download .apk</a>
+        <p class="file mono" data-filename>UILabsInstaller-2.3.0.apk</p>
+        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabsInstaller-2.3.0.apk" download><span data-size>8.7 MB</span> · Download .apk</a>
       </article>
 
       <article class="dl" data-os="linux" data-file="UILabsInstaller-{v}-amd64.deb" data-bytes="92480708">
@@ -1174,8 +1314,8 @@ html[data-form="tablet"] .desk-only { display: none; }
           <b>Linux</b>
         </div>
         <p class="note">Debian package, x86-64. Ubuntu, Debian, Mint and relatives.</p>
-        <p class="file mono" data-filename>UILabsInstaller-2.2.0-amd64.deb</p>
-        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0-amd64.deb" download><span data-size>88.2 MB</span> · Download .deb</a>
+        <p class="file mono" data-filename>UILabsInstaller-2.3.0-amd64.deb</p>
+        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabsInstaller-2.3.0-amd64.deb" download><span data-size>88.2 MB</span> · Download .deb</a>
       </article>
 
       <article class="dl" data-os="any" data-file="UILabs-{v}.jar" data-bytes="78981166">
@@ -1188,8 +1328,8 @@ html[data-form="tablet"] .desk-only { display: none; }
           <b>Any OS with a JVM</b>
         </div>
         <p class="note">Portable. Needs Java 17 or newer: <code>java -jar &lt;file&gt;</code>. Also the answer for Intel Macs.</p>
-        <p class="file mono" data-filename>UILabs-2.2.0.jar</p>
-        <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabs-2.2.0.jar" download><span data-size>75.3 MB</span> · Download .jar</a>
+        <p class="file mono" data-filename>UILabs-2.3.0.jar</p>
+        <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabs-2.3.0.jar" download><span data-size>75.3 MB</span> · Download .jar</a>
       </article>
 
       <article class="dl" data-os="none" data-file="uilabs-{v}.zip" data-bytes="609218744">
@@ -1202,8 +1342,8 @@ html[data-form="tablet"] .desk-only { display: none; }
           <b>Everything at once</b>
         </div>
         <p class="note">Every installer above plus templates, docs, sample exports and full source. <code>MANIFEST.txt</code> lists every file with its SHA-256.</p>
-        <p class="file mono" data-filename>uilabs-2.2.0.zip</p>
-        <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/uilabs-2.2.0.zip" download><span data-size>581.0 MB</span> · Download .zip</a>
+        <p class="file mono" data-filename>uilabs-2.3.0.zip</p>
+        <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/uilabs-2.3.0.zip" download><span data-size>581.0 MB</span> · Download .zip</a>
       </article>
     </div>
 
@@ -1222,22 +1362,22 @@ html[data-form="tablet"] .desk-only { display: none; }
           <span class="ribbon">Recommended for you</span>
           <div class="head"><b>Windows · .msi</b></div>
           <p class="note">For deploying with Group Policy or Intune rather than clicking through an installer.</p>
-          <p class="file mono" data-filename>UILabsInstaller-2.2.0.msi</p>
-          <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0.msi" download><span data-size>95.0 MB</span> · Download .msi</a>
+          <p class="file mono" data-filename>UILabsInstaller-2.3.0.msi</p>
+          <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabsInstaller-2.3.0.msi" download><span data-size>95.0 MB</span> · Download .msi</a>
         </article>
         <article class="dl" data-os="none" data-file="UILabsInstaller-{v}-macos-aarch64.pkg" data-bytes="104857080">
           <span class="ribbon">Recommended for you</span>
           <div class="head"><b>macOS · .pkg</b></div>
           <p class="note">The same app as the .dmg, as an installer package. Apple Silicon.</p>
-          <p class="file mono" data-filename>UILabsInstaller-2.2.0-macos-aarch64.pkg</p>
-          <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsInstaller-2.2.0-macos-aarch64.pkg" download><span data-size>100.0 MB</span> · Download .pkg</a>
+          <p class="file mono" data-filename>UILabsInstaller-2.3.0-macos-aarch64.pkg</p>
+          <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabsInstaller-2.3.0-macos-aarch64.pkg" download><span data-size>100.0 MB</span> · Download .pkg</a>
         </article>
         <article class="dl" data-os="none" data-file="UILabsDebug-{v}.apk" data-bytes="12046779">
           <span class="ribbon">Recommended for you</span>
           <div class="head"><b>Android · test build</b></div>
           <p class="note">Installs <em>alongside</em> the normal app. Adds a Diagnostics screen that shows every failure with its full stack trace, and copies the lot to the clipboard.</p>
-          <p class="file mono" data-filename>UILabsDebug-2.2.0.apk</p>
-          <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.2.0/UILabsDebug-2.2.0.apk" download><span data-size>11.5 MB</span> · Download .apk</a>
+          <p class="file mono" data-filename>UILabsDebug-2.3.0.apk</p>
+          <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabsDebug-2.3.0.apk" download><span data-size>11.5 MB</span> · Download .apk</a>
         </article>
       </div>
     </details>
@@ -1325,7 +1465,7 @@ html[data-form="tablet"] .desk-only { display: none; }
     </div>
     <div>
       <p style="color:var(--text);font-weight:700;margin-bottom:8px">This build</p>
-      <p>Version <span data-version>2.2.0</span></p>
+      <p>Version <span data-version>2.3.0</span></p>
       <p id="footer-detected">—</p>
     </div>
   </div>
@@ -1343,7 +1483,7 @@ html[data-form="tablet"] .desk-only { display: none; }
   "use strict";
 
   var REPO = "lhetvillanueva2000-maker/GUI-developer";
-  var VERSION = "2.2.0";
+  var VERSION = "2.3.0";
   var RELEASES = "https://github.com/" + REPO + "/releases";
   var root = document.documentElement;
 

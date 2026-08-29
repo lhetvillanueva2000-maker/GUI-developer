@@ -10,7 +10,6 @@
     "gridSize": 2,
     "backdrop": "DIM",
     "backdropColor": 3222278168,
-    "targetForm": "desktop",
     "safeArea": {
       "left": 0,
       "top": 0,
