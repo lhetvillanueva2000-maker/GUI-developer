@@ -56,6 +56,10 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            // The paint state's heavy operations - the bucket, the cutout, the
+            // selection maths - are `suspend` so they can run off the frame
+            // thread. Testing them needs somewhere to run them.
+            implementation(libs.kotlinx.coroutines.test)
         }
         // Skia is the renderer on the desktop and in the browser alike, so the
         // two `actual`s for PaintSurface and the texture decoders are one file

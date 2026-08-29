@@ -22,6 +22,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,6 +103,24 @@ fun GuiDemoView(
     val clock by rememberDemoClock(playing)
     val time = if (playing) clock else 0L
 
+    // Everything the gesture handlers read, held so that reading it does not
+    // *restart* them.
+    //
+    // `pointerInput` cancels and re-launches its block whenever its keys
+    // change, and the demo's state changes on every event a gesture produces -
+    // so keying these on `demo` would tear down the handler in the middle of
+    // the drag that just updated it. A slider would move once and then stop; a
+    // scroll would jump and freeze. The keys are constant and the values are
+    // read live instead, which is what `rememberUpdatedState` is for.
+    //
+    // Note the handlers pass the *document's* project to `DemoRuntime`, never
+    // `shown`: every entry point there merges the overrides itself, so folding
+    // a fresh tree per pointer event would allocate one for nothing.
+    val liveProject by rememberUpdatedState(project)
+    val liveDemo by rememberUpdatedState(demo)
+    val liveOnDemo by rememberUpdatedState(onDemo)
+    val liveBaseZoom by rememberUpdatedState(baseZoom)
+
     Box(modifier.clipToBounds()) {
         Canvas(
             Modifier
@@ -110,18 +129,19 @@ fun GuiDemoView(
                 // whether the thing under the cursor is the thing you meant.
                 // A touchscreen sends no hover events, so this costs nothing
                 // there rather than having to be conditional.
-                .pointerInput(project, demo) {
+                .pointerInput(Unit) {
                     awaitEachGesture {
                         while (true) {
                             val event = awaitPointerEvent(PointerEventPass.Main)
                             if (event.changes.any { it.pressed }) break
                             when (event.type) {
-                                PointerEventType.Exit -> onDemo(DemoRuntime.hover(demo, null))
+                                PointerEventType.Exit -> liveOnDemo(DemoRuntime.hover(liveDemo, null))
                                 PointerEventType.Move, PointerEventType.Enter -> {
                                     val position = event.changes.lastOrNull()?.position ?: continue
-                                    val point = fitOf(size, project, baseZoom, zoom, pan).toCanvasPoint(position)
-                                    val over = DemoRuntime.hitTest(shown, demo, point.x, point.y)?.id
-                                    if (over != demo.hovered) onDemo(DemoRuntime.hover(demo, over))
+                                    val fit = fitOf(size, liveProject, liveBaseZoom, zoom, pan)
+                                    val point = fit.toCanvasPoint(position)
+                                    val over = DemoRuntime.hitTest(liveProject, liveDemo, point.x, point.y)?.id
+                                    if (over != liveDemo.hovered) liveOnDemo(DemoRuntime.hover(liveDemo, over))
                                 }
 
                                 else -> Unit
@@ -133,7 +153,7 @@ fun GuiDemoView(
                 // is nothing under it to scroll. Two meanings on one input, but
                 // they are the two meanings a wheel has everywhere else, so
                 // nobody has to be told which is which.
-                .pointerInput(project, demo) {
+                .pointerInput(Unit) {
                     awaitEachGesture {
                         while (true) {
                             val event = awaitPointerEvent(PointerEventPass.Main)
@@ -143,13 +163,14 @@ fun GuiDemoView(
                             val change = event.changes.firstOrNull() ?: continue
                             val notches = change.scrollDelta.y
                             if (notches == 0f) continue
-                            val fit = fitOf(size, project, baseZoom, zoom, pan)
+                            val fit = fitOf(size, liveProject, liveBaseZoom, zoom, pan)
                             val point = fit.toCanvasPoint(change.position)
+                            val held = liveDemo
                             val scrolled = DemoRuntime.scrollBy(
-                                shown, demo, point.x, point.y, notches * WHEEL_PIXELS,
+                                liveProject, held, point.x, point.y, notches * WHEEL_PIXELS,
                             )
-                            if (scrolled !== demo) {
-                                onDemo(scrolled)
+                            if (scrolled !== held) {
+                                liveOnDemo(scrolled)
                             } else {
                                 val next = (zoom * if (notches > 0f) 1f / ZOOM_STEP else ZOOM_STEP)
                                     .coerceIn(MIN_DEMO_ZOOM, MAX_DEMO_ZOOM)
@@ -160,13 +181,13 @@ fun GuiDemoView(
                         }
                     }
                 }
-                .pointerInput(project, demo) {
+                .pointerInput(Unit) {
                     awaitEachGesture {
                         val first = awaitFirstDown(requireUnconsumed = false)
-                        var fit = fitOf(size, project, baseZoom, zoom, pan)
+                        var fit = fitOf(size, liveProject, liveBaseZoom, zoom, pan)
                         val start = fit.toCanvasPoint(first.position)
-                        var live = DemoRuntime.pointerDown(shown, demo, start.x, start.y)
-                        onDemo(live)
+                        var live = DemoRuntime.pointerDown(liveProject, liveDemo, start.x, start.y)
+                        liveOnDemo(live)
                         first.consume()
 
                         var pinching = false
@@ -186,7 +207,7 @@ fun GuiDemoView(
                                     // Two fingers is a pinch, never a press.
                                     pinching = true
                                     live = DemoRuntime.cancelPointer(live)
-                                    onDemo(live)
+                                    liveOnDemo(live)
                                     lastCentroid = centroidOf(down.map { it.position })
                                     lastSpan = spanOf(down.map { it.position })
                                 }
@@ -216,7 +237,7 @@ fun GuiDemoView(
                             val moved = change.position - lastPosition
                             travelled += moved.getDistance()
                             lastPosition = change.position
-                            fit = fitOf(size, project, baseZoom, zoom, pan)
+                            fit = fitOf(size, liveProject, liveBaseZoom, zoom, pan)
 
                             // A drag that has gone far enough is a scroll rather
                             // than a press - which is how every touch list
@@ -226,12 +247,12 @@ fun GuiDemoView(
                             if (!scrolling && live.dragging == null && travelled > TOUCH_SLOP) {
                                 val anchor = fit.toCanvasPoint(first.position)
                                 val scrolled = DemoRuntime.scrollBy(
-                                    shown, live, anchor.x, anchor.y, -moved.y / fit.zoom,
+                                    liveProject, live, anchor.x, anchor.y, -moved.y / fit.zoom,
                                 )
                                 if (scrolled !== live) {
                                     scrolling = true
                                     live = DemoRuntime.cancelPointer(scrolled)
-                                    onDemo(live)
+                                    liveOnDemo(live)
                                     change.consume()
                                     continue
                                 }
@@ -239,20 +260,20 @@ fun GuiDemoView(
 
                             live = if (scrolling) {
                                 val anchor = fit.toCanvasPoint(first.position)
-                                DemoRuntime.scrollBy(shown, live, anchor.x, anchor.y, -moved.y / fit.zoom)
+                                DemoRuntime.scrollBy(liveProject, live, anchor.x, anchor.y, -moved.y / fit.zoom)
                             } else {
                                 val point = fit.toCanvasPoint(change.position)
-                                DemoRuntime.pointerDrag(shown, live, point.x, point.y)
+                                DemoRuntime.pointerDrag(liveProject, live, point.x, point.y)
                             }
-                            onDemo(live)
+                            liveOnDemo(live)
                             change.consume()
                         }
 
                         if (scrolling || pinching) {
-                            onDemo(DemoRuntime.cancelPointer(live))
+                            liveOnDemo(DemoRuntime.cancelPointer(live))
                         } else {
                             val point = fit.toCanvasPoint(lastPosition)
-                            onDemo(DemoRuntime.pointerUp(shown, live, point.x, point.y))
+                            liveOnDemo(DemoRuntime.pointerUp(liveProject, live, point.x, point.y))
                         }
                     }
                 },

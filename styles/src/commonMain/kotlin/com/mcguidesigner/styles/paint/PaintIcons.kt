@@ -97,6 +97,38 @@ object PaintIcons {
         )
     }
 
+    /** Lasso: a loop with its tail hanging off. */
+    fun DrawScope.lasso(tint: Color) {
+        drawOval(
+            color = tint,
+            topLeft = Offset(size.width * 0.14f, size.height * 0.12f),
+            size = Size(size.width * 0.72f, size.height * 0.52f),
+            style = Stroke(width = size.minDimension * 0.09f),
+        )
+        shape(tint, filled = false, weight = 0.08f) { w, h ->
+            moveTo(w * 0.32f, h * 0.62f)
+            cubicTo(w * 0.28f, h * 0.78f, w * 0.40f, h * 0.82f, w * 0.38f, h * 0.92f)
+        }
+    }
+
+    /** Magic wand: a stick with a sparkle at the end of it. */
+    fun DrawScope.wand(tint: Color) {
+        line(0.18f, 0.86f, 0.62f, 0.42f, tint, 0.10f)
+        // The sparkle: a four-pointed star, which reads at 26dp where a
+        // five-pointed one turns into a blob.
+        val cx = size.width * 0.72f
+        val cy = size.height * 0.28f
+        val r = size.minDimension * 0.22f
+        shape(tint, filled = true) { _, _ ->
+            moveTo(cx, cy - r)
+            quadraticTo(cx + r * 0.18f, cy - r * 0.18f, cx + r, cy)
+            quadraticTo(cx + r * 0.18f, cy + r * 0.18f, cx, cy + r)
+            quadraticTo(cx - r * 0.18f, cy + r * 0.18f, cx - r, cy)
+            quadraticTo(cx - r * 0.18f, cy - r * 0.18f, cx, cy - r)
+            close()
+        }
+    }
+
     /** The stroke popover: a hand, standing for stabilizer and shape tools. */
     fun DrawScope.hand(tint: Color) {
         shape(tint, filled = false, weight = 0.08f) { w, h ->

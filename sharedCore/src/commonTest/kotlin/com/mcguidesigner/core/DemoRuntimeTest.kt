@@ -192,6 +192,37 @@ class DemoRuntimeTest {
         assertEquals("h", DemoRuntime.propsOf(p.elements.findById("f")!!, demo).string("value"))
     }
 
+    /** The clear cross on a search field is a button, and it works. */
+    @Test
+    fun tappingTheClearCrossEmptiesASearchField() {
+        val p = project(
+            element(
+                "s", ElementCatalog.INPUT_SEARCH, 0, 0, 120, 16,
+                mapOf("value" to StringValue("hello"), "showClear" to BoolValue(true)),
+            ),
+        )
+        // Well inside: takes the keyboard and keeps what is there.
+        val focused = click(p, DemoState(), 40f, 8f)
+        assertEquals("hello", DemoRuntime.propsOf(p.elements.findById("s")!!, focused).string("value"))
+
+        // On the cross at the right-hand end: empties it.
+        val cleared = click(p, focused, 117f, 8f)
+        assertEquals("", DemoRuntime.propsOf(p.elements.findById("s")!!, cleared).string("value"))
+    }
+
+    @Test
+    fun aFieldWithNoClearButtonIsJustFocusedAtItsRightHandEnd() {
+        val p = project(
+            element(
+                "f", ElementCatalog.INPUT_TEXTBOX, 0, 0, 120, 16,
+                mapOf("value" to StringValue("hello")),
+            ),
+        )
+        val after = click(p, DemoState(), 117f, 8f)
+        assertEquals("hello", DemoRuntime.propsOf(p.elements.findById("f")!!, after).string("value"))
+        assertEquals("f", after.focused)
+    }
+
     @Test
     fun aNumericFieldRefusesLetters() {
         val p = project(
@@ -252,6 +283,24 @@ class DemoRuntimeTest {
         val scrolled = DemoRuntime.scrollBy(p, DemoState(), 100f, 50f, 999f)
         val hit = DemoRuntime.hitTest(p, scrolled, 100f, 70f)
         assertEquals("row9", hit?.id, "the row under the finger was not the row that is drawn there")
+    }
+
+    /**
+     * A row past the bottom of an unscrolled list is not there yet.
+     *
+     * The catalog has always called this element a "clipped, scrollable region"
+     * and the renderer never clipped it: a twelve-row list in a six-row window
+     * drew all twelve, over whatever was beneath. So the one element whose
+     * entire purpose is holding more than it can show was the one element that
+     * could not show that.
+     */
+    @Test
+    fun aRowBelowAnUnscrolledListIsNotHittable() {
+        val p = listProject()
+        assertNull(
+            DemoRuntime.hitTest(p, DemoState(), 100f, 270f),
+            "a row well past the bottom of the list was clickable through it",
+        )
     }
 
     @Test

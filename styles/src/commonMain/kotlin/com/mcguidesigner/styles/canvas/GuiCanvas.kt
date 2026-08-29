@@ -393,21 +393,26 @@ private fun DrawScope.drawElements(
 
         if (element.children.isEmpty()) continue
 
-        // A scroll container that has been scrolled moves its contents and hides
-        // whatever leaves it. Both halves matter: shifting without clipping
-        // paints the scrolled-away rows straight over whatever is laid out
-        // beside the list, which looks like a rendering bug rather than a
-        // scrolled list.
-        val scroll = scrollOffsetOf(element)
-        if (scroll == 0) {
+        // A scroll container hides what does not fit and moves what it holds.
+        //
+        // Both halves matter, and the first half is not new behaviour so much
+        // as behaviour the catalog always claimed - "clipped, scrollable
+        // region" - and the renderer never did. A list of twelve rows in a
+        // window six rows tall drew all twelve, straight over whatever was laid
+        // out beneath it, so the one element whose whole purpose is that its
+        // contents are longer than itself was the one element that could not
+        // show that.
+        if (element.type != ElementCatalog.CONTAINER_SCROLL) {
             drawElements(
                 element.children, bounds, project, transform, textures,
                 measurer, skin, stateOf, selection, timeMillis,
             )
             continue
         }
-        val horizontal = element.props.string("direction", "vertical").let { it == "horizontal" || it == "both" }
-        val vertical = element.props.string("direction", "vertical") != "horizontal"
+        val scroll = element.props.int("scrollOffset", 0)
+        val direction = element.props.string("direction", "vertical")
+        val horizontal = direction == "horizontal" || direction == "both"
+        val vertical = direction != "horizontal"
         clipRect(viewRect.left, viewRect.top, viewRect.right, viewRect.bottom) {
             translate(
                 left = if (horizontal) -scroll * transform.zoom else 0f,
@@ -421,10 +426,6 @@ private fun DrawScope.drawElements(
         }
     }
 }
-
-/** How far a scroll container is scrolled; zero for everything else. */
-private fun scrollOffsetOf(element: GuiElement): Int =
-    if (element.type == ElementCatalog.CONTAINER_SCROLL) element.props.int("scrollOffset", 0) else 0
 
 /**
  * Whether [viewRect] intersects a viewport of [viewport] at the origin.
@@ -473,28 +474,47 @@ private fun DrawScope.drawGrid(
     // Below ~4 device pixels the grid turns into noise; hide it instead.
     if (step < 4f) return
 
+    // Started from the first line that is actually on screen rather than from
+    // the corner of the sheet.
+    //
+    // Zoomed in, the sheet is many times the size of the window, so walking it
+    // from its corner spends most of the loop drawing lines that land outside
+    // the viewport and are clipped away - the cost of the grid rises with the
+    // zoom, which is exactly backwards, and it is why deep zoom used to be
+    // expensive. The clip below is still needed: it is what keeps the lines
+    // inside the sheet. This only stops the ones that were never going to be
+    // seen from being issued at all.
+    //
+    // The index still counts from the sheet's corner, because which lines are
+    // major has to depend on where they are on the canvas and not on where the
+    // window happens to be.
+    fun firstIndex(from: Float, edge: Float): Int =
+        if (from >= edge) 0 else kotlin.math.floor((edge - from) / step).toInt()
+
     clipRect(canvasRect.left, canvasRect.top, canvasRect.right, canvasRect.bottom) {
-        var index = 0
-        var x = canvasRect.left
-        while (x <= canvasRect.right + 0.5f) {
+        var index = firstIndex(canvasRect.left, 0f)
+        var x = canvasRect.left + index * step
+        val lastX = minOf(canvasRect.right, size.width)
+        while (x <= lastX + 0.5f) {
             val major = index % 4 == 0
             drawLine(
                 color = if (major) chrome.gridLineMajor else chrome.gridLine,
-                start = Offset(x, canvasRect.top),
-                end = Offset(x, canvasRect.bottom),
+                start = Offset(x, maxOf(canvasRect.top, 0f)),
+                end = Offset(x, minOf(canvasRect.bottom, size.height)),
                 strokeWidth = 1f,
             )
             x += step
             index++
         }
-        index = 0
-        var y = canvasRect.top
-        while (y <= canvasRect.bottom + 0.5f) {
+        index = firstIndex(canvasRect.top, 0f)
+        var y = canvasRect.top + index * step
+        val lastY = minOf(canvasRect.bottom, size.height)
+        while (y <= lastY + 0.5f) {
             val major = index % 4 == 0
             drawLine(
                 color = if (major) chrome.gridLineMajor else chrome.gridLine,
-                start = Offset(canvasRect.left, y),
-                end = Offset(canvasRect.right, y),
+                start = Offset(maxOf(canvasRect.left, 0f), y),
+                end = Offset(minOf(canvasRect.right, size.width), y),
                 strokeWidth = 1f,
             )
             y += step

@@ -22,6 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.mcguidesigner.core.paint.MarqueeShape
+import com.mcguidesigner.core.paint.RulerKind
+import com.mcguidesigner.core.paint.SelectMode
 import com.mcguidesigner.styles.paint.PaintIcons.checker
 import com.mcguidesigner.styles.paint.PaintIcons.magicEraser
 import com.mcguidesigner.styles.theme.LocalSkinPalette
@@ -86,17 +89,97 @@ private fun ViewPopover(state: PaintState) {
 }
 
 /**
- * The selection menu.
+ * The selection panel.
  *
- * Every entry here operates on the whole active layer, because this build has
- * no marquee selection yet. Rather than show six greyed-out selection rows, the
- * ones that mean something without a selection are offered and the rest are
- * left out until there is something for them to act on.
+ * A selection is the answer to "do this, but only here", and the reason it is
+ * worth the machinery is that the alternative - being careful with the brush -
+ * is the thing that makes editing a picture slow. So everything is confined to
+ * it: the brush, the eraser, the bucket, blur, smudge, fill, clear and the
+ * cutout. A selection that only some tools respect is worse than none, because
+ * it teaches you not to trust it.
+ *
+ * The three ways to make one are tools; what is here is what you do to one once
+ * you have it, and the two settings - how close a colour counts as the same,
+ * and how soft the edge is - that the wand and the bucket share.
  */
 @Composable
 private fun SelectPopover(state: PaintState) {
-    PaintPopoverCard(pointerFromStart = 22.dp, modifier = Modifier.widthIn(max = 340.dp)) {
-        PaintSectionLabel("This layer")
+    val palette = LocalSkinPalette.current
+    val scope = rememberCoroutineScope()
+    PaintPopoverCard(pointerFromStart = 22.dp, modifier = Modifier.widthIn(max = 360.dp)) {
+        PaintSectionLabel("Select with")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(
+                PaintTool.MARQUEE to "Box",
+                PaintTool.LASSO to "Lasso",
+                PaintTool.MAGIC_WAND to "Wand",
+            ).forEach { (tool, label) ->
+                Box(Modifier.weight(1f)) {
+                    PaintWideButton(label, selected = state.tool == tool) {
+                        state.previousTool = state.tool
+                        state.tool = tool
+                        state.popover = PaintPopover.NONE
+                    }
+                }
+            }
+        }
+        if (state.tool == PaintTool.MARQUEE) {
+            PaintSegmented(
+                options = MarqueeShape.entries.map { it.label },
+                selectedIndex = MarqueeShape.entries.indexOf(state.marqueeShape),
+                onSelect = { state.marqueeShape = MarqueeShape.entries[it] },
+            )
+        }
+
+        // How the next selection meets the one already there. A modifier key
+        // would be the desktop answer and there is no modifier key on a phone,
+        // so it is a setting that both can reach.
+        PaintSectionLabel("Next selection")
+        PaintSegmented(
+            options = SelectMode.entries.map { it.label },
+            selectedIndex = SelectMode.entries.indexOf(state.selectMode),
+            onSelect = { state.selectMode = SelectMode.entries[it] },
+        )
+
+        PaintSectionLabel("The selection")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f)) {
+                PaintWideButton("All") { scope.launch { state.selectAll() } }
+            }
+            Box(Modifier.weight(1f)) {
+                PaintWideButton("None", enabled = state.hasSelection) { state.deselect() }
+            }
+            Box(Modifier.weight(1f)) {
+                PaintWideButton("Invert") { scope.launch { state.invertSelection() } }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f)) {
+                PaintWideButton("Expand", enabled = state.hasSelection) {
+                    scope.launch { state.growSelection(state.selectionStep) }
+                }
+            }
+            Box(Modifier.weight(1f)) {
+                PaintWideButton("Contract", enabled = state.hasSelection) {
+                    scope.launch { state.growSelection(-state.selectionStep) }
+                }
+            }
+            Box(Modifier.weight(1f)) {
+                PaintWideButton("Soften", enabled = state.hasSelection) {
+                    scope.launch { state.featherSelection(state.selectionStep) }
+                }
+            }
+        }
+        ValueSlider(
+            value = state.selectionStep.toFloat(),
+            range = 1f..32f,
+            step = 1f,
+            label = "${state.selectionStep} px",
+            onChange = { state.selectionStep = it.toInt() },
+        )
+        PaintWideButton("Everything on this layer") { scope.launch { state.selectOpaque() } }
+
+        PaintSectionLabel(if (state.hasSelection) "The selection" else "This layer")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.weight(1f)) {
                 PaintWideButton("Clear") {
@@ -115,9 +198,9 @@ private fun SelectPopover(state: PaintState) {
         PaintSectionLabel("Colour range")
         Text(
             "How close a colour has to be to count as the same one. Used by the " +
-                "bucket, the magic eraser and the cutout.",
+                "magic wand, the bucket, the magic eraser and the cutout.",
             style = MaterialTheme.typography.labelSmall,
-            color = LocalSkinPalette.current.chromeTextMuted,
+            color = palette.chromeTextMuted,
         )
         ValueSlider(
             value = state.tolerance.toFloat(),
@@ -179,9 +262,109 @@ private fun StrokePopover(state: PaintState) {
     }
 }
 
+/**
+ * The ruler.
+ *
+ * A ruler is not a tool you draw with - it is a thing you put down and then
+ * draw *against*, and everything drawn while it is there comes out straight, or
+ * round, or converging on a vanishing point, without any of the care that would
+ * otherwise take. On a touchscreen that is the difference between line art
+ * being possible and not.
+ *
+ * Nine of them, and they are the nine that do different jobs rather than nine
+ * variations on one. A straight edge for a single line; parallels for hatching
+ * and for anything with a grain; a cross for boxes; circles and ellipses for
+ * anything turned; a radial for spokes and starbursts; and one, two and three
+ * point perspective, which is the whole reason anybody learns to draw a room.
+ *
+ * Symmetry is here too, because it is the other thing that constrains a stroke,
+ * but it is a mirror rather than a guide and is kept visibly separate.
+ */
 @Composable
 private fun RulerPopover(state: PaintState) {
-    PaintPopoverCard(pointerFromStart = 22.dp, modifier = Modifier.widthIn(max = 340.dp)) {
+    val palette = LocalSkinPalette.current
+    PaintPopoverCard(pointerFromStart = 22.dp, modifier = Modifier.widthIn(max = 360.dp)) {
+        PaintSectionLabel("Ruler")
+        // Three rows of three rather than a long list: nine names in a column
+        // is a menu, and a menu is the wrong shape for a thing you switch
+        // between while drawing.
+        RulerKind.entries.chunked(3).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { kind ->
+                    Box(Modifier.weight(1f)) {
+                        PaintWideButton(kind.label, selected = state.ruler.kind == kind) {
+                            state.setRulerKind(kind)
+                            if (kind != RulerKind.OFF && state.tool == PaintTool.PAN) {
+                                state.tool = PaintTool.BRUSH
+                            }
+                        }
+                    }
+                }
+                repeat(3 - row.size) { Box(Modifier.weight(1f)) {} }
+            }
+        }
+
+        Text(
+            state.ruler.kind.hint,
+            style = MaterialTheme.typography.labelSmall,
+            color = palette.chromeTextMuted,
+        )
+
+        if (state.ruler.isOn) {
+            if (state.ruler.kind.usesAngle) {
+                PaintSectionLabel("Angle")
+                ValueSlider(
+                    value = state.ruler.angle,
+                    range = -180f..180f,
+                    step = 1f,
+                    label = "${state.ruler.angle.toInt()}°",
+                    onChange = { state.setRulerAngle(it) },
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(0f, 30f, 45f, 90f).forEach { degrees ->
+                        Box(Modifier.weight(1f)) {
+                            PaintWideButton("${degrees.toInt()}°") { state.setRulerAngle(degrees) }
+                        }
+                    }
+                }
+            }
+
+            if (state.ruler.kind == RulerKind.RADIAL) {
+                PaintSectionLabel("Spokes")
+                ValueSlider(
+                    value = state.ruler.slices.toFloat(),
+                    range = 2f..48f,
+                    step = 1f,
+                    label = "${state.ruler.slices}",
+                    onChange = { state.setRulerSlices(it.toInt()) },
+                )
+            }
+
+            if (state.ruler.kind == RulerKind.ELLIPSE) {
+                PaintSectionLabel("Squash")
+                ValueSlider(
+                    value = state.ruler.flatten * 100f,
+                    range = 5f..100f,
+                    step = 1f,
+                    label = "${(state.ruler.flatten * 100).toInt()}%",
+                    onChange = { state.setRulerFlatten(it / 100f) },
+                )
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    PaintWideButton("Move it", selected = state.tool == PaintTool.RULER) {
+                        state.previousTool = state.tool
+                        state.tool = PaintTool.RULER
+                        state.popover = PaintPopover.NONE
+                    }
+                }
+                Box(Modifier.weight(1f)) {
+                    PaintWideButton("Recentre") { state.centreRuler() }
+                }
+            }
+        }
+
         PaintSectionLabel("Symmetry")
         PaintSegmented(
             options = listOf("Off", "Vertical", "Horizontal", "Both"),
@@ -201,6 +384,7 @@ private fun RulerPopover(state: PaintState) {
         )
         PaintWideButton(
             if (state.symmetry == SymmetryMode.RADIAL) "Radial · ${state.radialSlices} slices" else "Radial",
+            selected = state.symmetry == SymmetryMode.RADIAL,
         ) {
             state.symmetry = if (state.symmetry == SymmetryMode.RADIAL) SymmetryMode.OFF else SymmetryMode.RADIAL
         }
@@ -217,7 +401,7 @@ private fun RulerPopover(state: PaintState) {
             "Every mirrored copy shares one stroke, so the crossings are painted " +
                 "once and no seam appears down the axis.",
             style = MaterialTheme.typography.labelSmall,
-            color = LocalSkinPalette.current.chromeTextMuted,
+            color = palette.chromeTextMuted,
         )
     }
 }

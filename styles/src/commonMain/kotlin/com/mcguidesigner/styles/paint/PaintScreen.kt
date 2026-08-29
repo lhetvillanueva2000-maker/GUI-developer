@@ -44,6 +44,15 @@ import com.mcguidesigner.styles.paint.PaintIcons.hand
 import com.mcguidesigner.styles.paint.PaintIcons.layers
 import com.mcguidesigner.styles.paint.PaintIcons.marquee
 import com.mcguidesigner.styles.paint.PaintIcons.picture
+import com.mcguidesigner.styles.paint.PaintIcons.bucket
+import com.mcguidesigner.styles.paint.PaintIcons.dropper
+import com.mcguidesigner.styles.paint.PaintIcons.magicEraser
+import com.mcguidesigner.styles.paint.PaintIcons.shapes
+import com.mcguidesigner.styles.paint.PaintIcons.smudge
+import com.mcguidesigner.styles.paint.PaintIcons.blur
+import com.mcguidesigner.styles.paint.PaintIcons.lasso
+import com.mcguidesigner.styles.paint.PaintIcons.wand
+import com.mcguidesigner.styles.paint.PaintIcons.pan
 import com.mcguidesigner.styles.paint.PaintIcons.redo
 import com.mcguidesigner.styles.paint.PaintIcons.ruler
 import com.mcguidesigner.styles.paint.PaintIcons.sliders
@@ -295,11 +304,31 @@ private fun PaintBottomBar(state: PaintState, onBack: () -> Unit) {
             state.previousTool = held
         }) { swap(it) }
 
+        // The current tool's own icon, not just brush-or-eraser. This button
+        // opens the tool sheet, and a button that opens a picker should say
+        // what is picked - with a dozen tools, "it is a brush unless it is the
+        // eraser" is wrong most of the time.
         RoundIconButton(
             selected = state.sheet == PaintSheet.TOOLS,
             size = 44.dp,
             onClick = { state.sheet = if (state.sheet == PaintSheet.TOOLS) PaintSheet.NONE else PaintSheet.TOOLS },
-        ) { tint -> if (state.tool == PaintTool.ERASER) eraser(tint) else brush(tint) }
+        ) { tint ->
+            when (state.tool) {
+                PaintTool.ERASER -> eraser(tint)
+                PaintTool.BUCKET -> bucket(tint)
+                PaintTool.EYEDROPPER -> dropper(tint)
+                PaintTool.MAGIC_ERASER -> magicEraser(tint)
+                PaintTool.SHAPE -> shapes(tint)
+                PaintTool.SMUDGE -> smudge(tint)
+                PaintTool.BLUR -> blur(tint)
+                PaintTool.MARQUEE -> marquee(tint)
+                PaintTool.LASSO -> lasso(tint)
+                PaintTool.MAGIC_WAND -> wand(tint)
+                PaintTool.RULER -> ruler(tint)
+                PaintTool.PAN -> pan(tint)
+                PaintTool.BRUSH -> brush(tint)
+            }
+        }
 
         // The size bubble.
         Box(

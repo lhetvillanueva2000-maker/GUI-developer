@@ -314,23 +314,45 @@ fun PaintToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit)
     }
 }
 
-/** A full-width dark button, as under "Grid Settings". */
+/**
+ * A full-width dark button, as under "Grid Settings".
+ *
+ * [selected] makes it a latching one. Several of these rows are pickers - which
+ * ruler, which selection tool - and a picker whose current choice looks exactly
+ * like the others is a picker you have to remember the state of.
+ */
 @Composable
-fun PaintWideButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
+fun PaintWideButton(
+    label: String,
+    enabled: Boolean = true,
+    selected: Boolean = false,
+    onClick: () -> Unit,
+) {
     val palette = LocalSkinPalette.current
     Box(
         Modifier
             .fillMaxWidth()
             .height(38.dp)
             .clip(RoundedCornerShape(19.dp))
-            .background(if (enabled) palette.chromeBackground else palette.chromePanelAlt)
+            .background(
+                when {
+                    selected -> palette.accent.copy(alpha = 0.22f)
+                    enabled -> palette.chromeBackground
+                    else -> palette.chromePanelAlt
+                },
+            )
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             label,
             style = MaterialTheme.typography.labelLarge,
-            color = if (enabled) palette.chromeText else palette.chromeTextMuted,
+            color = when {
+                selected -> palette.accent
+                enabled -> palette.chromeText
+                else -> palette.chromeTextMuted
+            },
+            maxLines = 1,
         )
     }
 }

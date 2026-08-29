@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.mcguidesigner.core.paint.BlendMode
 import com.mcguidesigner.core.paint.BrushShape
 import com.mcguidesigner.core.paint.Pixels
+import com.mcguidesigner.core.paint.RulerKind
 import com.mcguidesigner.styles.paint.PaintIcons.alphaLock
 import com.mcguidesigner.styles.paint.PaintIcons.bin
 import com.mcguidesigner.styles.paint.PaintIcons.blur
@@ -55,12 +56,16 @@ import com.mcguidesigner.styles.paint.PaintIcons.eraser
 import com.mcguidesigner.styles.paint.PaintIcons.exportImage
 import com.mcguidesigner.styles.paint.PaintIcons.eye
 import com.mcguidesigner.styles.paint.PaintIcons.importImage
+import com.mcguidesigner.styles.paint.PaintIcons.lasso
 import com.mcguidesigner.styles.paint.PaintIcons.magicEraser
+import com.mcguidesigner.styles.paint.PaintIcons.marquee
 import com.mcguidesigner.styles.paint.PaintIcons.mergeDown
 import com.mcguidesigner.styles.paint.PaintIcons.pan
 import com.mcguidesigner.styles.paint.PaintIcons.plus
+import com.mcguidesigner.styles.paint.PaintIcons.ruler
 import com.mcguidesigner.styles.paint.PaintIcons.shapes
 import com.mcguidesigner.styles.paint.PaintIcons.smudge
+import com.mcguidesigner.styles.paint.PaintIcons.wand
 import com.mcguidesigner.styles.theme.LocalSkinPalette
 import kotlinx.coroutines.launch
 import kotlin.math.atan2
@@ -646,7 +651,9 @@ fun ToolSheet(
         val tools = listOf(
             PaintTool.BRUSH, PaintTool.ERASER, PaintTool.BUCKET,
             PaintTool.EYEDROPPER, PaintTool.MAGIC_ERASER, PaintTool.SHAPE,
-            PaintTool.SMUDGE, PaintTool.BLUR, PaintTool.PAN,
+            PaintTool.SMUDGE, PaintTool.BLUR, PaintTool.MARQUEE,
+            PaintTool.LASSO, PaintTool.MAGIC_WAND, PaintTool.RULER,
+            PaintTool.PAN,
         )
         tools.chunked(4).forEach { row ->
             Row(
@@ -663,8 +670,20 @@ fun ToolSheet(
                             .clickable {
                                 state.previousTool = state.tool
                                 state.tool = tool
-                                if (tool == PaintTool.MAGIC_ERASER || tool == PaintTool.BUCKET) {
+                                // Straight back to the canvas for the tools
+                                // whose next act is a tap or a drag on it -
+                                // leaving the sheet up over the thing they are
+                                // about to be used on is one tap of pure
+                                // ceremony.
+                                if (tool == PaintTool.MAGIC_ERASER || tool == PaintTool.BUCKET ||
+                                    tool.isSelection || tool == PaintTool.RULER
+                                ) {
                                     state.sheet = PaintSheet.NONE
+                                }
+                                // Turning the ruler tool on with no ruler set
+                                // would be a tool that visibly does nothing.
+                                if (tool == PaintTool.RULER && !state.ruler.isOn) {
+                                    state.setRulerKind(RulerKind.LINE)
                                 }
                             }
                             .padding(vertical = 10.dp),
@@ -681,6 +700,10 @@ fun ToolSheet(
                                 PaintTool.SHAPE -> shapes(tint)
                                 PaintTool.SMUDGE -> smudge(tint)
                                 PaintTool.BLUR -> blur(tint)
+                                PaintTool.MARQUEE -> marquee(tint)
+                                PaintTool.LASSO -> lasso(tint)
+                                PaintTool.MAGIC_WAND -> wand(tint)
+                                PaintTool.RULER -> ruler(tint)
                                 PaintTool.PAN -> pan(tint)
                             }
                         }
@@ -709,6 +732,14 @@ fun ToolSheet(
             PaintTool.SHAPE ->
                 ToolHint("Draw it roughly and let go — it becomes the shape you drew, tidied up.")
             PaintTool.EYEDROPPER -> ToolHint("Tap to take a colour, then it hands you back to the brush.")
+            PaintTool.MARQUEE ->
+                ToolHint("Drag a box. Tap once to let the selection go. The shape is in the selection panel.")
+            PaintTool.LASSO ->
+                ToolHint("Draw round what you want. It closes the loop for you when you let go.")
+            PaintTool.MAGIC_WAND ->
+                ToolHint("Tap a colour to select all of it. Colour range decides how close counts.")
+            PaintTool.RULER ->
+                ToolHint(state.ruler.kind.hint + " Drag on the canvas to move it.")
             PaintTool.PAN -> ToolHint("Drag to move the canvas. Two fingers do this from any tool.")
             else -> Unit
         }

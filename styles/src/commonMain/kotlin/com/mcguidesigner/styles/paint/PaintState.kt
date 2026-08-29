@@ -13,14 +13,21 @@ import com.mcguidesigner.core.paint.Compositor
 import com.mcguidesigner.core.paint.distanceBetween
 import com.mcguidesigner.core.paint.Guides
 import com.mcguidesigner.core.paint.MagicEraser
+import com.mcguidesigner.core.paint.MarqueeShape
 import com.mcguidesigner.core.paint.PaintBackground
 import com.mcguidesigner.core.paint.PaintDocument
 import com.mcguidesigner.core.paint.PaintLayer
 import com.mcguidesigner.core.paint.PaintOps
+import com.mcguidesigner.core.paint.PaintSelection
 import com.mcguidesigner.core.paint.Pixels
 import com.mcguidesigner.core.paint.RecognisedShape
 import com.mcguidesigner.core.paint.RegionFill
+import com.mcguidesigner.core.paint.Ruler
+import com.mcguidesigner.core.paint.RulerGuide
+import com.mcguidesigner.core.paint.RulerKind
 import com.mcguidesigner.core.paint.ScribbleSelection
+import com.mcguidesigner.core.paint.SelectMode
+import com.mcguidesigner.core.paint.SelectionOutline
 import com.mcguidesigner.core.paint.ShapeGuess
 import com.mcguidesigner.core.paint.ShapeRecogniser
 import com.mcguidesigner.core.paint.Stabilizer
@@ -41,6 +48,10 @@ enum class PaintTool(val label: String) {
     SHAPE("Shape"),
     SMUDGE("Smudge"),
     BLUR("Blur"),
+    MARQUEE("Marquee"),
+    LASSO("Lasso"),
+    MAGIC_WAND("Magic Wand"),
+    RULER("Ruler"),
     PAN("Pan"),
     ;
 
@@ -54,13 +65,20 @@ enum class PaintTool(val label: String) {
      * overlay, then act once the finger lifts - the eraser because what it
      * removes depends on everywhere the scribble went, the shape tool because
      * what it draws depends on the shape of the whole drag. Neither can commit
-     * anything mid-gesture without being wrong most of the way through.
+     * anything mid-gesture without being wrong most of the way through. The two
+     * selection drags are the same shape of thing, and the ruler is a drag that
+     * moves a guide rather than the artwork.
      */
-    val isGesture: Boolean get() = this == MAGIC_ERASER || this == SHAPE
+    val isGesture: Boolean
+        get() = this == MAGIC_ERASER || this == SHAPE ||
+            this == LASSO || this == MARQUEE || this == RULER
+
+    /** Whether this tool makes a selection rather than marks. */
+    val isSelection: Boolean get() = this == MARQUEE || this == LASSO || this == MAGIC_WAND
 }
 
 /** What the canvas is drawing over the artwork, if anything. */
-enum class PaintOverlay { NONE, SCRIBBLE, SHAPE }
+enum class PaintOverlay { NONE, SCRIBBLE, SHAPE, LASSO, MARQUEE, RULER }
 
 /** Which panel is open over the canvas, if any. */
 enum class PaintSheet { NONE, LAYERS, COLOUR, BRUSH, TOOLS, CUTOUT }
@@ -151,6 +169,72 @@ class PaintState(
 
     var symmetry by mutableStateOf(SymmetryMode.OFF)
     var radialSlices by mutableStateOf(8)
+
+    // -- The ruler ---------------------------------------------------------
+    //
+    // A shape strokes are held to. Not a tool you draw with: a thing you put
+    // down and then draw against, which is what makes clean line art possible
+    // with a finger. See core.paint.Ruler for the arithmetic.
+
+    var ruler by mutableStateOf(RulerGuide())
+        private set
+
+    /** Which of the ruler's control points a drag is moving. */
+    private var rulerHandle = 0
+
+    fun setRulerKind(kind: RulerKind) {
+        ruler = if (kind == RulerKind.OFF) {
+            ruler.copy(kind = RulerKind.OFF)
+        } else if (ruler.kind == RulerKind.OFF) {
+            // First time it is switched on, put it somewhere it can be seen
+            // rather than at the origin, where it looks like nothing happened.
+            RulerGuide.placed(kind, document.width, document.height)
+                .copy(angle = ruler.angle, slices = ruler.slices, flatten = ruler.flatten)
+        } else {
+            ruler.copy(kind = kind)
+        }
+    }
+
+    fun setRulerAngle(degrees: Float) {
+        ruler = ruler.copy(angle = degrees)
+    }
+
+    fun setRulerSlices(count: Int) {
+        ruler = ruler.copy(slices = count.coerceIn(2, 48))
+    }
+
+    fun setRulerFlatten(value: Float) {
+        ruler = ruler.copy(flatten = value.coerceIn(0.05f, 1f))
+    }
+
+    fun centreRuler() {
+        ruler = RulerGuide.placed(ruler.kind, document.width, document.height)
+            .copy(angle = ruler.angle, slices = ruler.slices, flatten = ruler.flatten)
+    }
+
+    // -- The selection -----------------------------------------------------
+    //
+    // When there is one, it is where everything happens: strokes, the eraser,
+    // the bucket, blur, smudge, fill and clear are all confined to it. That is
+    // the whole point of having one, and a selection that only some tools
+    // respect is worse than none - it teaches you not to trust it.
+
+    var selection by mutableStateOf<PaintSelection?>(null)
+        private set
+
+    /** The boundary, for the marching ants. Recomputed when the selection is. */
+    var selectionOutline by mutableStateOf<SelectionOutline?>(null)
+        private set
+
+    /** How the next selection combines with this one. */
+    var selectMode by mutableStateOf(SelectMode.REPLACE)
+
+    var marqueeShape by mutableStateOf(MarqueeShape.RECTANGLE)
+
+    /** How many pixels Expand, Contract and Soften move the edge by. */
+    var selectionStep by mutableStateOf(4)
+
+    val hasSelection: Boolean get() = selection?.isEmpty == false
     var showGrid by mutableStateOf(false)
     var gridStep by mutableStateOf(64)
     var pixelated by mutableStateOf(false)
@@ -257,6 +341,9 @@ class PaintState(
         zoom = 1f
         pan = Offset.Zero
         cutoutConfidence = null
+        selection = null
+        selectionOutline = null
+        ruler = RulerGuide()
         bumpAll()
     }
 
@@ -487,16 +574,45 @@ class PaintState(
         overlayPath.clear()
         overlayPath.add(StrokePoint(x, y))
         shapeGuess = null
-        overlay = if (tool == PaintTool.SHAPE) PaintOverlay.SHAPE else PaintOverlay.SCRIBBLE
+        overlay = when (tool) {
+            PaintTool.SHAPE -> PaintOverlay.SHAPE
+            PaintTool.LASSO -> PaintOverlay.LASSO
+            PaintTool.MARQUEE -> PaintOverlay.MARQUEE
+            PaintTool.RULER -> PaintOverlay.RULER
+            else -> PaintOverlay.SCRIBBLE
+        }
+        if (overlay == PaintOverlay.RULER) rulerHandle = nearestRulerHandle(x, y)
         overlayRevision++
     }
 
     fun gestureMove(x: Float, y: Float) {
         if (overlay == PaintOverlay.NONE) return
+        // The ruler is the one drag that changes something while it is
+        // happening: it moves a guide rather than collecting a path, and a
+        // guide that only appeared where you let go would be placed by trial
+        // and error.
+        if (overlay == PaintOverlay.RULER) {
+            dragRuler(x, y)
+            overlayRevision++
+            return
+        }
         val last = overlayPath.lastOrNull()
         // Thinned: a fast drag delivers far more points than the recogniser or
         // the trail can use, and the extras only slow both down.
-        if (last != null && distanceBetween(last.x, last.y, x, y) < 1.5f) return
+        if (last != null && distanceBetween(last.x, last.y, x, y) < 1.5f) {
+            // ...except a marquee, which is two corners rather than a path:
+            // thinning it throws away the only point that matters, the one
+            // under the finger now. The first corner is never replaced - it is
+            // the anchor the box is measured from.
+            if (overlay != PaintOverlay.MARQUEE) return
+            if (overlayPath.size == 1) {
+                overlayPath.add(StrokePoint(x, y))
+            } else {
+                overlayPath[overlayPath.lastIndex] = StrokePoint(x, y)
+            }
+            overlayRevision++
+            return
+        }
         overlayPath.add(StrokePoint(x, y))
         if (overlay == PaintOverlay.SHAPE && overlayPath.size % 4 == 0) {
             // Recognised live, so the preview settles as the shape closes
@@ -519,9 +635,56 @@ class PaintState(
         when (mode) {
             PaintOverlay.SCRIBBLE -> scribbleErase(path)
             PaintOverlay.SHAPE -> drawRecognisedShape(path)
-            PaintOverlay.NONE -> Unit
+            PaintOverlay.LASSO -> lassoSelect(path)
+            PaintOverlay.MARQUEE -> marqueeSelect(path.first(), path.last())
+            PaintOverlay.RULER, PaintOverlay.NONE -> Unit
         }
         shapeGuess = null
+    }
+
+    /** Which of the ruler's control points a touch at this point should move. */
+    private fun nearestRulerHandle(x: Float, y: Float): Int {
+        if (!ruler.kind.isPerspective || ruler.kind == RulerKind.PERSPECTIVE_1) return 0
+        val candidates = buildList {
+            add(0 to (ruler.x to ruler.y))
+            add(2 to (ruler.x2 to ruler.y2))
+            if (ruler.kind == RulerKind.PERSPECTIVE_3) add(3 to (ruler.x3 to ruler.y3))
+        }
+        return candidates.minBy { (_, point) ->
+            val dx = point.first - x
+            val dy = point.second - y
+            dx * dx + dy * dy
+        }.first
+    }
+
+    private fun dragRuler(x: Float, y: Float) {
+        ruler = when (rulerHandle) {
+            2 -> ruler.copy(x2 = x, y2 = y)
+            3 -> ruler.copy(x3 = x, y3 = y)
+            else -> ruler.copy(x = x, y = y)
+        }
+    }
+
+    private suspend fun lassoSelect(path: List<StrokePoint>) {
+        buildSelection("Working out what you drew round") {
+            PaintSelection.lasso(path, document.width, document.height, featherEdges)
+        }
+    }
+
+    private suspend fun marqueeSelect(from: StrokePoint, to: StrokePoint) {
+        // A tap rather than a drag means "let go of the selection", which is
+        // what clicking outside one does in every editor there has ever been.
+        if (distanceBetween(from.x, from.y, to.x, to.y) < 2f) {
+            deselect()
+            return
+        }
+        buildSelection("Selecting") {
+            PaintSelection.marquee(
+                document.width, document.height,
+                from.x, from.y, to.x, to.y,
+                marqueeShape, featherEdges,
+            )
+        }
     }
 
     fun gestureCancel() {
@@ -592,6 +755,22 @@ class PaintState(
     private var strokeLength = 0f
     private var lastPoint = Offset.Zero
 
+    /**
+     * Where this stroke started, unsnapped.
+     *
+     * The ruler needs it: which of a family of parallel lines, or which
+     * concentric circle, a stroke belongs to is decided by where it began. See
+     * core.paint.Ruler.
+     */
+    private var rulerAnchor: StrokePoint? = null
+
+    /** [x], [y] moved onto the ruler, if there is one. */
+    private fun onRuler(x: Float, y: Float): StrokePoint {
+        val point = StrokePoint(x, y)
+        if (!ruler.isOn) return point
+        return Ruler.snap(ruler, rulerAnchor, point)
+    }
+
     /** Everything this stroke has touched: left, top, right, bottom. */
     private val strokeBounds = intArrayOf(0, 0, -1, -1)
 
@@ -642,7 +821,9 @@ class PaintState(
         smudgeConsumed = 0
         smudgeCarry = null
         stabilizer.reset(stabilizerStrength)
-        val (sx, sy) = stabilizer.push(x, y)
+        rulerAnchor = if (ruler.isOn) StrokePoint(x, y) else null
+        val (rx, ry) = onRuler(x, y).let { it.x to it.y }
+        val (sx, sy) = stabilizer.push(rx, ry)
 
         undo.begin(strokeLabel(), layer)
         val b = brush
@@ -655,7 +836,12 @@ class PaintState(
 
     fun strokeMove(x: Float, y: Float) {
         if (strokeLayer == null) return
-        val (sx, sy) = stabilizer.push(x, y)
+        // The ruler moves the point before the stabilizer smooths it, not
+        // after: smoothing a snapped point pulls it back off the line, which
+        // makes a ruled stroke wobble exactly as much as the stabilizer is set
+        // to smooth - a straight edge that is not straight.
+        val onGuide = onRuler(x, y)
+        val (sx, sy) = stabilizer.push(onGuide.x, onGuide.y)
         strokeLength += (Offset(sx, sy) - lastPoint).getDistance()
         lastPoint = Offset(sx, sy)
         val b = brush
@@ -672,7 +858,8 @@ class PaintState(
     fun strokeEnd(x: Float, y: Float) {
         val layer = strokeLayer ?: return
         val b = brush
-        stabilizer.drain(x, y).forEach { (dx, dy) ->
+        val last = onRuler(x, y)
+        stabilizer.drain(last.x, last.y).forEach { (dx, dy) ->
             reflections(StrokePoint(dx, dy)).forEachIndexed { channel, point ->
                 engine.extendTo(point, b, strokeLength, channel)
             }
@@ -685,6 +872,7 @@ class PaintState(
         engine.clear()
         undo.commit(layer)
         strokeLayer = null
+        rulerAnchor = null
         rememberColour()
         // The layer list has not changed shape, and the pixels outside the
         // stroke have not moved - so neither a full recomposite nor a full
@@ -798,7 +986,10 @@ class PaintState(
             for (x in left..right) {
                 val index = row + x
                 val original = scratch[scratchRow + (x - left)]
-                val coverage = engine.coverageAt(index)
+                // The selection is a second coverage: outside it the brush has
+                // no reach at all, and on a feathered edge it has some. One
+                // multiply is the whole of confining a stroke.
+                val coverage = Pixels.mul(engine.coverageAt(index), selectionAt(index))
                 layer.pixels[index] = when {
                     coverage == 0 -> original
                     erasing -> PaintOps.erasedPixel(original, coverage, ceiling)
@@ -848,7 +1039,7 @@ class PaintState(
             val row = y * document.width
             for (x in left..right) {
                 val index = row + x
-                val coverage = engine.coverageAt(index)
+                val coverage = Pixels.mul(engine.coverageAt(index), selectionAt(index))
                 val original = scratch[(y - readTop) * readWidth + (x - readLeft)]
                 if (coverage == 0) {
                     layer.pixels[index] = original
@@ -899,6 +1090,7 @@ class PaintState(
 
         undo.touch(layer, left, top, right, bottom)
         smudgeCarry = PaintOps.smudge(layer, segment, radius, activeOpacity, smudgeCarry)
+        confineToSelection(layer, left, top, right, bottom)
 
         Compositor.repaint(document, flattened, left, top, right, bottom)
         growStroke(left, top, right, bottom)
@@ -956,6 +1148,7 @@ class PaintState(
         when (tool) {
             PaintTool.BUCKET -> bucket(x, y)
             PaintTool.EYEDROPPER -> pick(x, y)
+            PaintTool.MAGIC_WAND -> wandAt(x, y)
             else -> Unit
         }
     }
@@ -1016,6 +1209,13 @@ class PaintState(
             // tolerance and a fill that stops at them leaves a pale halo
             // tracing every line.
             val grown = RegionFill.expand(mask, document.width, document.height, 1)
+            // Confined the same way a stroke is: a fill that escapes the
+            // selection is the one that loses somebody an afternoon.
+            selection?.let { region ->
+                for (i in grown.indices) {
+                    grown[i] = Pixels.mul(grown[i].toInt() and 0xFF, region.at(i)).toByte()
+                }
+            }
             RegionFill.apply(layer, grown, colour, 1f)
             undo.commit(layer)
         }
@@ -1062,6 +1262,16 @@ class PaintState(
         val options = AutoCutout.Options(keep = cutoutKeep, edgeSoftness = featherEdges + 1)
         val confidence = heavy("Working out the background") {
             val mask = AutoCutout.mask(layer.pixels, document.width, document.height, options)
+            // With a selection up, the cutout only removes inside it - which is
+            // how you take the background from behind one object in a busy
+            // picture instead of from the whole thing.
+            selection?.let { region ->
+                for (i in mask.indices) {
+                    val keep = mask[i].toInt() and 0xFF
+                    val outside = 255 - region.at(i)
+                    mask[i] = maxOf(keep, outside).toByte()
+                }
+            }
             undo.begin("Auto cutout", layer)
             undo.touchAll(layer)
             AutoCutout.apply(layer, mask, options, invert)
@@ -1101,24 +1311,208 @@ class PaintState(
     fun mergeDown() = structural("Merge down") { document.mergeDown() }
     fun moveLayer(from: Int, to: Int) = structural("Reorder layers") { document.move(from, to) }
 
+    /** Empties the selection, or the whole layer when there is not one. */
     fun clearLayer() {
         val layer = document.active ?: return
         if (layer.locked) return
-        undo.begin("Clear layer", layer)
+        val region = selection
+        undo.begin(if (region == null) "Clear layer" else "Clear selection", layer)
         undo.touchAll(layer)
-        layer.clear()
+        if (region == null) {
+            layer.clear()
+        } else {
+            for (i in layer.pixels.indices) {
+                val keep = 255 - region.at(i)
+                layer.pixels[i] = if (keep == 0) 0 else Pixels.withAlpha(
+                    layer.pixels[i],
+                    Pixels.mul(Pixels.alpha(layer.pixels[i]), keep),
+                )
+            }
+        }
         undo.commit(layer)
         bumpAll()
     }
 
+    /** Fills the selection, or the whole layer when there is not one. */
     fun fillLayer() {
         val layer = document.active ?: return
         if (layer.locked) return
-        undo.begin("Fill layer", layer)
+        val region = selection
+        undo.begin(if (region == null) "Fill layer" else "Fill selection", layer)
         undo.touchAll(layer)
-        layer.fill(colour)
+        if (region == null) {
+            layer.fill(colour)
+        } else {
+            RegionFill.apply(layer, region.coverage, colour, 1f)
+        }
         undo.commit(layer)
+        rememberColour()
         bumpAll()
+    }
+
+    // -- Selection operations ----------------------------------------------
+
+    /**
+     * What the selection becomes when [next] arrives, and its outline.
+     *
+     * Both together, because they are both a pass over the whole canvas and
+     * doing them in two places means doing that pass twice.
+     */
+    private fun resolveSelection(next: PaintSelection?): Pair<PaintSelection?, SelectionOutline?> {
+        val combined = when {
+            next == null -> null
+            selection == null || selectMode == SelectMode.REPLACE -> next
+            else -> selection!!.combine(next, selectMode)
+        }?.takeIf { !it.isEmpty }
+        return combined to combined?.outline()
+    }
+
+    /**
+     * Puts [next] in, according to the current combine mode.
+     *
+     * Passing null clears the selection, which is not the same as an empty one:
+     * "nothing is selected" means every tool acts on the whole layer, and it is
+     * how a selection is meant to end.
+     *
+     * Synchronous, so it blocks the caller for a pass or two over the canvas.
+     * Everything the user can press goes through [buildSelection] instead; this
+     * is for the tests, and for a caller that already knows the work is small.
+     */
+    fun applySelection(next: PaintSelection?) {
+        val (region, outline) = resolveSelection(next)
+        selection = region
+        selectionOutline = outline
+        revision++
+    }
+
+    /**
+     * The same, off the frame thread and behind a message.
+     *
+     * Selections are whole-canvas arithmetic - a flood, a combine, a boundary
+     * trace, each a pass over two and a third million pixels on a full-size
+     * document - and doing that between two frames is a visible freeze. Same
+     * reasoning as [heavy], which this is a specialisation of: the Compose
+     * state is only written either side of the `withContext`, never inside it.
+     */
+    private suspend fun buildSelection(message: String, build: () -> PaintSelection?) {
+        busy = message
+        val resolved = try {
+            withContext(Dispatchers.Default) { resolveSelection(build()) }
+        } finally {
+            busy = null
+        }
+        selection = resolved.first
+        selectionOutline = resolved.second
+        revision++
+    }
+
+    suspend fun selectAll() = buildSelection("Selecting everything") {
+        PaintSelection.all(document.width, document.height)
+    }
+
+    /** Lets the selection go. No work, so no message and no thread hop. */
+    fun deselect() {
+        if (selection == null) return
+        selection = null
+        selectionOutline = null
+        revision++
+    }
+
+    suspend fun invertSelection() {
+        val current = selection
+        if (current == null) {
+            // Inverting nothing is selecting everything, which is what this
+            // means when it is pressed with no selection: the fastest route to
+            // "all of it", and it costs nothing to allow.
+            selectAll()
+            return
+        }
+        val held = selectMode
+        selectMode = SelectMode.REPLACE
+        buildSelection("Inverting the selection") { current.invert() }
+        selectMode = held
+    }
+
+    /** Grows the selection by [amount] pixels, or shrinks it if negative. */
+    suspend fun growSelection(amount: Int) {
+        val current = selection ?: return
+        val held = selectMode
+        selectMode = SelectMode.REPLACE
+        buildSelection(if (amount >= 0) "Expanding the selection" else "Contracting the selection") {
+            current.expand(amount)
+        }
+        selectMode = held
+    }
+
+    /** Softens the selection's edge, so what is done inside it fades out. */
+    suspend fun featherSelection(radius: Int) {
+        val current = selection ?: return
+        val held = selectMode
+        selectMode = SelectMode.REPLACE
+        buildSelection("Softening the selection") { current.feather(radius) }
+        selectMode = held
+    }
+
+    /** Everything on this layer that is not transparent. */
+    suspend fun selectOpaque() {
+        val layer = document.active ?: return
+        buildSelection("Selecting what is on this layer") {
+            val mask = ByteArray(document.width * document.height)
+            for (i in mask.indices) mask[i] = Pixels.alpha(layer.pixels[i]).toByte()
+            PaintSelection.of(mask, document.width, document.height)
+        }
+    }
+
+    /** The magic wand: everything near the colour under a point. */
+    private suspend fun wandAt(x: Int, y: Int) {
+        val layer = document.active ?: return
+        buildSelection("Finding that colour") {
+            PaintSelection.wand(
+                source = layer.pixels,
+                width = document.width,
+                height = document.height,
+                x = x,
+                y = y,
+                tolerance = tolerance,
+                contiguous = contiguous,
+                feather = featherEdges,
+            )
+        }
+    }
+
+    /**
+     * How much of the pixel at [index] the tools may touch.
+     *
+     * 255 when there is no selection - the absence of a selection means the
+     * whole layer, not none of it - and the selection's own coverage when there
+     * is one, which is what makes a feathered selection fade what is drawn into
+     * it rather than cutting it off at a hard line.
+     */
+    private fun selectionAt(index: Int): Int = selection?.at(index) ?: 255
+
+    /**
+     * Puts back whatever a tool wrote outside the selection.
+     *
+     * Most tools multiply their own coverage by the selection's and never write
+     * outside it. Smudge cannot: it drags colour along the stroke and is
+     * accumulated into the layer as it goes, so it is confined afterwards -
+     * mixed back towards the pre-stroke pixels by however little of each pixel
+     * is selected. The undo tiles already hold those pixels, so this costs no
+     * extra memory.
+     */
+    private fun confineToSelection(layer: PaintLayer, left: Int, top: Int, right: Int, bottom: Int) {
+        val current = selection ?: return
+        for (y in top..bottom) {
+            val row = y * document.width
+            for (x in left..right) {
+                val index = row + x
+                val keep = current.at(index)
+                if (keep == 255) continue
+                val original = undo.originalAt(layer, index)
+                layer.pixels[index] =
+                    if (keep == 0) original else PaintOps.mixPixels(original, layer.pixels[index], keep)
+            }
+        }
     }
 
     fun selectLayer(index: Int) {

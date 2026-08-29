@@ -181,9 +181,12 @@ object DemoRuntime {
                         if (axis == "horizontal" || axis == "both") -scroll else 0,
                         if (axis == "horizontal") 0 else -scroll,
                     )
-                    // A child of a scroll container that has been scrolled out
-                    // of sight is not on screen, so it is not hittable either.
-                    if (childHit != null && (scroll == 0 || overlaps(childHit.rect, rect))) return childHit
+                    // A child of a scroll container that is out of sight is not
+                    // on screen, so it is not hittable either - whether it is
+                    // out of sight because the list was scrolled or because it
+                    // was always past the bottom.
+                    val clipped = element.type == ElementCatalog.CONTAINER_SCROLL
+                    if (childHit != null && (!clipped || overlaps(childHit.rect, rect))) return childHit
                 }
                 if (!reactsToPointer(element, includeScrollable)) continue
                 val local = unrotate(element, rect, x, y)
@@ -281,9 +284,9 @@ object DemoRuntime {
             val percent = ((released.overrides[pressed]?.float("value", 0f) ?: 0f) * 100).toInt()
             return released.announce("${element?.name ?: "Slider"} → $percent%")
         }
-        val stillOn = hitTest(project, demo, x, y)?.id
-        if (stillOn != pressed) return released
-        return activate(project, released, pressed)
+        val stillOn = hitTest(project, demo, x, y)
+        if (stillOn?.id != pressed) return released
+        return activate(project, released, pressed, stillOn)
     }
 
     /** A press that was interrupted - a second finger, a scroll, leaving the canvas. */
@@ -299,7 +302,7 @@ object DemoRuntime {
      * bar this has to clear. A demo where the button only darkens for a frame
      * has not answered whether the button works; it has animated.
      */
-    fun activate(project: GuiProject, demo: DemoState, id: String): DemoState {
+    fun activate(project: GuiProject, demo: DemoState, id: String, where: DemoHit? = null): DemoState {
         val element = project.elements.findById(id) ?: return demo
         val props = propsOf(element, demo)
         val label = element.name.ifBlank { ElementCatalog[element.type]?.displayName ?: "Element" }
@@ -344,9 +347,22 @@ object DemoRuntime {
             }
 
             // Tapping the clear cross empties it; tapping anywhere else takes
-            // the keyboard.
+            // the keyboard. The cross is drawn about six GUI pixels in from the
+            // right edge, so the last sixth of the field - or twelve pixels,
+            // whichever is smaller - is its hit area. Getting that from the
+            // width rather than from a constant is what keeps it right on a
+            // field of any size.
             ElementCatalog.INPUT_SEARCH, ElementCatalog.INPUT_TEXTBOX -> {
-                demo.copy(focused = id).announce("$label focused")
+                val clearable = props.bool("showClear", false) && props.string("value").isNotBlank()
+                val width = where?.rect?.width ?: 0
+                val crossFrom = 1f - (minOf(12f, width / 6f) / width.coerceAtLeast(1))
+                if (clearable && (where?.fractionX ?: 0f) >= crossFrom) {
+                    demo.override(id, "value", StringValue(""))
+                        .copy(focused = id)
+                        .announce("$label cleared")
+                } else {
+                    demo.copy(focused = id).announce("$label focused")
+                }
             }
 
             else -> demo.announce("$label pressed")

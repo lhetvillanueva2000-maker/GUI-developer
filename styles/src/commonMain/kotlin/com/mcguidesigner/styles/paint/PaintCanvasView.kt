@@ -19,6 +19,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -81,6 +82,25 @@ fun PaintCanvasView(
         while (true) {
             withFrameMillis { now ->
                 shimmer = (((now - started) % TRAIL_CYCLE_MS) / TRAIL_CYCLE_MS.toFloat())
+            }
+        }
+    }
+
+    // The marching ants. Same treatment as the trail's clock and for the same
+    // reason: it runs only while there is a selection to march around, because
+    // an always-on frame loop to animate something that is usually not there is
+    // how an idle editor ends up warm.
+    var ants by remember { mutableFloatStateOf(0f) }
+    val selected = state.selectionOutline != null
+    LaunchedEffect(selected, motion.allowsLoops) {
+        if (!selected || !motion.allowsLoops) {
+            ants = 0f
+            return@LaunchedEffect
+        }
+        val started = withFrameMillis { it }
+        while (true) {
+            withFrameMillis { now ->
+                ants = ((now - started) % ANTS_CYCLE_MS) / ANTS_CYCLE_MS.toFloat()
             }
         }
     }
@@ -193,6 +213,8 @@ fun PaintCanvasView(
             state.revision
             val fit = fitOf(state, size.width.roundToInt(), size.height.roundToInt())
             drawSheet(state, fit, entrance)
+            drawRuler(state, fit, palette.accent)
+            drawSelection(state, fit, ants)
             // Read so the trail repaints as it travels.
             @Suppress("UNUSED_EXPRESSION")
             state.overlayRevision
@@ -227,7 +249,9 @@ private fun DrawScope.drawGestureOverlay(
     shimmer: Float,
     accent: Color,
 ) {
-    if (state.overlay == PaintOverlay.NONE) return
+    // The ruler draws itself, from where it actually is - see drawRuler. There
+    // is nothing for a trail to show while one is being dragged.
+    if (state.overlay == PaintOverlay.NONE || state.overlay == PaintOverlay.RULER) return
     val path = state.overlayPath
     if (path.isEmpty()) return
 
@@ -254,9 +278,140 @@ private fun DrawScope.drawGestureOverlay(
         return
     }
 
+    if (state.overlay == PaintOverlay.LASSO) {
+        // Thin and bright rather than a fat trail: a lasso is a boundary being
+        // drawn, and what matters is exactly where it passes.
+        val screen = path.map(::toScreen)
+        for (i in 0 until screen.size - 1) {
+            drawLine(Color(0xCC000000), screen[i], screen[i + 1], strokeWidth = 3f, cap = StrokeCap.Round)
+            drawLine(Color.White, screen[i], screen[i + 1], strokeWidth = 1.5f, cap = StrokeCap.Round)
+        }
+        // The closing chord, shown while it is still open, because the lasso
+        // closes itself and it should be obvious what it is about to enclose.
+        if (screen.size > 2) {
+            drawLine(
+                Color(0x99FFFFFF), screen.last(), screen.first(),
+                strokeWidth = 1.5f,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f)),
+            )
+        }
+        return
+    }
+
+    if (state.overlay == PaintOverlay.MARQUEE) {
+        val from = toScreen(path.first())
+        val to = toScreen(path.last())
+        val rect = androidx.compose.ui.geometry.Rect(
+            minOf(from.x, to.x), minOf(from.y, to.y),
+            maxOf(from.x, to.x), maxOf(from.y, to.y),
+        )
+        val dashes = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
+        if (state.marqueeShape == com.mcguidesigner.core.paint.MarqueeShape.ELLIPSE) {
+            drawOval(Color(0xCC000000), rect.topLeft, rect.size, style = Stroke(3f))
+            drawOval(Color.White, rect.topLeft, rect.size, style = Stroke(1.5f, pathEffect = dashes))
+        } else {
+            drawRect(Color(0xCC000000), rect.topLeft, rect.size, style = Stroke(3f))
+            drawRect(Color.White, rect.topLeft, rect.size, style = Stroke(1.5f, pathEffect = dashes))
+        }
+        return
+    }
+
     val width = (state.activeSize * fit.scale).coerceIn(10f, 220f)
     drawTrail(path.map(::toScreen), shimmer, width = width, glow = 0.55f)
 }
+
+/** How long the marching ants take to travel one dash, in milliseconds. */
+private const val ANTS_CYCLE_MS = 700L
+
+/**
+ * The ruler, drawn where it actually is.
+ *
+ * A ruler you cannot see is a ruler that appears to have broken the brush: the
+ * stroke goes somewhere other than the finger and there is nothing on screen
+ * saying why. So every kind draws its own outline, and it comes from the same
+ * `Ruler.outline` the arithmetic lives beside rather than being redrawn here
+ * from the parameters - two descriptions of where a ruler is would eventually
+ * disagree, and the one you can see is the one you would believe.
+ */
+private fun DrawScope.drawRuler(state: PaintState, fit: CanvasFit, accent: Color) {
+    val guide = state.ruler
+    if (!guide.isOn) return
+    val pieces = com.mcguidesigner.core.paint.Ruler.outline(guide, state.document.width, state.document.height)
+    val colour = accent.copy(alpha = 0.45f)
+    pieces.forEach { piece ->
+        for (i in 0 until piece.size - 1) {
+            drawLine(
+                colour,
+                Offset(fit.left + piece[i].x * fit.scale, fit.top + piece[i].y * fit.scale),
+                Offset(fit.left + piece[i + 1].x * fit.scale, fit.top + piece[i + 1].y * fit.scale),
+                strokeWidth = 1.5f,
+            )
+        }
+    }
+    // The handle, so it is obvious there is something to drag.
+    if (guide.kind.usesCentre) {
+        listOfNotNull(
+            Offset(fit.left + guide.x * fit.scale, fit.top + guide.y * fit.scale),
+            if (guide.kind == com.mcguidesigner.core.paint.RulerKind.PERSPECTIVE_2 ||
+                guide.kind == com.mcguidesigner.core.paint.RulerKind.PERSPECTIVE_3
+            ) {
+                Offset(fit.left + guide.x2 * fit.scale, fit.top + guide.y2 * fit.scale)
+            } else {
+                null
+            },
+            if (guide.kind == com.mcguidesigner.core.paint.RulerKind.PERSPECTIVE_3) {
+                Offset(fit.left + guide.x3 * fit.scale, fit.top + guide.y3 * fit.scale)
+            } else {
+                null
+            },
+        ).forEach { centre ->
+            drawCircle(Color.White, radius = 5f, center = centre)
+            drawCircle(accent, radius = 5f, center = centre, style = Stroke(width = 2f))
+        }
+    }
+}
+
+/**
+ * The selection boundary, as marching ants.
+ *
+ * Two passes - a solid dark line and a white dashed one travelling along it -
+ * which is the only outline that stays visible over both a white canvas and a
+ * dark photograph. The dashes move because a still dotted line is easy to
+ * mistake for part of the artwork.
+ *
+ * The outline arrives as merged runs rather than pixels (see
+ * `PaintSelection.outline`), so a lasso round a hand is a couple of hundred
+ * lines a frame rather than a couple of thousand.
+ */
+private fun DrawScope.drawSelection(state: PaintState, fit: CanvasFit, phase: Float) {
+    val outline = state.selectionOutline ?: return
+    if (outline.isEmpty) return
+    val dash = 6f
+    val effect = PathEffect.dashPathEffect(floatArrayOf(dash, dash), phase * dash * 2f)
+
+    fun each(draw: (Offset, Offset) -> Unit) {
+        outline.horizontal.forEach { (y, x0, x1) ->
+            draw(
+                Offset(fit.left + x0 * fit.scale, fit.top + y * fit.scale),
+                Offset(fit.left + x1 * fit.scale, fit.top + y * fit.scale),
+            )
+        }
+        outline.vertical.forEach { (x, y0, y1) ->
+            draw(
+                Offset(fit.left + x * fit.scale, fit.top + y0 * fit.scale),
+                Offset(fit.left + x * fit.scale, fit.top + y1 * fit.scale),
+            )
+        }
+    }
+
+    each { a, b -> drawLine(Color(0xCC000000), a, b, strokeWidth = 1.5f) }
+    each { a, b -> drawLine(Color.White, a, b, strokeWidth = 1.5f, pathEffect = effect) }
+}
+
+/** Destructures a `[y, x0, x1]` run. */
+private operator fun IntArray.component1(): Int = this[0]
+private operator fun IntArray.component2(): Int = this[1]
+private operator fun IntArray.component3(): Int = this[2]
 
 /**
  * A band of travelling colour along [points].
