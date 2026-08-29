@@ -187,6 +187,13 @@ object ElementCatalog {
             properties = listOf(
                 enumProp("direction", "Scroll direction", listOf("vertical", "horizontal", "both"), group = PropGroup.LAYOUT),
                 intProp("contentLength", "Content length", 240, min = 0, max = 8192, group = PropGroup.LAYOUT),
+                // Where the region is scrolled to. A real property rather than
+                // demo-only state, because "what this looks like scrolled to
+                // the bottom" is a thing to design against - the last row of a
+                // list is where the layout usually breaks - and because it is
+                // then the demo's scrolling *and* the designer's, drawn by one
+                // piece of code in each skin.
+                intProp("scrollOffset", "Scrolled to", 0, min = 0, max = 8192, group = PropGroup.LAYOUT),
                 boolProp("showScrollbar", "Show scrollbar", true, group = PropGroup.APPEARANCE),
                 intProp("scrollbarWidth", "Scrollbar width", 6, min = 2, max = 24, group = PropGroup.APPEARANCE),
                 colorProp("background", "Background", 0x40000000),

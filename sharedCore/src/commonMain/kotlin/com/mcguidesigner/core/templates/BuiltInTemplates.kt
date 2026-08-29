@@ -17,7 +17,6 @@ import com.mcguidesigner.core.model.ListValue
 import com.mcguidesigner.core.model.ProjectMeta
 import com.mcguidesigner.core.model.PropValue
 import com.mcguidesigner.core.model.StringValue
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.util.Ids
 
 /** Metadata shown in the "New from template" gallery. */
@@ -25,7 +24,6 @@ data class GuiTemplate(
     val id: String,
     val title: String,
     val edition: Edition,
-    val form: TargetForm,
     val description: String,
     val tags: List<String>,
     private val factory: () -> GuiProject,
@@ -352,7 +350,6 @@ object BuiltInTemplates {
             canvas = CanvasSpec(
                 320, 180, guiScale = 3, gridSize = 4,
                 backdrop = CanvasBackdrop.GAME_WORLD,
-                targetForm = TargetForm.MOBILE,
                 safeArea = Insets.symmetric(12, 8),
             ),
             elements = elements,
@@ -400,7 +397,6 @@ object BuiltInTemplates {
             canvas = CanvasSpec(
                 320, 180, guiScale = 3, gridSize = 4,
                 backdrop = CanvasBackdrop.DIM,
-                targetForm = TargetForm.MOBILE,
                 safeArea = Insets.symmetric(12, 8),
             ),
             elements = listOf(panel),
@@ -446,7 +442,6 @@ object BuiltInTemplates {
             canvas = CanvasSpec(
                 320, 180, guiScale = 3, gridSize = 2,
                 backdrop = CanvasBackdrop.DIM,
-                targetForm = TargetForm.MOBILE,
                 safeArea = Insets.symmetric(8, 4),
             ),
             elements = listOf(panel),
@@ -480,7 +475,6 @@ object BuiltInTemplates {
             canvas = CanvasSpec(
                 320, 180, guiScale = 3, gridSize = 4,
                 backdrop = CanvasBackdrop.DIM,
-                targetForm = TargetForm.MOBILE,
                 safeArea = Insets.symmetric(12, 8),
             ),
             elements = listOf(panel),
@@ -497,57 +491,57 @@ object BuiltInTemplates {
 
     val all: List<GuiTemplate> = listOf(
         GuiTemplate(
-            "java-chest", "Java Chest Container", Edition.JAVA, TargetForm.DESKTOP,
+            "java-chest", "Java Chest Container", Edition.JAVA,
             "Vanilla 3-row chest with the full player inventory grid.",
             listOf("container", "vanilla"), ::javaChest,
         ),
         GuiTemplate(
-            "java-options", "Java Options Menu", Edition.JAVA, TargetForm.DESKTOP,
+            "java-options", "Java Options Menu", Edition.JAVA,
             "Settings screen with sliders, a cycling dropdown and a checkbox.",
             listOf("menu", "settings"), ::javaOptionsMenu,
         ),
         GuiTemplate(
-            "java-machine", "Java Machine UI", Edition.JAVA, TargetForm.DESKTOP,
+            "java-machine", "Java Machine UI", Edition.JAVA,
             "Furnace-style machine with progress arrow and fuel gauge.",
             listOf("machine", "modded"), ::javaMachine,
         ),
         GuiTemplate(
-            "bedrock-hud", "Bedrock Touch HUD", Edition.BEDROCK, TargetForm.MOBILE,
+            "bedrock-hud", "Bedrock Touch HUD", Edition.BEDROCK,
             "Landscape HUD with D-pad, action buttons, hotbar and status bars.",
             listOf("hud", "touch"), ::bedrockTouchHud,
         ),
         GuiTemplate(
-            "bedrock-settings", "Bedrock Settings Sheet", Edition.BEDROCK, TargetForm.MOBILE,
+            "bedrock-settings", "Bedrock Settings Sheet", Edition.BEDROCK,
             "Scrollable settings sheet with switches and a search field.",
             listOf("settings", "touch"), ::bedrockSettings,
         ),
         GuiTemplate(
-            "bedrock-container", "Bedrock Pocket Container", Edition.BEDROCK, TargetForm.MOBILE,
+            "bedrock-container", "Bedrock Pocket Container", Edition.BEDROCK,
             "Pocket-edition chest sized for a touch canvas.",
             listOf("container", "touch"), ::bedrockContainer,
         ),
         GuiTemplate(
-            "bedrock-form", "Bedrock Action Form", Edition.BEDROCK, TargetForm.MOBILE,
+            "bedrock-form", "Bedrock Action Form", Edition.BEDROCK,
             "ActionForm dialog with stacked full-width buttons.",
             listOf("form", "dialog"), ::bedrockActionForm,
         ),
         GuiTemplate(
-            "other-signin", "Sign-in Screen", Edition.OTHER, TargetForm.MOBILE,
+            "other-signin", "Sign-in Screen", Edition.OTHER,
             "A phone-sized sign-in form: card, two fields and a primary action.",
             listOf("app", "form"), ::otherSignIn,
         ),
         GuiTemplate(
-            "other-settings", "Settings Screen", Edition.OTHER, TargetForm.MOBILE,
+            "other-settings", "Settings Screen", Edition.OTHER,
             "Grouped settings rows: switches, a divider, a select and a slider.",
             listOf("app", "settings"), ::otherSettings,
         ),
         GuiTemplate(
-            "other-dashboard", "Dashboard", Edition.OTHER, TargetForm.DESKTOP,
+            "other-dashboard", "Dashboard", Edition.OTHER,
             "A wide layout: search, tabs and a row of stat cards.",
             listOf("app", "dashboard"), ::otherDashboard,
         ),
         GuiTemplate(
-            "other-studio", "Dark Studio Panel", Edition.OTHER, TargetForm.MOBILE,
+            "other-studio", "Dark Studio Panel", Edition.OTHER,
             "A dark creative-tool screen: toolbar, layer rows, sliders and a swatch row.",
             listOf("app", "dark", "tool"), ::otherStudio,
         ),

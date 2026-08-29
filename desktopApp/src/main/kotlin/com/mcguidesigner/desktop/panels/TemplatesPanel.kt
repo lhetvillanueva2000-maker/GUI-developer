@@ -117,8 +117,7 @@ fun TemplateCard(
                 color = palette.chromeTextMuted,
             )
             Text(
-                "${template.edition.displayName}  ·  ${template.form.displayName}  ·  " +
-                    template.tags.joinToString(", "),
+                "${template.edition.displayName}  ·  " + template.tags.joinToString(", "),
                 style = MaterialTheme.typography.labelSmall,
                 color = if (matchesCurrentEdition) palette.accent else palette.chromeTextMuted,
                 modifier = Modifier.padding(top = 4.dp),

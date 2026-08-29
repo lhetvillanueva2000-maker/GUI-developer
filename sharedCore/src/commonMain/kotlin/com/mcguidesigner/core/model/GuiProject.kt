@@ -27,14 +27,23 @@ data class CanvasSpec(
     val gridSize: Int = 8,
     val backdrop: CanvasBackdrop = CanvasBackdrop.DIM,
     val backdropColor: Long = 0xC0101018,
-    val targetForm: TargetForm = TargetForm.DESKTOP,
     /**
-     * Safe-area insets for touch layouts; the Bedrock preview draws these and
-     * the validator warns about elements that fall outside them.
+     * Margins the design must keep clear, drawn as a dashed inset in the
+     * editor and warned about by the validator.
+     *
+     * A phone's rounded corners and notch are the usual reason to want one, but
+     * it is not a property of "being a phone layout" - a TV's overscan and a
+     * window's title bar are the same problem - so it is simply a margin that
+     * is either set or not, and the safe-area overlay follows whether it has
+     * been set rather than a device category.
      */
     val safeArea: Insets = Insets.Zero,
 ) {
     val size: IntSize get() = IntSize(width, height)
+
+    /** Whether a safe-area margin has actually been asked for. */
+    val hasSafeArea: Boolean
+        get() = safeArea.left > 0 || safeArea.top > 0 || safeArea.right > 0 || safeArea.bottom > 0
 }
 
 @Serializable

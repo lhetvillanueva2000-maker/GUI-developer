@@ -1,7 +1,6 @@
 package com.mcguidesigner.desktop.panels
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,25 +14,28 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mcguidesigner.core.editor.EditorController
 import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.InteractionState
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.desktop.widgets.IconToggle
 import com.mcguidesigner.desktop.widgets.ToolbarSeparator
-import com.mcguidesigner.styles.canvas.GuiPreview
+import com.mcguidesigner.styles.canvas.GuiDemoView
 import com.mcguidesigner.styles.render.TextureCache
 import com.mcguidesigner.styles.theme.LocalSkinPalette
 
 /**
- * Live preview: the screen exactly as the edition's skin will draw it, with no
- * editor chrome at all.
+ * Preview / Demo: the screen exactly as the edition's skin will draw it, with
+ * no editor chrome at all - and running.
  *
- * The interaction-state selector is the important part - it is the only way to
- * check hover/pressed/disabled skins without running the game, and the two
- * editions expose different state sets (Bedrock has no hover).
+ * Two modes share the pane, and the toolbar is the switch between them. "Live"
+ * hands every widget its own state and lets the pointer reach it: press a
+ * button, tick a box, drag a slider, scroll a list, wheel or pinch to zoom.
+ * The other five pin *every* widget to one interaction state at once, which is
+ * the only way to inspect a hover or disabled skin you drew - no amount of
+ * pointing at one widget will show you the rest.
  */
 @Composable
 fun PreviewPanel(
@@ -60,6 +62,12 @@ fun PreviewPanel(
                 color = palette.chromeTextMuted,
                 modifier = Modifier.padding(end = 6.dp),
             )
+            IconToggle(
+                label = "Live",
+                hint = "Let every widget answer for itself - press, toggle, drag, scroll and zoom",
+                selected = state.previewState == null,
+                onClick = { controller.setPreviewState(null) },
+            )
             states.forEach { candidate ->
                 IconToggle(
                     label = candidate.displayName,
@@ -71,23 +79,29 @@ fun PreviewPanel(
 
             ToolbarSeparator()
 
-            Text(
-                "Layout:",
-                style = MaterialTheme.typography.labelSmall,
-                color = palette.chromeTextMuted,
-                modifier = Modifier.padding(end = 6.dp),
+            IconToggle(
+                label = "Reset",
+                hint = "Put every widget back the way the document has it",
+                selected = false,
+                enabled = !state.demo.isClean,
+                onClick = { controller.resetDemo() },
             )
-            TargetForm.entries.forEach { form ->
-                IconToggle(
-                    label = form.displayName,
-                    hint = "Preview the ${form.displayName.lowercase()} layout",
-                    selected = state.previewForm == form,
-                    onClick = { controller.setPreviewForm(form) },
-                )
-            }
 
             Box(Modifier.weight(1f))
 
+            // What the demo just did, so a press that changes something
+            // off-screen - a tab three panels over, a value inside a list - is
+            // still visible as having happened.
+            state.demo.lastAction?.takeIf { state.previewState == null }?.let { action ->
+                Text(
+                    action,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = palette.accent,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(end = 10.dp),
+                )
+            }
             Text(
                 "${state.edition.displayName}  ·  ${state.project.canvas.guiScale}x GUI scale",
                 style = MaterialTheme.typography.labelSmall,
@@ -97,13 +111,15 @@ fun PreviewPanel(
         Divider(color = palette.chromeBorder)
 
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            GuiPreview(
+            GuiDemoView(
                 project = state.project,
                 textures = textures,
+                demo = state.demo,
+                onDemo = controller::setDemo,
                 modifier = Modifier.fillMaxSize(),
-                zoom = state.project.canvas.guiScale.toFloat().coerceAtLeast(1f),
-                previewState = state.previewState,
-                form = state.previewForm,
+                forcedState = state.previewState,
+                baseZoom = state.project.canvas.guiScale.toFloat().coerceAtLeast(1f),
+                playAnimations = state.settings.playAnimations,
             )
         }
     }

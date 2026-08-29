@@ -69,6 +69,7 @@ fun IconToggle(
     hint: String,
     selected: Boolean,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     val palette = LocalSkinPalette.current
@@ -84,14 +85,18 @@ fun IconToggle(
                     color = if (selected) palette.accent else Color.Transparent,
                     shape = RoundedCornerShape(4.dp),
                 )
-                .clickable(onClick = onClick)
+                .clickable(enabled = enabled, onClick = onClick)
                 .padding(horizontal = 10.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (selected) palette.chromeText else palette.chromeTextMuted,
+                color = when {
+                    !enabled -> palette.chromeTextMuted.copy(alpha = 0.45f)
+                    selected -> palette.chromeText
+                    else -> palette.chromeTextMuted
+                },
             )
         }
     }

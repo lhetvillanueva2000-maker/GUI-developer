@@ -16,10 +16,13 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.utf16CodePoint
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ApplicationScope
@@ -35,6 +38,7 @@ import com.mcguidesigner.styles.render.decodeImageBitmap
 import kotlinx.coroutines.delay
 import com.mcguidesigner.core.catalog.CustomPresets
 import com.mcguidesigner.core.editor.EditorTool
+import com.mcguidesigner.core.editor.DemoRuntime
 import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.AlignMode
 import com.mcguidesigner.core.model.Edition
@@ -158,7 +162,11 @@ private fun ApplicationScope.DesignerWindow(appState: AppState) {
         icon = rememberAppIcon(),
         onPreviewKeyEvent = { event ->
             if (event.type != KeyEventType.KeyDown) return@Window false
-            handleShortcut(appState, event.key, event.isCtrlPressed, event.isShiftPressed)
+            // Typing into a field in the demo comes first, or the editor's
+            // single-letter shortcuts would eat the letters: pressing V in a
+            // demo's search box would change the tool instead of typing a V.
+            handleDemoTyping(appState, event) ||
+                handleShortcut(appState, event.key, event.isCtrlPressed, event.isShiftPressed)
         },
     ) {
         LaunchedEffect(window) { appState.frameProvider = { window } }
@@ -315,6 +323,48 @@ internal fun editorShortcutsApply(screen: AppScreen, dialog: ActiveDialog, key: 
     screen != AppScreen.EDITOR -> false
     dialog != ActiveDialog.NONE -> key == Key.Escape
     else -> true
+}
+
+/**
+ * Keys that belong to a text field inside the running demo.
+ *
+ * The demo's fields are drawn by a skin rather than being real widgets, so
+ * nothing about them is focusable in Compose's sense and no key would ever
+ * reach them. This is the whole of their keyboard: a focused field takes
+ * printable characters and Backspace, Enter and Escape let it go, and anything
+ * with a modifier on it is left for the editor - Ctrl+S must still save while a
+ * demo field has the caret.
+ */
+private fun handleDemoTyping(app: AppState, event: androidx.compose.ui.input.key.KeyEvent): Boolean {
+    if (app.screen != AppScreen.EDITOR || app.dialog != ActiveDialog.NONE) return false
+    val controller = app.controller
+    val state = controller.current
+    if (state.viewMode != ViewMode.PREVIEW || state.demo.focused == null) return false
+    return when {
+        event.key == Key.Escape || event.key == Key.Enter -> {
+            controller.setDemo(DemoRuntime.blur(state.demo))
+            true
+        }
+
+        event.key == Key.Backspace -> {
+            controller.setDemo(DemoRuntime.backspace(state.project, state.demo))
+            true
+        }
+
+        event.isCtrlPressed || event.isMetaPressed || event.isAltPressed -> false
+
+        else -> {
+            val code = event.utf16CodePoint
+            // Control characters and the ones Compose reports as zero are not
+            // typing; letting them through puts a box glyph in the field.
+            if (code < 0x20 || code == 0x7F) {
+                false
+            } else {
+                controller.setDemo(DemoRuntime.type(state.project, state.demo, code.toChar()))
+                true
+            }
+        }
+    }
 }
 
 /**

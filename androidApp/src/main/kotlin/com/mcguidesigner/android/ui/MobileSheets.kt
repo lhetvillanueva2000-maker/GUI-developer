@@ -77,7 +77,6 @@ import com.mcguidesigner.core.model.ListValue
 import com.mcguidesigner.core.model.PropValue
 import com.mcguidesigner.core.model.Rotation
 import com.mcguidesigner.core.model.StringValue
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.model.TextureValue
 import com.mcguidesigner.core.templates.BuiltInTemplates
 import com.mcguidesigner.core.validation.Severity
@@ -485,7 +484,7 @@ private fun TemplatesSheet(app: AndroidAppState, state: EditorState, textures: T
                             color = palette.chromeTextMuted,
                         )
                         Text(
-                            "${template.edition.displayName}  ·  ${template.form.displayName}",
+                            template.edition.displayName,
                             style = MaterialTheme.typography.labelSmall,
                             color = if (template.edition == state.edition) palette.accent else palette.chromeTextMuted,
                         )
@@ -882,28 +881,19 @@ private fun CanvasSheet(controller: EditorController, state: EditorState) {
             display = { CanvasBackdrop.valueOf(it).displayName },
         ) { controller.updateCanvas { spec -> spec.copy(backdrop = CanvasBackdrop.valueOf(it)) } }
 
-        MobileChoiceChips(
-            label = "Target form",
-            options = TargetForm.entries.map { it.name },
-            selected = canvas.targetForm.name,
-            display = { TargetForm.valueOf(it).displayName },
-        ) { controller.updateCanvas { spec -> spec.copy(targetForm = TargetForm.valueOf(it)) } }
-
-        if (canvas.targetForm == TargetForm.MOBILE) {
-            SheetSection("Safe area")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MobileNumberField("L", canvas.safeArea.left, Modifier.weight(1f), min = 0) {
-                    controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(left = it)) }
-                }
-                MobileNumberField("T", canvas.safeArea.top, Modifier.weight(1f), min = 0) {
-                    controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(top = it)) }
-                }
-                MobileNumberField("R", canvas.safeArea.right, Modifier.weight(1f), min = 0) {
-                    controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(right = it)) }
-                }
-                MobileNumberField("B", canvas.safeArea.bottom, Modifier.weight(1f), min = 0) {
-                    controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(bottom = it)) }
-                }
+        SheetSection("Safe area")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            MobileNumberField("L", canvas.safeArea.left, Modifier.weight(1f), min = 0) {
+                controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(left = it)) }
+            }
+            MobileNumberField("T", canvas.safeArea.top, Modifier.weight(1f), min = 0) {
+                controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(top = it)) }
+            }
+            MobileNumberField("R", canvas.safeArea.right, Modifier.weight(1f), min = 0) {
+                controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(right = it)) }
+            }
+            MobileNumberField("B", canvas.safeArea.bottom, Modifier.weight(1f), min = 0) {
+                controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(bottom = it)) }
             }
         }
         Box(Modifier.height(40.dp))

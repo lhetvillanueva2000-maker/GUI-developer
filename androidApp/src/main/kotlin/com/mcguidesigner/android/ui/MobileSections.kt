@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mcguidesigner.android.AndroidAppState
 import com.mcguidesigner.core.catalog.ElementCatalog
@@ -36,11 +37,10 @@ import com.mcguidesigner.core.editor.EditorState
 import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.GuiElement
 import com.mcguidesigner.core.model.InteractionState
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.validation.Severity
 import com.mcguidesigner.exporters.CodeGenerator
 import com.mcguidesigner.exporters.CodeTarget
-import com.mcguidesigner.styles.canvas.GuiPreview
+import com.mcguidesigner.styles.canvas.GuiDemoView
 import com.mcguidesigner.styles.render.TextureCache
 import com.mcguidesigner.styles.theme.ErrorRed
 import com.mcguidesigner.styles.theme.LocalSkinPalette
@@ -176,21 +176,11 @@ fun MobilePreviewSection(
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            TargetForm.entries.forEach { form ->
-                FilterChip(
-                    selected = state.previewForm == form,
-                    onClick = { controller.setPreviewForm(form) },
-                    label = { Text(form.displayName) },
-                )
-            }
-        }
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
+            FilterChip(
+                selected = state.previewState == null,
+                onClick = { controller.setPreviewState(null) },
+                label = { Text("Live") },
+            )
             states.forEach { candidate ->
                 FilterChip(
                     selected = state.previewState == candidate,
@@ -198,16 +188,38 @@ fun MobilePreviewSection(
                     label = { Text(candidate.displayName) },
                 )
             }
+            FilterChip(
+                selected = false,
+                enabled = !state.demo.isClean,
+                onClick = { controller.resetDemo() },
+                label = { Text("Reset") },
+            )
+        }
+
+        // What the demo just did. On a phone the toolbar is the only place with
+        // room for it, and without it a press that changes something off the
+        // visible part of the screen looks like a press that did nothing.
+        state.demo.lastAction?.takeIf { state.previewState == null }?.let { action ->
+            Text(
+                action,
+                style = MaterialTheme.typography.labelSmall,
+                color = palette.accent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 14.dp),
+            )
         }
 
         Box(Modifier.fillMaxSize().padding(top = 8.dp), contentAlignment = Alignment.Center) {
-            GuiPreview(
+            GuiDemoView(
                 project = state.project,
                 textures = textures,
+                demo = state.demo,
+                onDemo = controller::setDemo,
                 modifier = Modifier.fillMaxSize(),
-                zoom = state.project.canvas.guiScale.toFloat().coerceAtLeast(1f),
-                previewState = state.previewState,
-                form = state.previewForm,
+                forcedState = state.previewState,
+                baseZoom = state.project.canvas.guiScale.toFloat().coerceAtLeast(1f),
+                playAnimations = state.settings.playAnimations,
             )
         }
     }

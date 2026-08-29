@@ -16,7 +16,6 @@ import com.mcguidesigner.core.image.ImageSize
 import com.mcguidesigner.core.image.PngWriter
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.InteractionState
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.model.absoluteBounds
 import com.mcguidesigner.core.model.walkAll
 
@@ -145,7 +144,6 @@ fun DrawScope.drawProject(
                     project = project,
                     textures = textures,
                     textMeasurer = measurer,
-                    form = project.canvas.targetForm,
                     selected = false,
                 ),
             )

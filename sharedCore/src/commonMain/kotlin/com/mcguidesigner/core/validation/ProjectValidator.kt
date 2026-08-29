@@ -6,7 +6,6 @@ import com.mcguidesigner.core.model.Edition
 import com.mcguidesigner.core.model.GuiElement
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.IntRect
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.model.TextureValue
 import com.mcguidesigner.core.model.absoluteBoundsMap
 import com.mcguidesigner.core.model.walkAll
@@ -295,9 +294,7 @@ object ProjectValidator {
         }
 
         val safe = project.canvas.safeArea
-        if (project.canvas.targetForm == TargetForm.MOBILE &&
-            (safe.left > 0 || safe.top > 0 || safe.right > 0 || safe.bottom > 0)
-        ) {
+        if (project.canvas.hasSafeArea) {
             val safeRect = IntRect.fromEdges(
                 safe.left, safe.top,
                 project.canvas.width - safe.right,

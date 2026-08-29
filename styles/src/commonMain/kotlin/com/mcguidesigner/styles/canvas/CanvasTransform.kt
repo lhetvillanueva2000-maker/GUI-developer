@@ -50,6 +50,16 @@ data class CanvasTransform(
         y = floor((offset.y - originY) / zoom).toInt(),
     )
 
+    /**
+     * The same mapping without the rounding.
+     *
+     * The editor works in whole GUI pixels and wants [toCanvas]; the demo needs
+     * the fraction, because where along a slider a finger landed is the answer
+     * to a question that has no integer form.
+     */
+    fun toCanvasPoint(offset: Offset): Offset =
+        Offset((offset.x - originX) / zoom, (offset.y - originY) / zoom)
+
     /** Converts a view-space delta into whole GUI pixels. */
     fun deltaToCanvas(dx: Float, dy: Float): IntPoint =
         IntPoint((dx / zoom).roundToInt(), (dy / zoom).roundToInt())

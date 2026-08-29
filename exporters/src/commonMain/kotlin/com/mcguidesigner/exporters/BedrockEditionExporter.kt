@@ -565,7 +565,6 @@ object BedrockEditionExporter {
 
         ## Canvas
 
-        Authored at ${project.canvas.width}x${project.canvas.height} for
-        ${project.canvas.targetForm.displayName.lowercase()} layouts.
+        Authored at ${project.canvas.width}x${project.canvas.height}.
     """.trimIndent()
 }

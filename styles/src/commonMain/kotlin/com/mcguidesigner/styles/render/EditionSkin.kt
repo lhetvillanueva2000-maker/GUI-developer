@@ -13,7 +13,6 @@ import com.mcguidesigner.core.model.GuiElement
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.InteractionState
 import com.mcguidesigner.core.model.PropValue
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.styles.theme.ChromeColors
 import com.mcguidesigner.styles.theme.ChromeTheme
 import com.mcguidesigner.styles.theme.SkinPalette
@@ -34,7 +33,6 @@ class ElementRenderContext(
     val project: GuiProject,
     val textures: TextureResolver,
     val textMeasurer: TextMeasurer,
-    val form: TargetForm,
     val selected: Boolean = false,
     /**
      * Milliseconds since the editor's animation clock started.
@@ -83,6 +81,38 @@ class ElementRenderContext(
             fontWeight = weight,
             letterSpacing = letterSpacing,
         )
+
+    /**
+     * Where a scroll container's thumb sits inside [track].
+     *
+     * One definition shared by all three skins, because a thumb that says the
+     * region is scrolled to a different place from where its contents actually
+     * are is worse than no thumb at all - and three skins each doing their own
+     * arithmetic is three chances to disagree.
+     *
+     * Its length is the visible fraction of the content and its position is how
+     * far through the remainder the region has been scrolled, which is what
+     * every scrollbar since the eighties has meant. Content shorter than the
+     * window fills the track and cannot move, which is also correct: there is
+     * nowhere to go.
+     */
+    fun scrollThumb(track: Rect, horizontal: Boolean = false): Rect {
+        val visible = (if (horizontal) element.bounds.width else element.bounds.height).coerceAtLeast(1)
+        val content = props.int("contentLength", 240).coerceAtLeast(visible)
+        val fraction = (visible.toFloat() / content).coerceIn(0.08f, 1f)
+        val scrolled = props.int("scrollOffset", 0)
+            .coerceIn(0, (content - visible).coerceAtLeast(0))
+        val progress = if (content == visible) 0f else scrolled.toFloat() / (content - visible)
+        return if (horizontal) {
+            val length = track.width * fraction
+            val start = track.left + (track.width - length) * progress
+            Rect(start, track.top, start + length, track.bottom)
+        } else {
+            val length = track.height * fraction
+            val start = track.top + (track.height - length) * progress
+            Rect(track.left, start, track.right, start + length)
+        }
+    }
 }
 
 /**

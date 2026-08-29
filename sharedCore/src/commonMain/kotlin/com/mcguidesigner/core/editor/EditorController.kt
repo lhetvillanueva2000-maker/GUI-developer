@@ -20,7 +20,6 @@ import com.mcguidesigner.core.model.PropValue
 import com.mcguidesigner.core.model.int
 import com.mcguidesigner.core.model.ResizeHandle
 import com.mcguidesigner.core.model.Rotation
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.model.TextureAsset
 import com.mcguidesigner.core.model.absoluteBoundsMap
 import com.mcguidesigner.core.model.findById
@@ -148,7 +147,10 @@ class EditorController(initial: GuiProject) {
         val canvas = transform(s.project.canvas)
         s.copy(
             project = s.project.copy(canvas = canvas),
-            previewForm = canvas.targetForm,
+            // Setting a margin is how you ask to see it. Leaving the overlay
+            // off after somebody typed one in means the numbers they entered
+            // appear to do nothing.
+            showSafeArea = s.showSafeArea || (canvas.hasSafeArea && !s.project.canvas.hasSafeArea),
         )
     }
 
@@ -1008,11 +1010,20 @@ class EditorController(initial: GuiProject) {
 
     fun setViewMode(mode: ViewMode) = touch { it.copy(viewMode = mode) }
 
-    fun setPreviewState(state: InteractionState) = touch { it.copy(previewState = state) }
+    /** Pins every widget to one state, or hands them back to the demo (null). */
+    fun setPreviewState(state: InteractionState?) = touch { it.copy(previewState = state) }
 
-    fun setPreviewForm(form: TargetForm) = touch {
-        it.copy(previewForm = form, showSafeArea = form == TargetForm.MOBILE)
-    }
+    /**
+     * Records what the demo did.
+     *
+     * `touch`, never `edit`: the demo must not dirty the document, must not
+     * enter the undo history and must not survive being closed. Pressing a
+     * button in a preview is not an edit to the screen that contains it.
+     */
+    fun setDemo(demo: DemoState) = touch { it.copy(demo = demo) }
+
+    /** Puts every widget back the way the document has it. */
+    fun resetDemo() = touch { it.copy(demo = DemoState()) }
 
     fun setZoom(zoom: Float) = touch { it.copy(zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM)) }
 
@@ -1264,8 +1275,33 @@ class EditorController(initial: GuiProject) {
     }
 
     companion object {
-        const val MIN_ZOOM = 0.25f
-        const val MAX_ZOOM = 16f
+        const val MIN_ZOOM = 0.1f
+
+        /**
+         * How far in the canvas will go: one design pixel filling a 64-pixel
+         * square on screen.
+         *
+         * The old ceiling was 16, which sounds like plenty and is not. These
+         * canvases are *tiny* - a Java chest screen is 176 by 166 - so the unit
+         * of work is a single pixel, and at 16x a pixel is a 16-pixel square:
+         * about the size of a full stop at arm's length, and smaller than the
+         * fingertip aiming at it. Nudging a one-pixel highlight along the top of
+         * a button, or checking that two edges meet rather than overlap, is
+         * eyestrain at that scale.
+         *
+         * At 64x a pixel is a large tile, its halves are unambiguous, and the
+         * grid at gridSize 1 is a legible lattice rather than grey. Beyond that
+         * a pixel stops being a pixel and starts being a wall, and the canvas
+         * is 20,000 points wide, which is a lot of panning to cross a screen
+         * that is a couple of hundred pixels across.
+         *
+         * Nothing else has to change to allow it: the sheet is one drawn rect,
+         * the grid and the ruler both clip to the window and pick a step from
+         * the zoom, and handles are sized in view space. What used to make deep
+         * zoom expensive - a grid whose cost rose with the zoom - was the bug
+         * fixed in the drawing pass, not a reason to keep the ceiling low.
+         */
+        const val MAX_ZOOM = 64f
 
         /**
          * Least of the viewport the canvas must keep covering when panned.
@@ -1284,17 +1320,17 @@ class EditorController(initial: GuiProject) {
         fun newProject(
             edition: Edition,
             name: String = "Untitled Screen",
-            form: TargetForm = if (edition == Edition.BEDROCK) TargetForm.MOBILE else TargetForm.DESKTOP,
         ): GuiProject {
-            val canvas = when {
-                edition == Edition.JAVA -> CanvasSpec(width = 176, height = 166, guiScale = 3, gridSize = 8)
-                form == TargetForm.MOBILE -> CanvasSpec(
+            val canvas = when (edition) {
+                Edition.JAVA -> CanvasSpec(width = 176, height = 166, guiScale = 3, gridSize = 8)
+                // Bedrock screens are landscape and drawn to the edges of a
+                // handheld device, so they start with a margin to keep clear.
+                Edition.BEDROCK -> CanvasSpec(
                     width = 320, height = 180, guiScale = 3, gridSize = 4,
-                    targetForm = TargetForm.MOBILE,
                     safeArea = com.mcguidesigner.core.model.Insets.symmetric(12, 8),
                 )
 
-                else -> CanvasSpec(width = 320, height = 240, guiScale = 3, gridSize = 4, targetForm = form)
+                Edition.OTHER -> CanvasSpec(width = 320, height = 240, guiScale = 3, gridSize = 4)
             }
             return GuiProject(
                 id = Ids.prefixed("project"),

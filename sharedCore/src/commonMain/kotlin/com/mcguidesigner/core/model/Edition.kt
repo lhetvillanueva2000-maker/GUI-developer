@@ -72,22 +72,6 @@ enum class Edition {
 }
 
 /**
- * Which device class a layout is authored for.  Bedrock projects frequently
- * ship two variants of the same screen; Java projects are practically always
- * [DESKTOP].
- */
-@Serializable
-enum class TargetForm {
-    @SerialName("desktop")
-    DESKTOP,
-
-    @SerialName("mobile")
-    MOBILE;
-
-    val displayName: String get() = if (this == DESKTOP) "Desktop" else "Mobile / Touch"
-}
-
-/**
  * Visual states an interactive element can be rendered in.  Every interactive
  * definition in the catalog declares support for these so the preview and the
  * exporters can emit per-state skins.

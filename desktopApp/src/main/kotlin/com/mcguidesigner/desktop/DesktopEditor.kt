@@ -58,7 +58,6 @@ import com.mcguidesigner.core.editor.EditorTool
 import com.mcguidesigner.core.editor.ViewMode
 import com.mcguidesigner.core.model.AlignMode
 import com.mcguidesigner.core.model.InteractionState
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.desktop.dialogs.AboutDialog
 import com.mcguidesigner.desktop.dialogs.AppearanceDialog
 import com.mcguidesigner.desktop.dialogs.AddCustomDialog

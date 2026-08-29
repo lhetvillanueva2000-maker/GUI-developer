@@ -3,7 +3,6 @@ package com.mcguidesigner.core.editor
 import com.mcguidesigner.core.model.GuiProject
 import com.mcguidesigner.core.model.InteractionState
 import com.mcguidesigner.core.model.IntRect
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.validation.ValidationReport
 
 /** Active canvas tool. */
@@ -18,7 +17,17 @@ enum class EditorTool(val displayName: String, val shortcut: String) {
 /** Whether the canvas is being edited or shown as the running screen. */
 enum class ViewMode(val displayName: String) {
     DESIGN("Design"),
-    PREVIEW("Preview"),
+
+    /**
+     * The screen as it will actually behave, not a picture of it.
+     *
+     * Called "Preview / Demo" because it is both, and the second word is the
+     * one that says what changed: buttons press, switches flip, sliders drag,
+     * lists scroll and the whole thing zooms. The entire reason to look at a
+     * preview is to find out whether the layout works when it is used, and a
+     * still image cannot answer that.
+     */
+    PREVIEW("Preview / Demo"),
     CODE("Code"),
 }
 
@@ -102,8 +111,28 @@ data class EditorState(
     val guides: List<Guide> = emptyList(),
 
     val viewMode: ViewMode = ViewMode.DESIGN,
-    val previewState: InteractionState = InteractionState.NORMAL,
-    val previewForm: TargetForm = TargetForm.DESKTOP,
+
+    /**
+     * The state every widget is *forced* into in the preview, or null for the
+     * demo, where each widget carries its own.
+     *
+     * Both are worth having. Pinning everything to hover at once is how you
+     * check a hover skin you drew, and no amount of pointing at one widget will
+     * show you the others; leaving it null is how you find out whether the
+     * screen works when it is used. Null is the default because that is the
+     * question people actually open the tab to answer.
+     */
+    val previewState: InteractionState? = null,
+
+    /**
+     * What the demo has done to the screen, which is never the document.
+     *
+     * In the state rather than in the preview pane's own `remember` so that
+     * switching to Design and back does not silently undo everything you just
+     * pressed, and so both front-ends read one definition of "what the demo
+     * currently shows".
+     */
+    val demo: DemoState = DemoState(),
 
     val filePath: String? = null,
     val dirty: Boolean = false,
@@ -156,8 +185,7 @@ data class EditorState(
     companion object {
         fun of(project: GuiProject) = EditorState(
             project = project,
-            previewForm = project.canvas.targetForm,
-            showSafeArea = project.canvas.targetForm == TargetForm.MOBILE,
+            showSafeArea = project.canvas.hasSafeArea,
         )
     }
 }

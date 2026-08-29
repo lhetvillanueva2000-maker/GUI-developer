@@ -235,12 +235,8 @@ object JavaEditionSkin : EditionSkin {
             val width = ctx.px(ctx.props.int("scrollbarWidth", 6))
             val track = Rect(rect.right - width, rect.top, rect.right, rect.bottom)
             fillRect(track, Color(0xFF000000))
-            val content = ctx.props.int("contentLength", 240).coerceAtLeast(1)
-            val visible = ctx.element.bounds.height.coerceAtLeast(1)
-            val ratio = (visible.toFloat() / content).coerceIn(0.08f, 1f)
-            val thumb = Rect(track.left, track.top, track.right, track.top + track.height * ratio)
             bevelBox(
-                thumb,
+                ctx.scrollThumb(track),
                 Color(ctx.props.color("thumbColor", 0xFFC6C6C6)),
                 JavaPalette.ContainerHighlight,
                 JavaPalette.ContainerShadow,

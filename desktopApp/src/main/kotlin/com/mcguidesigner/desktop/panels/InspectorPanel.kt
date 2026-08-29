@@ -65,7 +65,6 @@ import com.mcguidesigner.core.model.IntValue
 import com.mcguidesigner.core.model.ListValue
 import com.mcguidesigner.core.model.PropValue
 import com.mcguidesigner.core.model.StringValue
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.model.TextureValue
 import com.mcguidesigner.styles.theme.LocalSkinPalette
 
@@ -519,32 +518,22 @@ private fun CanvasSection(controller: EditorController, state: EditorState) {
         display = { CanvasBackdrop.valueOf(it).displayName },
     ) { controller.updateCanvas { spec -> spec.copy(backdrop = CanvasBackdrop.valueOf(it)) } }
 
-    EnumDropdown(
-        label = "Target form",
-        options = TargetForm.entries.map { it.name },
-        selected = canvas.targetForm.name,
-        display = { TargetForm.valueOf(it).displayName },
-        modifier = Modifier.padding(top = 8.dp),
-    ) { controller.updateCanvas { spec -> spec.copy(targetForm = TargetForm.valueOf(it)) } }
-
-    if (canvas.targetForm == TargetForm.MOBILE) {
-        SectionSpacer()
-        SectionHeader("Safe area")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NumberField("Left", canvas.safeArea.left, Modifier.weight(1f), min = 0) {
-                controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(left = it)) }
-            }
-            NumberField("Top", canvas.safeArea.top, Modifier.weight(1f), min = 0) {
-                controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(top = it)) }
-            }
+    SectionSpacer()
+    SectionHeader("Safe area")
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        NumberField("Left", canvas.safeArea.left, Modifier.weight(1f), min = 0) {
+            controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(left = it)) }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-            NumberField("Right", canvas.safeArea.right, Modifier.weight(1f), min = 0) {
-                controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(right = it)) }
-            }
-            NumberField("Bottom", canvas.safeArea.bottom, Modifier.weight(1f), min = 0) {
-                controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(bottom = it)) }
-            }
+        NumberField("Top", canvas.safeArea.top, Modifier.weight(1f), min = 0) {
+            controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(top = it)) }
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+        NumberField("Right", canvas.safeArea.right, Modifier.weight(1f), min = 0) {
+            controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(right = it)) }
+        }
+        NumberField("Bottom", canvas.safeArea.bottom, Modifier.weight(1f), min = 0) {
+            controller.updateCanvas { spec -> spec.copy(safeArea = spec.safeArea.copy(bottom = it)) }
         }
     }
 

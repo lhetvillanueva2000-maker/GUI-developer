@@ -319,8 +319,7 @@ object OtherUiSkin : EditionSkin {
         )
         if (track.height > 0f) {
             panel(track, t.surfaceSunken, null, trackWidth / 2f)
-            val thumb = Rect(track.left, track.top, track.right, track.top + track.height * 0.4f)
-            panel(thumb, t.controlOutline, null, trackWidth / 2f)
+            panel(ctx.scrollThumb(track), t.controlOutline, null, trackWidth / 2f)
         }
     }
 

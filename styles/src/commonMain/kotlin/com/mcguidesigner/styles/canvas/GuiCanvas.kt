@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -37,9 +38,9 @@ import com.mcguidesigner.core.model.PointF
 import com.mcguidesigner.core.model.Rotation
 import com.mcguidesigner.core.model.bool
 import com.mcguidesigner.core.model.int
+import com.mcguidesigner.core.model.string
 import com.mcguidesigner.core.model.texture
 import com.mcguidesigner.core.model.walkAll
-import com.mcguidesigner.core.model.TargetForm
 import com.mcguidesigner.core.validation.Severity
 import com.mcguidesigner.styles.render.EditionSkin
 import com.mcguidesigner.styles.render.ElementRenderContext
@@ -152,8 +153,11 @@ private val GuiProject.hasPlayingAnimation: Boolean
     }
 
 /**
- * Read-only rendering of a project, used by the preview pane, the template
- * gallery and the palette thumbnails.
+ * Read-only rendering of a project, used by the template gallery, the palette
+ * thumbnails and anywhere a still of a screen is wanted.
+ *
+ * The live, working version is [drawProject]'s other caller - see
+ * `GuiDemoView`, which draws the same thing but lets you press it.
  */
 @Composable
 fun GuiPreview(
@@ -162,7 +166,6 @@ fun GuiPreview(
     modifier: Modifier = Modifier,
     zoom: Float = 2f,
     previewState: InteractionState = InteractionState.NORMAL,
-    form: TargetForm = project.canvas.targetForm,
     drawBackdrop: Boolean = true,
     playAnimations: Boolean = true,
     skin: EditionSkin = LocalEditionSkin.current,
@@ -181,29 +184,54 @@ fun GuiPreview(
             viewport = size,
             canvas = project.canvas.size,
         )
-        if (drawBackdrop) {
-            skin.drawBackdropOn(this, transform.canvasRect, project, zoom)
-        }
-        clipRect(
-            transform.canvasRect.left,
-            transform.canvasRect.top,
-            transform.canvasRect.right,
-            transform.canvasRect.bottom,
-        ) {
-            drawElements(
-                nodes = project.elements,
-                bounds = project.absoluteBounds(),
-                project = project,
-                transform = transform,
-                textures = textures,
-                measurer = measurer,
-                skin = skin,
-                state = previewState,
-                form = form,
-                selection = emptySet(),
-                timeMillis = time,
-            )
-        }
+        drawProject(
+            project = project,
+            transform = transform,
+            textures = textures,
+            measurer = measurer,
+            skin = skin,
+            stateOf = { previewState },
+            drawBackdrop = drawBackdrop,
+            timeMillis = time,
+        )
+    }
+}
+
+/**
+ * The whole screen, backdrop and all, clipped to the canvas rectangle.
+ *
+ * Shared by the still preview and the working demo so there is exactly one
+ * answer to "what does this project look like". The only difference between the
+ * two is [stateOf]: a constant for the still, and the demo's live per-widget
+ * answer for the other.
+ */
+internal fun DrawScope.drawProject(
+    project: GuiProject,
+    transform: CanvasTransform,
+    textures: TextureResolver,
+    measurer: TextMeasurer,
+    skin: EditionSkin,
+    stateOf: (GuiElement) -> InteractionState,
+    drawBackdrop: Boolean = true,
+    timeMillis: Long = 0L,
+) {
+    val canvasRect = transform.canvasRect
+    if (drawBackdrop) {
+        skin.drawBackdropOn(this, canvasRect, project, transform.zoom)
+    }
+    clipRect(canvasRect.left, canvasRect.top, canvasRect.right, canvasRect.bottom) {
+        drawElements(
+            nodes = project.elements,
+            bounds = project.absoluteBounds(),
+            project = project,
+            transform = transform,
+            textures = textures,
+            measurer = measurer,
+            skin = skin,
+            stateOf = stateOf,
+            selection = emptySet(),
+            timeMillis = timeMillis,
+        )
     }
 }
 
@@ -268,8 +296,7 @@ private fun DrawScope.drawCanvasSurface(
             textures = textures,
             measurer = measurer,
             skin = skin,
-            state = if (designMode) InteractionState.NORMAL else state.previewState,
-            form = state.previewForm,
+            stateOf = { if (designMode) InteractionState.NORMAL else state.previewState ?: InteractionState.NORMAL },
             selection = state.selection,
             timeMillis = timeMillis,
         )
@@ -280,7 +307,7 @@ private fun DrawScope.drawCanvasSurface(
 
     if (!designMode) return
 
-    if (state.showSafeArea && project.canvas.targetForm == TargetForm.MOBILE) {
+    if (state.showSafeArea && project.canvas.hasSafeArea) {
         drawSafeArea(state, transform, chrome)
     }
 
@@ -330,8 +357,7 @@ private fun DrawScope.drawElements(
     textures: TextureResolver,
     measurer: TextMeasurer,
     skin: EditionSkin,
-    state: InteractionState,
-    form: TargetForm,
+    stateOf: (GuiElement) -> InteractionState,
     selection: Set<String>,
     timeMillis: Long,
 ) {
@@ -355,25 +381,50 @@ private fun DrawScope.drawElements(
                 element = element,
                 rect = viewRect,
                 scale = transform.zoom,
-                state = state,
+                state = stateOf(element),
                 project = project,
                 textures = textures,
                 textMeasurer = measurer,
-                form = form,
                 selected = element.id in selection,
                 timeMillis = timeMillis,
             )
             skin.draw(this, context)
         }
 
-        if (element.children.isNotEmpty()) {
+        if (element.children.isEmpty()) continue
+
+        // A scroll container that has been scrolled moves its contents and hides
+        // whatever leaves it. Both halves matter: shifting without clipping
+        // paints the scrolled-away rows straight over whatever is laid out
+        // beside the list, which looks like a rendering bug rather than a
+        // scrolled list.
+        val scroll = scrollOffsetOf(element)
+        if (scroll == 0) {
             drawElements(
                 element.children, bounds, project, transform, textures,
-                measurer, skin, state, form, selection, timeMillis,
+                measurer, skin, stateOf, selection, timeMillis,
             )
+            continue
+        }
+        val horizontal = element.props.string("direction", "vertical").let { it == "horizontal" || it == "both" }
+        val vertical = element.props.string("direction", "vertical") != "horizontal"
+        clipRect(viewRect.left, viewRect.top, viewRect.right, viewRect.bottom) {
+            translate(
+                left = if (horizontal) -scroll * transform.zoom else 0f,
+                top = if (vertical) -scroll * transform.zoom else 0f,
+            ) {
+                drawElements(
+                    element.children, bounds, project, transform, textures,
+                    measurer, skin, stateOf, selection, timeMillis,
+                )
+            }
         }
     }
 }
+
+/** How far a scroll container is scrolled; zero for everything else. */
+private fun scrollOffsetOf(element: GuiElement): Int =
+    if (element.type == ElementCatalog.CONTAINER_SCROLL) element.props.int("scrollOffset", 0) else 0
 
 /**
  * Whether [viewRect] intersects a viewport of [viewport] at the origin.
