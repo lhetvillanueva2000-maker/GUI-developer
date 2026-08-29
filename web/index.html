@@ -1277,19 +1277,6 @@ html[data-form="tablet"] .desk-only { display: none; }
         <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabsInstaller-2.3.0.exe" download><span data-size>95.5 MB</span> · Download .exe</a>
       </article>
 
-      <article class="dl" data-os="macos" data-file="UILabsInstaller-{v}-macos-aarch64.dmg" data-bytes="109869981">
-        <span class="ribbon">Recommended for you</span>
-        <div class="head">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M16.4 12.7c0-2.4 2-3.6 2.1-3.6-1.1-1.7-2.9-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9s-2-.9-3.2-.9c-1.7 0-3.2 1-4 2.5-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.5 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.4c.9-1.4 1.3-2.7 1.3-2.8-.1 0-2.5-1-2.2-4.1zM14 4.9c.7-.8 1.1-2 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4z"/>
-          </svg>
-          <b>macOS</b>
-        </div>
-        <p class="note">Apple Silicon — every Mac since late 2020. On an Intel Mac, use the .jar.</p>
-        <p class="file mono" data-filename>UILabsInstaller-2.3.0-macos-aarch64.dmg</p>
-        <a class="btn btn-primary" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabsInstaller-2.3.0-macos-aarch64.dmg" download><span data-size>104.8 MB</span> · Download .dmg</a>
-      </article>
-
       <article class="dl" data-os="android" data-file="UILabsInstaller-{v}.apk" data-bytes="9106604">
         <span class="ribbon">Recommended for you</span>
         <div class="head">
@@ -1325,9 +1312,9 @@ html[data-form="tablet"] .desk-only { display: none; }
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/>
           </svg>
-          <b>Any OS with a JVM</b>
+          <b>macOS, or any OS with a JVM</b>
         </div>
-        <p class="note">Portable. Needs Java 17 or newer: <code>java -jar &lt;file&gt;</code>. Also the answer for Intel Macs.</p>
+        <p class="note">Portable. Needs Java 17 or newer: <code>java -jar &lt;file&gt;</code>. This is also the macOS download — there is no .dmg, <a href="#no-dmg">on purpose</a>.</p>
         <p class="file mono" data-filename>UILabs-2.3.0.jar</p>
         <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabs-2.3.0.jar" download><span data-size>75.3 MB</span> · Download .jar</a>
       </article>
@@ -1365,13 +1352,6 @@ html[data-form="tablet"] .desk-only { display: none; }
           <p class="file mono" data-filename>UILabsInstaller-2.3.0.msi</p>
           <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabsInstaller-2.3.0.msi" download><span data-size>95.0 MB</span> · Download .msi</a>
         </article>
-        <article class="dl" data-os="none" data-file="UILabsInstaller-{v}-macos-aarch64.pkg" data-bytes="104857080">
-          <span class="ribbon">Recommended for you</span>
-          <div class="head"><b>macOS · .pkg</b></div>
-          <p class="note">The same app as the .dmg, as an installer package. Apple Silicon.</p>
-          <p class="file mono" data-filename>UILabsInstaller-2.3.0-macos-aarch64.pkg</p>
-          <a class="btn btn-ghost" data-dl href="https://github.com/lhetvillanueva2000-maker/GUI-developer/releases/download/v2.3.0/UILabsInstaller-2.3.0-macos-aarch64.pkg" download><span data-size>100.0 MB</span> · Download .pkg</a>
-        </article>
         <article class="dl" data-os="none" data-file="UILabsDebug-{v}.apk" data-bytes="12046779">
           <span class="ribbon">Recommended for you</span>
           <div class="head"><b>Android · test build</b></div>
@@ -1402,16 +1382,25 @@ html[data-form="tablet"] .desk-only { display: none; }
       </p>
     </div>
 
-    <details class="acc" open>
-      <summary>macOS — “cannot be opened because the developer cannot be verified”</summary>
+    <details class="acc" id="no-dmg" open>
+      <summary>macOS — why there is no .dmg</summary>
       <div class="inner">
         <p>
-          The .dmg is not signed with an Apple Developer certificate, so Gatekeeper blocks
-          the first launch. Open it once with <strong>right-click → Open</strong> and choose
-          <strong>Open</strong>, or clear the quarantine flag:
+          An installer that is not signed with an Apple Developer certificate is blocked by
+          Gatekeeper on first launch — <em>“cannot be opened because the developer cannot be
+          verified”</em> — and the way past it is right-click, then Open, then confirm you
+          meant it. An installer whose instructions start like that is worse than no
+          installer.
         </p>
-        <p><code>xattr -dr com.apple.quarantine "/Applications/UILabs.app"</code></p>
-        <p>Every launch after the first is normal.</p>
+        <p>
+          So the Mac download is the portable jar instead. It needs Java 17 or newer and no
+          ceremony at all:
+        </p>
+        <p><code>java -jar UILabs-2.3.0.jar</code></p>
+        <p>
+          It also runs on Intel Macs, which the .dmg never did — that was Apple Silicon
+          only.
+        </p>
       </div>
     </details>
 
@@ -1566,7 +1555,10 @@ html[data-form="tablet"] .desk-only { display: none; }
   /* Which download this device should be offered. ChromeOS runs Android
      apps, so it gets the APK; iOS gets nothing, because nothing exists. */
   var PICK = {
-    windows: "windows", macos: "macos", linux: "linux",
+    // A Mac gets the portable jar. There is no macOS installer to offer -
+    // see the "why there is no .dmg" note - and pointing a Mac at the
+    // downloads with nothing marked would be the page giving up.
+    windows: "windows", macos: "any", linux: "linux",
     android: "android", chromeos: "android",
     ios: null, ipados: null, unknown: null
   };
@@ -1667,11 +1659,11 @@ html[data-form="tablet"] .desk-only { display: none; }
       cta.href = href;
       cta.setAttribute("download", "");
       ctaLabel.textContent = "Download for " + OS_NAME[device.os];
-      // Safari does not report the CPU, so a Mac cannot be told apart
-      // from an Intel one here. Saying which this build is beats
-      // handing an Intel Mac a binary that will not start.
+      // The Mac download is the portable jar, which runs on both
+      // architectures - so unlike the .dmg it replaced, there is no
+      // Apple Silicon caveat to print and no CPU to detect.
       ctaSub.textContent = device.os === "macos"
-        ? size + " · " + ext + " · Apple Silicon"
+        ? size + " · " + ext + " · needs Java 17+"
         : size + " · " + ext + " · " + shown;
 
       dockCta.href = href;
@@ -1715,10 +1707,11 @@ html[data-form="tablet"] .desk-only { display: none; }
     ));
     document.getElementById("footer-detected").textContent = bits;
 
-    // A Chromium browser can be asked for the CPU as well, which is the
-    // one thing that decides between the Apple Silicon .dmg and the
-    // portable .jar. Safari cannot answer it, so macOS is offered the
-    // .dmg with the Intel caveat printed on the card either way.
+    // A Chromium browser can be asked for the CPU as well. Nothing on the
+    // page depends on the answer any more - the Mac download is the
+    // portable jar and runs on either architecture - but it is worth
+    // showing, because "what did it think I am" is the whole point of
+    // the detected-device line.
     var uad = navigator.userAgentData;
     if (uad && uad.getHighEntropyValues) {
       uad.getHighEntropyValues(["architecture", "bitness"]).then(function (h) {

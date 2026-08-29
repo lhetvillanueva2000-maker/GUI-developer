@@ -62,8 +62,9 @@ change when the device is rotated. That is the same rule the app itself uses
 here, rather than being handed the laptop layout on a screen four inches tall.
 
 The download button is aimed at the detected platform — Windows gets the
-`.exe`, macOS the `.dmg`, Android the `.apk`, Linux the `.deb` — and that card
-is marked and moved to the front of the downloads grid. iOS and iPadOS are told
+`.exe`, Android the `.apk`, Linux the `.deb`, and macOS the portable `.jar`,
+since releases ship no `.dmg` — and that card is marked and moved to the front
+of the downloads grid. iOS and iPadOS are told
 plainly that there is nothing to install, and pointed at the browser build,
 which is the one that does run there.
 

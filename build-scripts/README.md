@@ -7,8 +7,22 @@ Everything needed to turn the source tree into installable artifacts.
 | `package-release.sh` | Linux/macOS: builds the APK, the `.deb` and the portable jar. |
 | `package-release.ps1` | Windows: builds the `.exe`/`.msi` installers and the portable jar. |
 | `bundle-release.sh` | Merges the per-platform outputs into the single release ZIP and writes `MANIFEST.txt`. |
+| `make-icns.sh` | Builds the macOS app icon. Only for a local `.dmg` on a Mac - releases do not ship one, see below. |
 | `icon/IconRenderer.java` | Renders the app icon (PNG, ICO, Android vector drawable) from one geometry description. |
 | `dev-signing.jks` | The development signing key. See below. |
+
+## There is no macOS installer
+
+Releases ship Windows, Linux and Android; a Mac gets the portable jar. A
+`.dmg` that is not signed with an Apple Developer certificate is blocked by
+Gatekeeper on first launch, and an installer whose instructions begin
+"right-click, then Open, then confirm you meant it" is worse than no installer
+at all. The jar needs Java 17 and nothing else, and it runs on Intel and Apple
+Silicon alike - which the `.dmg` never did.
+
+`make-icns.sh` and the `macOS { }` block in `desktopApp/build.gradle.kts` are
+still here because building a `.dmg` by hand on a Mac still works. Nothing in
+CI runs them.
 
 ## Android signing
 

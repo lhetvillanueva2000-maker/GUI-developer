@@ -114,11 +114,16 @@ compose.desktop {
                 bundleID = "com.mcguidesigner.desktop"
                 dockName = "UILabs"
                 packageName = "UILabs"
+                // Kept for a local build on a Mac. Releases no longer ship a
+                // .dmg - an unsigned one is blocked by Gatekeeper and there is
+                // no Apple Developer certificate - so nothing in CI runs this;
+                // the Mac download is the portable jar. Building it by hand
+                // still works, which is why the block stays.
+                //
                 // jpackage wants an .icns, which only macOS tooling can build.
-                // `build-scripts/make-icns.sh` produces it during the macOS CI
-                // job; when it has not run (any non-Mac build, or a local Mac
-                // build that skipped it) the app just gets the default Java
-                // icon rather than failing the build over a missing file.
+                // `build-scripts/make-icns.sh` produces it. When it has not run
+                // the app gets the default Java icon rather than the build
+                // failing over a missing file.
                 rootProject.file("assets/icon/app-icon.icns")
                     .takeIf { it.isFile }
                     ?.let { iconFile.set(it) }

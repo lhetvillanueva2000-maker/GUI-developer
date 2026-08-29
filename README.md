@@ -23,11 +23,10 @@ Everything is published on the
 | You want | Grab |
 | --- | --- |
 | **Windows** | `UILabsInstaller-<version>.exe` — installer, no Java needed |
-| **macOS (Apple Silicon)** | `UILabsInstaller-<version>-macos-aarch64.dmg` — any Mac from late 2020 on |
-| **Android** | `androidApp-release.apk` — enable "install from unknown sources" when prompted |
-| **Google Play** | `androidApp-release.aab` — an app bundle for uploading to Play, not installable on a phone |
+| **Android** | `UILabsInstaller-<version>.apk` — enable "install from unknown sources" when prompted |
+| **Android (test build)** | `UILabsDebug-<version>.apk` — installs *alongside* the one above and can show a crash's real text |
 | **Linux** | `UILabsInstaller-<version>-amd64.deb` |
-| **Any OS with a JVM** | `UILabs-<version>.jar` — `java -jar <file>` |
+| **macOS, or any OS with a JVM** | `UILabs-<version>.jar` — `java -jar <file>`, Java 17 or newer |
 | **Everything at once** | `uilabs-<version>.zip` — all of the above plus source, templates and docs |
 
 The individual installers are attached to the release alongside the combined
@@ -37,20 +36,18 @@ why nothing has to be installed first.
 
 `MANIFEST.txt` inside the ZIP lists every file with its SHA-256.
 
-**First launch on macOS.** The `.dmg` is not signed with an Apple Developer
-certificate, so Gatekeeper blocks the first launch. Open it once with
-**right-click → Open** and choose **Open**, or clear the quarantine flag:
+**On a Mac, use the portable jar.** There is no `.dmg`, on purpose. An
+installer that is not signed with an Apple Developer certificate is blocked by
+Gatekeeper on first launch, and one whose instructions begin "right-click, then
+Open, then confirm you meant it" is worse than none. The app itself runs on
+macOS perfectly well:
 
 ```bash
-xattr -dr com.apple.quarantine "/Applications/UILabs.app"
+java -jar UILabs-<version>.jar
 ```
 
-Every launch after the first is normal.
-
-The `.dmg` is Apple Silicon only — which is every Mac sold since late 2020. On
-an older **Intel** Mac, run the portable `UILabs-<version>.jar`
-with `java -jar` instead (Java 17 or newer). An Apple Silicon binary cannot run
-on Intel, and Rosetta only translates the other way.
+Java 17 or newer, and it works on Intel and Apple Silicon alike — which the
+`.dmg` never did, since it was Apple Silicon only.
 
 > Release binaries are attached to releases, never committed to the repository —
 > GitHub rejects files over 100 MB in git, and a binary in history bloats every
@@ -288,8 +285,8 @@ cd gui-developer
 # Portable jar that runs anywhere with a JVM
 ./gradlew :desktopApp:packageUberJarForCurrentOS
 
-# Android APK (sideload) and .aab (Google Play upload)
-./gradlew :androidApp:assembleRelease :androidApp:bundleRelease
+# Android APK, for sideloading
+./gradlew :androidApp:assembleRelease
 ```
 
 ### Package a full release ZIP
@@ -303,9 +300,9 @@ Produces `dist/uilabs-<version>.zip` containing the desktop
 installer, the APK, the templates, the docs and a source archive, plus a
 `MANIFEST.txt` listing every file.
 
-Because a Windows `.exe` can only be produced on Windows and a macOS `.dmg`
-only on macOS, [`.github/workflows/release.yml`](.github/workflows/release.yml)
-builds each platform on its own runner - Windows, macOS and Linux (which also
+Because a Windows `.exe` can only be produced on Windows,
+[`.github/workflows/release.yml`](.github/workflows/release.yml)
+builds each platform on its own runner - Windows, and Linux (which also
 builds Android) - and merges them with
 [`build-scripts/bundle-release.sh`](build-scripts/bundle-release.sh) into a
 single ZIP, attached to the GitHub Release. Push a `v*` tag to trigger it:
