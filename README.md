@@ -30,7 +30,7 @@ Everything is published on the
 | **Everything at once** | `uilabs-<version>.zip` — all of the above plus source, templates and docs |
 
 The individual installers are attached to the release alongside the combined
-ZIP, so there is no need to download ~360 MB just to get one of them. Each
+ZIP, so there is no need to download ~375 MB just to get one of them. Each
 desktop package embeds its own Java runtime, which is why they are large and
 why nothing has to be installed first.
 

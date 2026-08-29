@@ -237,7 +237,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      # Each installer also goes up on its own. The combined ZIP is ~360 MB
+      # Each installer also goes up on its own. The combined ZIP is ~375 MB
       # because every desktop package embeds a Java runtime, and nobody should
       # have to download all four to install one of them.
       - name: Collect the individual installers
